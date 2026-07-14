@@ -1,0 +1,14 @@
+{
+  "name": "college-attendance-portal",
+  "version": "1.0.0",
+  "description": "Synchronized attendance management system for Tolani Commerce College",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}

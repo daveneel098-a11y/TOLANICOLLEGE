@@ -1,0 +1,5 @@
+node_modules/
+.gemini/
+*.log
+database.db-journal
+.agents/
