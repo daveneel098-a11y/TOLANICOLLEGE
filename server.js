@@ -235,7 +235,7 @@ app.get('/api/users', (req, res) => {
 
 // 8. Add User (Admin GUI)
 app.post('/api/users/add', (req, res) => {
-    const { username, password, role, name, email, phone, division, class_name, department } = req.body;
+    const { username, password, role, name, email, phone, division, class_name, department, program, year, semester } = req.body;
 
     if (!username || !password || !role || !name) {
         return res.status(400).json({ error: 'Missing required user parameters.' });
@@ -243,10 +243,14 @@ app.post('/api/users/add', (req, res) => {
 
     try {
         const stmt = db.prepare(`
-            INSERT INTO users (username, password, role, name, email, phone, division, class, department)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO users (username, password, role, name, email, phone, division, class, department, program, year, semester)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
-        stmt.run(username, password, role, name, email || null, phone || null, division || 'A', class_name || 'B.Com. Sem-I', department || 'B.Com (NEP)');
+        stmt.run(
+            username, password, role, name, email || null, phone || null, 
+            division || 'A', class_name || 'B.Com. Sem-I', department || 'B.Com (NEP)',
+            program || 'B.Com (Regular)', year || '1st Year', semester || 'Semester 1'
+        );
         res.json({ success: true, message: 'User added successfully.' });
     } catch (err) {
         console.error('Error adding user:', err);
@@ -256,7 +260,7 @@ app.post('/api/users/add', (req, res) => {
 
 // 9. Edit User (Admin GUI)
 app.post('/api/users/edit', (req, res) => {
-    const { id, name, email, phone, division, class_name, department } = req.body;
+    const { id, name, email, phone, division, class_name, department, program, year, semester } = req.body;
 
     if (!id) {
         return res.status(400).json({ error: 'User ID is required.' });
@@ -265,10 +269,14 @@ app.post('/api/users/edit', (req, res) => {
     try {
         const stmt = db.prepare(`
             UPDATE users 
-            SET name = ?, email = ?, phone = ?, division = ?, class = ?, department = ?
+            SET name = ?, email = ?, phone = ?, division = ?, class = ?, department = ?, program = ?, year = ?, semester = ?
             WHERE id = ?
         `);
-        stmt.run(name, email || null, phone || null, division || 'A', class_name || 'B.Com. Sem-I', department || 'B.Com (NEP)', id);
+        stmt.run(
+            name, email || null, phone || null, division || 'A', class_name || 'B.Com. Sem-I', 
+            department || 'B.Com (NEP)', program || 'B.Com (Regular)', year || '1st Year', semester || 'Semester 1',
+            id
+        );
         res.json({ success: true, message: 'User updated successfully.' });
     } catch (err) {
         console.error('Error updating user:', err);

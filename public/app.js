@@ -513,10 +513,10 @@ window.renderStudentFees = function() {
 
             ${currentUser.fee_due > 0 ? `
                 <div class="text-center">
-                    <button class="btn btn-primary" onclick="openPaymentModal(${currentUser.fee_due})" style="max-width: 280px; margin: 0 auto; display: flex;">
+                    <a href="https://share.google/x83WwiwJV409pKHzP" target="_blank" class="btn btn-primary" style="text-decoration: none; max-width: 320px; margin: 0 auto; display: inline-flex; align-items: center;">
                         <i class="fa-solid fa-credit-card mr-8"></i>
-                        <span>Pay Outstanding Fees</span>
-                    </button>
+                        <span>Pay Outstanding Fees (eShiksa)</span>
+                    </a>
                 </div>
             ` : `
                 <div class="text-center" style="color: var(--success); padding: 10px;">
@@ -1178,6 +1178,33 @@ window.openAddUserModal = function() {
                     <label>Class Year</label>
                     <input type="text" id="add-user-class" class="form-control" placeholder="B.Com. Sem-I" value="B.Com. Sem-I" autocomplete="off">
                 </div>
+                <div>
+                    <label>Stream / Program</label>
+                    <select id="add-user-program" class="form-control">
+                        <option value="B.Com (Regular)">B.Com (Regular)</option>
+                        <option value="B.Com (Professional)">B.Com (Professional)</option>
+                        <option value="M.Com">M.Com</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Current Year</label>
+                    <select id="add-user-year" class="form-control">
+                        <option value="1st Year">1st Year</option>
+                        <option value="2nd Year">2nd Year</option>
+                        <option value="3rd Year">3rd Year</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Current Semester</label>
+                    <select id="add-user-semester" class="form-control">
+                        <option value="Semester 1">Semester 1</option>
+                        <option value="Semester 2">Semester 2</option>
+                        <option value="Semester 3">Semester 3</option>
+                        <option value="Semester 4">Semester 4</option>
+                        <option value="Semester 5">Semester 5</option>
+                        <option value="Semester 6">Semester 6</option>
+                    </select>
+                </div>
             </div>
             <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
                 <i class="fa-solid fa-save mr-8"></i>
@@ -1199,12 +1226,15 @@ window.openAddUserModal = function() {
         const phone = document.getElementById("add-user-phone").value.trim();
         const division = document.getElementById("add-user-division").value;
         const class_name = document.getElementById("add-user-class").value.trim();
+        const program = document.getElementById("add-user-program").value;
+        const year = document.getElementById("add-user-year").value;
+        const semester = document.getElementById("add-user-semester").value;
 
         try {
             const res = await fetch('/api/users/add', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, role, name, email, phone, division, class_name })
+                body: JSON.stringify({ username, password, role, name, email, phone, division, class_name, program, year, semester })
             });
             const data = await res.json();
             if (data.success) {
@@ -1256,6 +1286,33 @@ window.openEditUserModal = function(user) {
                     <label>Department / Major</label>
                     <input type="text" id="edit-user-dept" class="form-control" value="${user.department || ''}" autocomplete="off">
                 </div>
+                <div>
+                    <label>Stream / Program</label>
+                    <select id="edit-user-program" class="form-control">
+                        <option value="B.Com (Regular)" ${user.program === 'B.Com (Regular)' ? 'selected' : ''}>B.Com (Regular)</option>
+                        <option value="B.Com (Professional)" ${user.program === 'B.Com (Professional)' ? 'selected' : ''}>B.Com (Professional)</option>
+                        <option value="M.Com" ${user.program === 'M.Com' ? 'selected' : ''}>M.Com</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Current Year</label>
+                    <select id="edit-user-year" class="form-control">
+                        <option value="1st Year" ${user.year === '1st Year' ? 'selected' : ''}>1st Year</option>
+                        <option value="2nd Year" ${user.year === '2nd Year' ? 'selected' : ''}>2nd Year</option>
+                        <option value="3rd Year" ${user.year === '3rd Year' ? 'selected' : ''}>3rd Year</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Current Semester</label>
+                    <select id="edit-user-semester" class="form-control">
+                        <option value="Semester 1" ${user.semester === 'Semester 1' ? 'selected' : ''}>Semester 1</option>
+                        <option value="Semester 2" ${user.semester === 'Semester 2' ? 'selected' : ''}>Semester 2</option>
+                        <option value="Semester 3" ${user.semester === 'Semester 3' ? 'selected' : ''}>Semester 3</option>
+                        <option value="Semester 4" ${user.semester === 'Semester 4' ? 'selected' : ''}>Semester 4</option>
+                        <option value="Semester 5" ${user.semester === 'Semester 5' ? 'selected' : ''}>Semester 5</option>
+                        <option value="Semester 6" ${user.semester === 'Semester 6' ? 'selected' : ''}>Semester 6</option>
+                    </select>
+                </div>
             </div>
             <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
                 <i class="fa-solid fa-save mr-8"></i>
@@ -1276,12 +1333,15 @@ window.openEditUserModal = function(user) {
         const division = document.getElementById("edit-user-division").value;
         const class_name = document.getElementById("edit-user-class").value.trim();
         const department = document.getElementById("edit-user-dept").value.trim();
+        const program = document.getElementById("edit-user-program").value;
+        const year = document.getElementById("edit-user-year").value;
+        const semester = document.getElementById("edit-user-semester").value;
 
         try {
             const res = await fetch('/api/users/edit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, name, email, phone, division, class_name, department })
+                body: JSON.stringify({ id, name, email, phone, division, class_name, department, program, year, semester })
             });
             const data = await res.json();
             if (data.success) {
