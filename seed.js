@@ -221,6 +221,7 @@ try {
     insertSubject.run('Auditing & Assurance', 'BCP-103', 'B.Com (Professional)', '1st Year', 'Semester 1');
     insertSubject.run('Direct Tax', 'BCP-201', 'B.Com (Professional)', '1st Year', 'Semester 2');
     insertSubject.run('Cost Accounting', 'BCP-202', 'B.Com (Professional)', '1st Year', 'Semester 2');
+    insertSubject.run('Advance Financial Accounting', 'DSC-MP 301 A', 'B.Com (Professional)', '2nd Year', 'Semester 3');
 
     // M.Com
     insertSubject.run('Managerial Economics', 'MC-101', 'M.Com', '1st Year', 'Semester 1');
@@ -351,6 +352,26 @@ try {
         0, 0, 0
     );
 
+    // Insert Teacher (Assigned to B.Com Professional Sem-III)
+    insertUser.run(
+        'tulsigarva',
+        'okokokok',
+        'teacher',
+        'Tulsi Garva',
+        'tulsi.garva@tolani.edu',
+        '9106947048',
+        'Female',
+        'General',
+        'Advance Financial Accounting',
+        'B.Com. Sem-III',
+        'Commerce & Accountancy',
+        'All',
+        'B.Com (Professional)',
+        'N/A',
+        'N/A',
+        0, 0, 0
+    );
+
     // Insert Teacher (Assigned to M.Com)
     insertUser.run(
         'teachermcom',
@@ -425,6 +446,103 @@ try {
             feeStatus.due,
             feeStatus.paid,
             feeStatus.total
+        );
+    });
+
+    // --- Seed B.Com Professional Semester 3 (2nd Year) Students ---
+    const bcomproSem3Students = [
+        { username: '2025010195', name: 'Archana kumari upendra Singh', gender: 'Female', phone: '8511567899', email: 'Keshwarsingh521@gmail.com', category: 'General' },
+        { username: '2025010180', name: 'Dev Khemchand Chandanani', gender: 'Male', phone: '9106620193', email: 'chandnanidev009@gmail.com', category: 'General' },
+        { username: '2025010186', name: 'JIYA MAHESH MORYANI', gender: 'Female', phone: '9313413797', email: 'karanmoryani22@gmail.com', category: 'General' },
+        { username: '2025010177', name: 'KRISHNA HARSHADBHAI ASODIYA', gender: 'Male', phone: '9727240110', email: 'krishnaasodiya1948@gmail.com', category: 'SEBC' },
+        { username: '2025010187', name: 'PREETIKUMARI SANTOSHBHAI PANDIT', gender: 'Female', phone: '8799264806', email: 'ld5496822@gmail.com', category: 'General' },
+        { username: '2025010181', name: 'RITIKA RAJ DAS', gender: 'Female', phone: '9974818510', email: 'rajkumarin68@gmail.com', category: 'General' },
+        { username: '2025010190', name: 'RIYA BISHT', gender: 'Female', phone: '8141142687', email: 'riyab1283@gmail.com', category: 'General' },
+        { username: '2025010182', name: 'ROMIKA RAJESHBHARATHI GOSWAMI', gender: 'Female', phone: '8128922545', email: 'goswamiromika3@gmail.com', category: 'SEBC' },
+        { username: '2025010192', name: 'SHANA SAIF', gender: 'Female', phone: '8445591222', email: 'saifuanas786@gmail.com', category: 'General' },
+        { username: '2025010199', name: 'SHIVANI RAMBHAVAN YADAV', gender: 'Female', phone: '9265448852', email: 'bhavn49@gmail.com', category: 'General' },
+        { username: '2025010196', name: 'Shivani Vishanjibhai Vaniya', gender: 'Female', phone: '6354405182', email: 'rsorathiya16@gmail.com', category: 'SEBC' },
+        { username: '2025010189', name: 'SNEHA RAJKUMAR PRAMANIK', gender: 'Female', phone: '7575827978', email: 'snehapramanik272@gmail.com', category: 'General' },
+        { username: '2025010179', name: 'TIRTH CHETANBHAI BRAHMBHATT', gender: 'Male', phone: '9408548760', email: 'playerofficial41@gmail.com', category: 'SEBC' },
+        { username: '2025010183', name: 'TRIPULLABA JAGDEVSINH JADEJA', gender: 'Female', phone: '6354181519', email: 'HARSHRAJSINHJ564@gmail.com', category: 'General' },
+        { username: '2025010184', name: 'VED ALPESH JOSHI', gender: 'Male', phone: '9725071011', email: 'vedalpeshjoshi@gmail.com', category: 'General' },
+        { username: '2025010185', name: 'VEENA RAMSUNDAR MISHRA', gender: 'Female', phone: '9904941617', email: 'veenamishra272007@gmail.com', category: 'General' },
+        { username: '2025010197', name: 'Yashvi Sanjaybhai Vaniya', gender: 'Female', phone: '9274335012', email: 'yashviahir555@gmail.com', category: 'SEBC' },
+        
+        { username: '2024001519', name: 'Jyoti Singh', gender: 'Female', phone: '+91 99901 00019', email: 'jyoti.singh@gmail.com', category: 'General' },
+        { username: '2024001490', name: 'Jenish Gosai', gender: 'Male', phone: '+91 99901 00090', email: 'jenish.gosai@gmail.com', category: 'General' },
+        { username: '2024001482', name: 'Krishna Baherwani', gender: 'Female', phone: '+91 99901 00082', email: 'krishna.baherwani@gmail.com', category: 'General' },
+        { username: '2024001487', name: 'Debabrata', gender: 'Male', phone: '+91 99901 00087', email: 'debabrata@gmail.com', category: 'General' },
+        { username: '2024001525', name: 'Laxmi Thakur', gender: 'Female', phone: '+91 99901 00025', email: 'laxmi.thakur@gmail.com', category: 'General' },
+        { username: '2024001511', name: 'Pranav Ramchandani', gender: 'Male', phone: '+91 99901 00011', email: 'pranav.ramchandani@gmail.com', category: 'General' },
+        { username: '2024001526', name: 'Muskan Thakur', gender: 'Female', phone: '+91 99901 00026', email: 'muskan.thakur@gmail.com', category: 'General' },
+        { username: '2024001512', name: 'Bharti Rana', gender: 'Female', phone: '+91 99901 00012', email: 'bharti.rana@gmail.com', category: 'General' },
+        { username: '2024001535', name: 'Nandani Goswami', gender: 'Female', phone: '+91 99901 00035', email: 'nandani.goswami@gmail.com', category: 'General' },
+        { username: '2024001493', name: 'Pooja Hadiya', gender: 'Female', phone: '+91 99901 00093', email: 'pooja.hadiya@gmail.com', category: 'General' },
+        { username: '2024001515', name: 'Yashvi Sanjot', gender: 'Female', phone: '+91 99901 00015', email: 'yashvi.sanjot@gmail.com', category: 'General' },
+        { username: '2024001528', name: 'Payal Ujjawal', gender: 'Female', phone: '+91 99901 00028', email: 'payal.ujjawal@gmail.com', category: 'General' },
+        { username: '2024001495', name: 'Laljibhai Humbal', gender: 'Male', phone: '+91 99901 00095', email: 'laljibhai.humbal@gmail.com', category: 'General' },
+        { username: '2024001527', name: 'Tushar Sharma', gender: 'Male', phone: '+91 99901 00027', email: 'tushar.sharma@gmail.com', category: 'General' },
+        { username: '2024001494', name: 'Hitanshi Maharana', gender: 'Female', phone: '+91 99901 00094', email: 'hitanshi.maharana@gmail.com', category: 'General' },
+        { username: '2024001513', name: 'Bansari Raval', gender: 'Female', phone: '+91 99901 00013', email: 'bansari.raval@gmail.com', category: 'General' },
+        { username: '2024001504', name: 'Devansh Kotecha', gender: 'Male', phone: '+91 99901 00004', email: 'devansh.kotecha@gmail.com', category: 'General' },
+        { username: '2024001480', name: 'Anuj Banmotra', gender: 'Male', phone: '+91 99901 00080', email: 'anuj.banmotra@gmail.com', category: 'General' },
+        { username: '2024001530', name: 'Aditya Vaghela', gender: 'Male', phone: '+91 99901 00030', email: 'aditya.vaghela@gmail.com', category: 'General' },
+        { username: '2024001517', name: 'Hasmita Shegaliya', gender: 'Female', phone: '+91 99901 00017', email: 'hasmita.shegaliya@gmail.com', category: 'General' },
+        { username: '2024001529', name: 'Deep Vaghamshi', gender: 'Male', phone: '+91 99901 00029', email: 'deep.vaghamshi@gmail.com', category: 'General' },
+        { username: '2024001540', name: 'Hiren Vada', gender: 'Male', phone: '+91 99901 00040', email: 'hiren.vada@gmail.com', category: 'General' },
+        { username: '2024001502', name: 'Mann Kansara', gender: 'Male', phone: '+91 99901 00002', email: 'mann.kansara@gmail.com', category: 'General' },
+        { username: '2024001483', name: 'Aaditya Baldaniya', gender: 'Male', phone: '+91 99901 00083', email: 'aaditya.baldaniya@gmail.com', category: 'General' },
+        { username: '2024001491', name: 'Shivamraj Gupta', gender: 'Male', phone: '+91 99901 00091', email: 'shivamraj.gupta@gmail.com', category: 'General' },
+        { username: '2024001499', name: 'Jaydeep Jani', gender: 'Male', phone: '+91 99901 00099', email: 'jaydeep.jani@gmail.com', category: 'General' },
+        { username: '2024001488', name: 'Rohini Dubey', gender: 'Female', phone: '+91 99901 00088', email: 'rohini.dubey@gmail.com', category: 'General' },
+        { username: '2024001532', name: 'Priya Yadav', gender: 'Female', phone: '+91 99901 00032', email: 'priya.yadav@gmail.com', category: 'General' },
+        { username: '2024001521', name: 'Priyank Sorathiya', gender: 'Male', phone: '+91 99901 00021', email: 'priyank.sorathiya@gmail.com', category: 'General' },
+        { username: '2024001507', name: 'Abhishek Pandey', gender: 'Male', phone: '+91 99901 00007', email: 'abhishek.pandey@gmail.com', category: 'General' },
+        { username: '2024001496', name: 'Isha Sharma', gender: 'Female', phone: '+91 99901 00096', email: 'isha.sharma@gmail.com', category: 'General' },
+        { username: '2024001479', name: 'Aditya', gender: 'Male', phone: '+91 99901 00079', email: 'aditya.2ndyear@gmail.com', category: 'General' },
+        { username: '2024001538', name: 'Sahil Prasad', gender: 'Male', phone: '+91 99901 00038', email: 'sahil.prasad@gmail.com', category: 'General' },
+        { username: '2024001484', name: 'Ronak Bhejwal', gender: 'Male', phone: '+91 99901 00084', email: 'ronak.bhejwal@gmail.com', category: 'General' },
+        { username: '2024001531', name: 'Khushi Vaghela', gender: 'Female', phone: '+91 99901 00031', email: 'khushi.vaghela@gmail.com', category: 'General' },
+        { username: '2024001533', name: 'Suman Yadav', gender: 'Female', phone: '+91 99901 00033', email: 'suman.yadav@gmail.com', category: 'General' },
+        { username: '2024001514', name: 'Pragati Roshiya', gender: 'Female', phone: '+91 99901 00014', email: 'pragati.roshiya@gmail.com', category: 'General' },
+        { username: '2024001505', name: 'Naitik', gender: 'Male', phone: '+91 99901 00005', email: 'naitik@gmail.com', category: 'General' },
+        { username: '2024001497', name: 'Mahipalsinh Jadeja', gender: 'Male', phone: '+91 99901 00097', email: 'mahipalsinh.jadeja@gmail.com', category: 'General' },
+        { username: '2024001518', name: 'Mohammad Sahil Sheikh', gender: 'Male', phone: '+91 99901 00018', email: 'sahil.sheikh@gmail.com', category: 'General' },
+        { username: '2024001523', name: 'Asha Suthar', gender: 'Female', phone: '+91 99901 00023', email: 'asha.suthar@gmail.com', category: 'General' }
+    ];
+
+    bcomproSem3Students.forEach((s) => {
+        const username = s.username.trim();
+        const password = s.username.trim();
+        const gender = s.gender || 'Male';
+        
+        let division = 'A';
+        
+        let baselineFee = 9500;
+        if (gender.toLowerCase() === 'female') {
+            baselineFee = 8500;
+        }
+
+        insertUser.run(
+            username,
+            password,
+            'student',
+            s.name,
+            s.email,
+            s.phone,
+            gender,
+            s.category || 'General',
+            'Commerce',
+            'B.Com. Sem-III',
+            'B.Com (Professional)',
+            division,
+            'B.Com (Professional)', 
+            '2nd Year',
+            'Semester 3',
+            baselineFee,
+            0,
+            baselineFee
         );
     });
 
