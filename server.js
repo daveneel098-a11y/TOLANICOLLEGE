@@ -15,9 +15,116 @@ app.use(express.static(path.join(__dirname, 'public')));
 const db = new DatabaseSync(path.join(__dirname, 'database.db'));
 console.log('Server connected to SQLite database successfully.');
 
+// --- DATABASE AUTO-MIGRATIONS (If not run via seed.js) ---
+db.exec(`
+    CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS subjects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        code TEXT UNIQUE NOT NULL,
+        program TEXT NOT NULL,
+        year TEXT NOT NULL,
+        semester TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS timetables (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        program TEXT NOT NULL,
+        day TEXT NOT NULL,
+        slot_1 TEXT DEFAULT '',
+        slot_2 TEXT DEFAULT '',
+        slot_3 TEXT DEFAULT '',
+        slot_4 TEXT DEFAULT '',
+        UNIQUE(program, day)
+    );
+
+    CREATE TABLE IF NOT EXISTS notices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        program TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS daily_lectures (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        program TEXT NOT NULL,
+        division TEXT NOT NULL,
+        slot TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        original_teacher TEXT NOT NULL,
+        status TEXT NOT NULL,
+        substitute_teacher TEXT DEFAULT '',
+        combined_division TEXT DEFAULT '',
+        notes TEXT DEFAULT '',
+        UNIQUE(date, program, division, slot)
+    );
+`);
+
+// Safe Schema Upgrades for Anti-Proxy Suite
+try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN require_gps INTEGER DEFAULT 0"); } catch (e) {}
+try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN creator_lat REAL"); } catch (e) {}
+try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN creator_lon REAL"); } catch (e) {}
+try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN is_rolling INTEGER DEFAULT 0"); } catch (e) {}
+try { db.exec("ALTER TABLE attendance_records ADD COLUMN device_id TEXT"); } catch (e) {}
+
+// Try adding program column to attendance_sessions in case of legacy schema
+try {
+    db.exec("ALTER TABLE attendance_sessions ADD COLUMN program TEXT DEFAULT 'B.Com (Regular)'");
+} catch (e) {
+    // Column already exists, ignore
+}
+
+// Try adding gender column to users in case of legacy schema
+try {
+    db.exec("ALTER TABLE users ADD COLUMN gender TEXT DEFAULT 'Male'");
+} catch (e) {
+    // Column already exists, ignore
+}
+
 // --- HELPER FUNCTIONS ---
 function generateAttendanceCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function getDistanceKm(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Earth radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2); 
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    return R * c;
+}
+
+function getBaselineFee(program, gender) {
+    let key = 'fee_baseline_bcom_regular_boy';
+    const prog = (program || '').toLowerCase();
+    const g = (gender || '').toLowerCase();
+
+    if (prog.includes('professional')) {
+        key = g === 'female' ? 'fee_baseline_bcom_professional_girl' : 'fee_baseline_bcom_professional_boy';
+    } else if (prog.includes('m.com') || prog.includes('mcom')) {
+        key = g === 'female' ? 'fee_baseline_mcom_girl' : 'fee_baseline_mcom_boy';
+    } else {
+        key = g === 'female' ? 'fee_baseline_bcom_regular_girl' : 'fee_baseline_bcom_regular_boy';
+    }
+
+    try {
+        const stmt = db.prepare('SELECT value FROM settings WHERE key = ?');
+        const row = stmt.get(key);
+        return row ? parseFloat(row.value) : (prog.includes('professional') ? 9500 : (prog.includes('m.com') ? 12000 : 6200));
+    } catch (err) {
+        console.error('Error fetching baseline fee rate:', err);
+        return 6200;
+    }
 }
 
 // --- API ENDPOINTS ---
@@ -48,9 +155,9 @@ app.post('/api/login', (req, res) => {
 
 // 2. Create Attendance Session (Teacher/Admin)
 app.post('/api/attendance/create', (req, res) => {
-    const { creator_id, class_name, subject, division, duration_minutes } = req.body;
+    const { creator_id, class_name, subject, division, program, duration_minutes, require_gps, creator_lat, creator_lon, is_rolling } = req.body;
 
-    if (!creator_id || !class_name || !subject || !division) {
+    if (!creator_id || !class_name || !subject || !division || !program) {
         return res.status(400).json({ error: 'Missing required session parameters.' });
     }
 
@@ -60,10 +167,13 @@ app.post('/api/attendance/create', (req, res) => {
 
     try {
         const stmt = db.prepare(`
-            INSERT INTO attendance_sessions (code, creator_id, class_name, subject, division, expires_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO attendance_sessions (code, creator_id, class_name, subject, division, program, expires_at, require_gps, creator_lat, creator_lon, is_rolling)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
-        const info = stmt.run(code, creator_id, class_name, subject, division, expiresAt);
+        const info = stmt.run(
+            code, creator_id, class_name, subject, division, program, expiresAt,
+            require_gps ? 1 : 0, creator_lat !== undefined ? creator_lat : null, creator_lon !== undefined ? creator_lon : null, is_rolling ? 1 : 0
+        );
 
         res.json({
             success: true,
@@ -73,7 +183,10 @@ app.post('/api/attendance/create', (req, res) => {
                 class_name,
                 subject,
                 division,
-                expires_at: expiresAt
+                program,
+                expires_at: expiresAt,
+                require_gps: require_gps ? 1 : 0,
+                is_rolling: is_rolling ? 1 : 0
             }
         });
     } catch (err) {
@@ -82,12 +195,16 @@ app.post('/api/attendance/create', (req, res) => {
     }
 });
 
-// 3. Student Check-in
+// 3. Student Check-in (with anti-proxy validations)
 app.post('/api/attendance/check-in', (req, res) => {
-    const { code, student_id } = req.body;
+    const { code, student_id, device_id, student_lat, student_lon } = req.body;
 
     if (!code || !student_id) {
         return res.status(400).json({ error: 'Code and Student ID are required.' });
+    }
+
+    if (!device_id) {
+        return res.status(400).json({ error: 'Security identifier (Device ID) is required.' });
     }
 
     const now = new Date().toISOString();
@@ -104,12 +221,54 @@ app.post('/api/attendance/check-in', (req, res) => {
             return res.status(400).json({ error: 'Invalid, closed, or expired attendance code.' });
         }
 
-        // Fetch student details to verify division eligibility
+        // 1. Device Lockdown Protection
+        const deviceCheckStmt = db.prepare(`
+            SELECT * FROM attendance_records WHERE session_id = ? AND device_id = ?
+        `);
+        const duplicateDevice = deviceCheckStmt.get(session.id, device_id);
+        if (duplicateDevice) {
+            return res.status(400).json({ 
+                error: 'Security Alert: This device has already marked attendance for another student in this session. Proxy attendance is strictly prohibited.' 
+            });
+        }
+
+        // 2. GPS Geofencing Protection
+        if (session.require_gps) {
+            if (student_lat === null || student_lon === null || student_lat === undefined || student_lon === undefined) {
+                return res.status(400).json({ 
+                    error: 'GPS Geofencing is enabled. You must share your location coordinates to complete check-in.' 
+                });
+            }
+            if (session.creator_lat !== null && session.creator_lon !== null) {
+                const distance = getDistanceKm(session.creator_lat, session.creator_lon, student_lat, student_lon);
+                if (distance > 0.05) { // 50 meters
+                    return res.status(403).json({ 
+                        error: `Geofencing failure. You must be in close proximity to the instructor (within 50m) to check in. (Calculated distance: ${(distance * 1000).toFixed(0)} meters).` 
+                    });
+                }
+            }
+        }
+
+        // Fetch student details to verify eligibility
         const studentStmt = db.prepare("SELECT * FROM users WHERE id = ? AND role = 'student'");
         const student = studentStmt.get(student_id);
 
         if (!student) {
             return res.status(404).json({ error: 'Student record not found.' });
+        }
+
+        // Verify program mapping
+        if (session.program && session.program !== student.program) {
+            return res.status(403).json({ 
+                error: `Program mismatch. This code is only for ${session.program}, but you are in ${student.program}.` 
+            });
+        }
+
+        // Verify class mapping (Year and Semester check)
+        if (session.class_name && !(student.class || '').startsWith(session.class_name)) {
+            return res.status(403).json({ 
+                error: `Class/Semester mismatch. This session is for ${session.class_name}, but you are enrolled in ${student.class}.` 
+            });
         }
 
         // Verify division mapping
@@ -128,12 +287,12 @@ app.post('/api/attendance/check-in', (req, res) => {
             return res.status(400).json({ error: 'You have already checked in for this session.' });
         }
 
-        // Insert attendance record
+        // Insert attendance record (including device_id)
         const recordStmt = db.prepare(`
-            INSERT INTO attendance_records (session_id, student_id, status)
-            VALUES (?, ?, 'present')
+            INSERT INTO attendance_records (session_id, student_id, device_id, status)
+            VALUES (?, ?, ?, 'present')
         `);
-        recordStmt.run(session.id, student.id);
+        recordStmt.run(session.id, student.id, device_id);
 
         res.json({ 
             success: true, 
@@ -145,7 +304,7 @@ app.post('/api/attendance/check-in', (req, res) => {
     }
 });
 
-// 4. Retrieve checked-in students for a specific active code (Polling API for Teachers)
+// 4. Retrieve checked-in students for a specific active code
 app.get('/api/attendance/session/:code/records', (req, res) => {
     const { code } = req.params;
 
@@ -177,7 +336,7 @@ app.get('/api/attendance/session/:code/records', (req, res) => {
     }
 });
 
-// 5. Close attendance session manually (Teacher/Admin)
+// 5. Close attendance session manually
 app.post('/api/attendance/session/close', (req, res) => {
     const { code } = req.body;
 
@@ -200,7 +359,31 @@ app.post('/api/attendance/session/close', (req, res) => {
     }
 });
 
-// 6. Student Dashboard Overview & History
+// 6. Dynamic OTP Code Rotation (Projector Mode)
+app.post('/api/attendance/session/rotate', (req, res) => {
+    const { code } = req.body;
+    if (!code) {
+        return res.status(400).json({ error: 'Session code is required.' });
+    }
+
+    try {
+        // Fetch current session
+        const session = db.prepare('SELECT * FROM attendance_sessions WHERE code = ? AND is_active = 1').get(code);
+        if (!session) {
+            return res.status(404).json({ error: 'Active session not found.' });
+        }
+
+        const newCode = generateAttendanceCode();
+        db.prepare('UPDATE attendance_sessions SET code = ? WHERE id = ?').run(newCode, session.id);
+
+        res.json({ success: true, new_code: newCode });
+    } catch (err) {
+        console.error('Error rotating code:', err);
+        res.status(500).json({ error: 'Failed to rotate code.' });
+    }
+});
+
+// 7. Student Dashboard Overview & History
 app.get('/api/attendance/student/:student_id/history', (req, res) => {
     const { student_id } = req.params;
 
@@ -221,10 +404,10 @@ app.get('/api/attendance/student/:student_id/history', (req, res) => {
     }
 });
 
-// 7. Get All Users (Admin GUI)
+// 8. Get All Users (Admin GUI)
 app.get('/api/users', (req, res) => {
     try {
-        const stmt = db.prepare('SELECT id, username, role, name, email, phone, division, class, department FROM users');
+        const stmt = db.prepare('SELECT id, username, role, name, email, phone, division, class, department, program, year, semester, gender, fee_due, fee_paid, fee_total FROM users');
         const users = stmt.all();
         res.json({ success: true, users });
     } catch (err) {
@@ -233,23 +416,35 @@ app.get('/api/users', (req, res) => {
     }
 });
 
-// 8. Add User (Admin GUI)
+// 9. Add User (Admin GUI)
 app.post('/api/users/add', (req, res) => {
-    const { username, password, role, name, email, phone, division, class_name, department, program, year, semester } = req.body;
+    const { username, password, role, name, email, phone, division, class_name, department, program, year, semester, gender } = req.body;
 
     if (!username || !password || !role || !name) {
         return res.status(400).json({ error: 'Missing required user parameters.' });
     }
 
+    const finalGender = gender || 'Male';
+    const finalProgram = program || 'B.Com (Regular)';
+
+    // Determine fees for students
+    let feeDue = 0;
+    let feeTotal = 0;
+    if (role === 'student') {
+        const baseline = getBaselineFee(finalProgram, finalGender);
+        feeDue = baseline;
+        feeTotal = baseline;
+    }
+
     try {
         const stmt = db.prepare(`
-            INSERT INTO users (username, password, role, name, email, phone, division, class, department, program, year, semester)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO users (username, password, role, name, email, phone, division, class, department, program, year, semester, gender, fee_due, fee_paid, fee_total)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
         `);
         stmt.run(
             username, password, role, name, email || null, phone || null, 
             division || 'A', class_name || 'B.Com. Sem-I', department || 'B.Com (NEP)',
-            program || 'B.Com (Regular)', year || '1st Year', semester || 'Semester 1'
+            finalProgram, year || '1st Year', semester || 'Semester 1', finalGender, feeDue, feeTotal
         );
         res.json({ success: true, message: 'User added successfully.' });
     } catch (err) {
@@ -258,9 +453,9 @@ app.post('/api/users/add', (req, res) => {
     }
 });
 
-// 9. Edit User (Admin GUI)
+// 10. Edit User (Admin GUI)
 app.post('/api/users/edit', (req, res) => {
-    const { id, name, email, phone, division, class_name, department, program, year, semester } = req.body;
+    const { id, name, email, phone, division, class_name, department, program, year, semester, gender } = req.body;
 
     if (!id) {
         return res.status(400).json({ error: 'User ID is required.' });
@@ -269,13 +464,13 @@ app.post('/api/users/edit', (req, res) => {
     try {
         const stmt = db.prepare(`
             UPDATE users 
-            SET name = ?, email = ?, phone = ?, division = ?, class = ?, department = ?, program = ?, year = ?, semester = ?
+            SET name = ?, email = ?, phone = ?, division = ?, class = ?, department = ?, program = ?, year = ?, semester = ?, gender = ?
             WHERE id = ?
         `);
         stmt.run(
             name, email || null, phone || null, division || 'A', class_name || 'B.Com. Sem-I', 
             department || 'B.Com (NEP)', program || 'B.Com (Regular)', year || '1st Year', semester || 'Semester 1',
-            id
+            gender || 'Male', id
         );
         res.json({ success: true, message: 'User updated successfully.' });
     } catch (err) {
@@ -284,7 +479,7 @@ app.post('/api/users/edit', (req, res) => {
     }
 });
 
-// 10. Delete User (Admin GUI)
+// 11. Delete User (Admin GUI)
 app.post('/api/users/delete', (req, res) => {
     const { id } = req.body;
 
@@ -302,7 +497,264 @@ app.post('/api/users/delete', (req, res) => {
     }
 });
 
-// 11. SQL Command Terminal Emulator (Admin Console)
+// --- PROGRAM MANAGEMENT ENDPOINTS ---
+
+// Settings: Fees Configuration
+app.get('/api/settings/fees', (req, res) => {
+    try {
+        const rows = db.prepare('SELECT * FROM settings').all();
+        const settingsMap = {};
+        rows.forEach(r => { settingsMap[r.key] = r.value; });
+        
+        // Return baseline settings or defaults
+        res.json({
+            success: true,
+            fees: {
+                fee_baseline_bcom_regular_boy: settingsMap['fee_baseline_bcom_regular_boy'] || '6200',
+                fee_baseline_bcom_regular_girl: settingsMap['fee_baseline_bcom_regular_girl'] || '5200',
+                fee_baseline_bcom_professional_boy: settingsMap['fee_baseline_bcom_professional_boy'] || '9500',
+                fee_baseline_bcom_professional_girl: settingsMap['fee_baseline_bcom_professional_girl'] || '8500',
+                fee_baseline_mcom_boy: settingsMap['fee_baseline_mcom_boy'] || '12000',
+                fee_baseline_mcom_girl: settingsMap['fee_baseline_mcom_girl'] || '11000',
+                fee_penalty: settingsMap['fee_penalty'] || '150'
+            }
+        });
+    } catch (err) {
+        console.error('Error reading baseline settings:', err);
+        res.status(500).json({ error: 'Failed to retrieve baseline fees configuration.' });
+    }
+});
+
+app.post('/api/settings/fees', (req, res) => {
+    const { fees } = req.body;
+    if (!fees) {
+        return res.status(400).json({ error: 'Missing fees settings object.' });
+    }
+
+    try {
+        const stmt = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
+        db.exec('BEGIN TRANSACTION');
+        for (const [key, value] of Object.entries(fees)) {
+            stmt.run(key, String(value));
+        }
+        db.exec('COMMIT');
+        res.json({ success: true, message: 'Fees baseline configuration saved successfully.' });
+    } catch (err) {
+        db.exec('ROLLBACK');
+        console.error('Error writing fees baseline settings:', err);
+        res.status(500).json({ error: 'Failed to save fees baseline configuration.' });
+    }
+});
+
+// Subjects Management
+app.get('/api/subjects', (req, res) => {
+    const { program } = req.query;
+    try {
+        let rows;
+        if (program) {
+            rows = db.prepare('SELECT * FROM subjects WHERE program = ? ORDER BY id ASC').all(program);
+        } else {
+            rows = db.prepare('SELECT * FROM subjects ORDER BY program ASC, id ASC').all();
+        }
+        res.json({ success: true, subjects: rows });
+    } catch (err) {
+        console.error('Error reading subjects:', err);
+        res.status(500).json({ error: 'Failed to retrieve subjects list.' });
+    }
+});
+
+app.post('/api/subjects/add', (req, res) => {
+    const { name, code, program, year, semester } = req.body;
+    if (!name || !code || !program) {
+        return res.status(400).json({ error: 'Missing required subject parameters (name, code, program).' });
+    }
+
+    try {
+        const stmt = db.prepare(`
+            INSERT INTO subjects (name, code, program, year, semester)
+            VALUES (?, ?, ?, ?, ?)
+        `);
+        stmt.run(name, code, program, year || '1st Year', semester || 'Semester 1');
+        res.json({ success: true, message: `Subject '${name}' registered successfully.` });
+    } catch (err) {
+        console.error('Error adding subject:', err);
+        res.status(500).json({ error: 'Failed to register subject. Code may already exist.' });
+    }
+});
+
+app.post('/api/subjects/delete', (req, res) => {
+    const { id } = req.body;
+    if (!id) {
+        return res.status(400).json({ error: 'Subject ID is required.' });
+    }
+
+    try {
+        db.prepare('DELETE FROM subjects WHERE id = ?').run(id);
+        res.json({ success: true, message: 'Subject deleted successfully.' });
+    } catch (err) {
+        console.error('Error deleting subject:', err);
+        res.status(500).json({ error: 'Failed to delete subject.' });
+    }
+});
+
+// Notices Management
+app.get('/api/notices', (req, res) => {
+    const { program } = req.query;
+    try {
+        let rows;
+        if (program) {
+            rows = db.prepare("SELECT * FROM notices WHERE program = ? OR program = 'All' ORDER BY created_at DESC").all(program);
+        } else {
+            rows = db.prepare('SELECT * FROM notices ORDER BY created_at DESC').all();
+        }
+        res.json({ success: true, notices: rows });
+    } catch (err) {
+        console.error('Error reading notices:', err);
+        res.status(500).json({ error: 'Failed to retrieve notices.' });
+    }
+});
+
+app.post('/api/notices/add', (req, res) => {
+    const { title, content, program } = req.body;
+    if (!title || !content || !program) {
+        return res.status(400).json({ error: 'Missing required notice parameters (title, content, program).' });
+    }
+
+    try {
+        const stmt = db.prepare('INSERT INTO notices (title, content, program) VALUES (?, ?, ?)');
+        stmt.run(title, content, program);
+        res.json({ success: true, message: 'Notice posted successfully.' });
+    } catch (err) {
+        console.error('Error adding notice:', err);
+        res.status(500).json({ error: 'Failed to post notice.' });
+    }
+});
+
+app.post('/api/notices/delete', (req, res) => {
+    const { id } = req.body;
+    if (!id) {
+        return res.status(400).json({ error: 'Notice ID is required.' });
+    }
+
+    try {
+        db.prepare('DELETE FROM notices WHERE id = ?').run(id);
+        res.json({ success: true, message: 'Notice deleted successfully.' });
+    } catch (err) {
+        console.error('Error deleting notice:', err);
+        res.status(500).json({ error: 'Failed to delete notice.' });
+    }
+});
+
+// Timetables Management
+app.get('/api/timetables', (req, res) => {
+    const { program } = req.query;
+    try {
+        let rows;
+        if (program) {
+            rows = db.prepare('SELECT * FROM timetables WHERE program = ?').all(program);
+        } else {
+            rows = db.prepare('SELECT * FROM timetables').all();
+        }
+        res.json({ success: true, timetables: rows });
+    } catch (err) {
+        console.error('Error reading timetables:', err);
+        res.status(500).json({ error: 'Failed to retrieve timetables.' });
+    }
+});
+
+app.post('/api/timetables/save', (req, res) => {
+    const { program, day, slot_1, slot_2, slot_3, slot_4 } = req.body;
+    if (!program || !day) {
+        return res.status(400).json({ error: 'Program and day parameters are required.' });
+    }
+
+    try {
+        const stmt = db.prepare(`
+            INSERT INTO timetables (program, day, slot_1, slot_2, slot_3, slot_4)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(program, day) DO UPDATE SET
+                slot_1 = excluded.slot_1,
+                slot_2 = excluded.slot_2,
+                slot_3 = excluded.slot_3,
+                slot_4 = excluded.slot_4
+        `);
+        stmt.run(program, day, slot_1 || '', slot_2 || '', slot_3 || '', slot_4 || '');
+        res.json({ success: true, message: `Timetable for ${program} (${day}) updated successfully.` });
+    } catch (err) {
+        console.error('Error saving timetable:', err);
+        res.status(500).json({ error: 'Failed to save timetable settings.' });
+    }
+});
+
+// --- DAILY LECTURE STATUS OVERRIDES ENDPOINTS ---
+
+app.get('/api/daily-lectures', (req, res) => {
+    const { date, program, division } = req.query;
+    if (!date) {
+        return res.status(400).json({ error: 'Date (YYYY-MM-DD) is required.' });
+    }
+
+    try {
+        let rows;
+        if (program && division) {
+            rows = db.prepare('SELECT * FROM daily_lectures WHERE date = ? AND program = ? AND division = ?').all(date, program, division);
+        } else if (program) {
+            rows = db.prepare('SELECT * FROM daily_lectures WHERE date = ? AND program = ?').all(date, program);
+        } else {
+            rows = db.prepare('SELECT * FROM daily_lectures WHERE date = ?').all(date);
+        }
+        res.json({ success: true, lectures: rows });
+    } catch (err) {
+        console.error('Error fetching daily lectures status:', err);
+        res.status(500).json({ error: 'Failed to fetch daily lectures schedule.' });
+    }
+});
+
+app.post('/api/daily-lectures/save', (req, res) => {
+    const { date, program, division, slot, subject, original_teacher, status, substitute_teacher, combined_division, notes } = req.body;
+    if (!date || !program || !division || !slot || !status) {
+        return res.status(400).json({ error: 'Missing required override parameters.' });
+    }
+
+    try {
+        const stmt = db.prepare(`
+            INSERT INTO daily_lectures (date, program, division, slot, subject, original_teacher, status, substitute_teacher, combined_division, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(date, program, division, slot) DO UPDATE SET
+                subject = excluded.subject,
+                original_teacher = excluded.original_teacher,
+                status = excluded.status,
+                substitute_teacher = excluded.substitute_teacher,
+                combined_division = excluded.combined_division,
+                notes = excluded.notes
+        `);
+        stmt.run(
+            date, program, division, slot, subject || '', original_teacher || '', 
+            status, substitute_teacher || '', combined_division || '', notes || ''
+        );
+        res.json({ success: true, message: 'Lecture adjustment updated successfully.' });
+    } catch (err) {
+        console.error('Error saving lecture override:', err);
+        res.status(500).json({ error: 'Failed to save lecture override.' });
+    }
+});
+
+app.post('/api/daily-lectures/delete', (req, res) => {
+    const { id } = req.body;
+    if (!id) {
+        return res.status(400).json({ error: 'Adjustment ID is required for deletion.' });
+    }
+
+    try {
+        db.prepare('DELETE FROM daily_lectures WHERE id = ?').run(id);
+        res.json({ success: true, message: 'Lecture adjustment cleared (reverted to default).' });
+    } catch (err) {
+        console.error('Error deleting override:', err);
+        res.status(500).json({ error: 'Failed to delete lecture override.' });
+    }
+});
+
+// SQL Command Terminal Emulator (Admin Console)
 app.post('/api/sql', (req, res) => {
     const { query } = req.body;
     if (!query) {
