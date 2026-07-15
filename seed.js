@@ -113,6 +113,7 @@ db.exec(`
         creator_lat REAL,
         creator_lon REAL,
         is_rolling INTEGER DEFAULT 0,
+        geofence_radius INTEGER DEFAULT 50,
         FOREIGN KEY(creator_id) REFERENCES users(id)
     );
 

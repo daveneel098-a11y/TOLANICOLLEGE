@@ -71,6 +71,7 @@ try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN require_gps INTEGER DE
 try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN creator_lat REAL"); } catch (e) {}
 try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN creator_lon REAL"); } catch (e) {}
 try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN is_rolling INTEGER DEFAULT 0"); } catch (e) {}
+try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN geofence_radius INTEGER DEFAULT 50"); } catch (e) {}
 try { db.exec("ALTER TABLE attendance_records ADD COLUMN device_id TEXT"); } catch (e) {}
 
 // Try adding program column to attendance_sessions in case of legacy schema
@@ -155,7 +156,7 @@ app.post('/api/login', (req, res) => {
 
 // 2. Create Attendance Session (Teacher/Admin)
 app.post('/api/attendance/create', (req, res) => {
-    const { creator_id, class_name, subject, division, program, duration_minutes, require_gps, creator_lat, creator_lon, is_rolling } = req.body;
+    const { creator_id, class_name, subject, division, program, duration_minutes, require_gps, creator_lat, creator_lon, is_rolling, geofence_radius } = req.body;
 
     if (!creator_id || !class_name || !subject || !division || !program) {
         return res.status(400).json({ error: 'Missing required session parameters.' });
@@ -164,15 +165,16 @@ app.post('/api/attendance/create', (req, res) => {
     const duration = duration_minutes || 10; // Default 10 mins
     const code = generateAttendanceCode();
     const expiresAt = new Date(Date.now() + duration * 60000).toISOString();
+    const radius = geofence_radius !== undefined ? parseInt(geofence_radius) : 50;
 
     try {
         const stmt = db.prepare(`
-            INSERT INTO attendance_sessions (code, creator_id, class_name, subject, division, program, expires_at, require_gps, creator_lat, creator_lon, is_rolling)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO attendance_sessions (code, creator_id, class_name, subject, division, program, expires_at, require_gps, creator_lat, creator_lon, is_rolling, geofence_radius)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
         const info = stmt.run(
             code, creator_id, class_name, subject, division, program, expiresAt,
-            require_gps ? 1 : 0, creator_lat !== undefined ? creator_lat : null, creator_lon !== undefined ? creator_lon : null, is_rolling ? 1 : 0
+            require_gps ? 1 : 0, creator_lat !== undefined ? creator_lat : null, creator_lon !== undefined ? creator_lon : null, is_rolling ? 1 : 0, radius
         );
 
         res.json({
@@ -186,7 +188,8 @@ app.post('/api/attendance/create', (req, res) => {
                 program,
                 expires_at: expiresAt,
                 require_gps: require_gps ? 1 : 0,
-                is_rolling: is_rolling ? 1 : 0
+                is_rolling: is_rolling ? 1 : 0,
+                geofence_radius: radius
             }
         });
     } catch (err) {
@@ -241,9 +244,11 @@ app.post('/api/attendance/check-in', (req, res) => {
             }
             if (session.creator_lat !== null && session.creator_lon !== null) {
                 const distance = getDistanceKm(session.creator_lat, session.creator_lon, student_lat, student_lon);
-                if (distance > 0.05) { // 50 meters
+                const radiusMeters = session.geofence_radius || 50;
+                const radiusKm = radiusMeters / 1000;
+                if (distance > radiusKm) { 
                     return res.status(403).json({ 
-                        error: `Geofencing failure. You must be in close proximity to the instructor (within 50m) to check in. (Calculated distance: ${(distance * 1000).toFixed(0)} meters).` 
+                        error: `Geofencing failure. You must be in close proximity to the instructor (within ${radiusMeters}m) to check in. (Calculated distance: ${(distance * 1000).toFixed(0)} meters).` 
                     });
                 }
             }

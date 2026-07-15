@@ -601,7 +601,7 @@ window.renderStudentAttendance = async function() {
                     }, async (err) => {
                         // Location query blocked/failed
                         await submitCheckin(code, null, null);
-                    });
+                    }, { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 });
                 } else {
                     await submitCheckin(code, null, null);
                 }
@@ -1210,15 +1210,29 @@ window.renderTeacherSchedule = function() {
                 </div>
 
                 <!-- ANTI-PROXY OPTIONS BLOCK -->
-                <div style="grid-column: span 2; display: flex; gap: 24px; align-items: center; background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; margin-top: 10px;">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0; font-weight: 500; font-size: 13px; color: var(--accent);">
-                        <input type="checkbox" id="att-require-gps" style="width: 18px; height: 18px; cursor: pointer;">
-                        <span><i class="fa-solid fa-location-crosshairs mr-4"></i> Enforce GPS Geofencing (50m)</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0; font-weight: 500; font-size: 13px; color: var(--accent);">
-                        <input type="checkbox" id="att-is-rolling" style="width: 18px; height: 18px; cursor: pointer;">
-                        <span><i class="fa-solid fa-arrows-spin mr-4"></i> Enable Rolling Codes (20s)</span>
-                    </label>
+                <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); padding: 16px; border-radius: 8px; margin-top: 10px;">
+                    <div style="display: flex; gap: 24px; align-items: center;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0; font-weight: 500; font-size: 13px; color: var(--accent);">
+                            <input type="checkbox" id="att-require-gps" style="width: 18px; height: 18px; cursor: pointer;">
+                            <span><i class="fa-solid fa-location-crosshairs mr-4"></i> Enforce GPS Geofencing</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0; font-weight: 500; font-size: 13px; color: var(--accent);">
+                            <input type="checkbox" id="att-is-rolling" style="width: 18px; height: 18px; cursor: pointer;">
+                            <span><i class="fa-solid fa-arrows-spin mr-4"></i> Enable Rolling Codes (20s)</span>
+                        </label>
+                    </div>
+                    
+                    <div id="gps-radius-container" style="display: none; margin-top: 4px;">
+                        <label for="att-gps-radius" style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">Geofence Radius Threshold</label>
+                        <select id="att-gps-radius" class="form-control" style="max-width: 320px; font-size: 12px; height: 32px; padding: 4px 8px;">
+                            <option value="50">50 Meters (Strict - Same Room)</option>
+                            <option value="100">100 Meters (Same Building)</option>
+                            <option value="200">200 Meters (Campus Wing)</option>
+                            <option value="500" selected>500 Meters (Recommended - Campus Wide)</option>
+                            <option value="1000">1 Kilometer (Broad Area)</option>
+                            <option value="5000">5 Kilometers (City/Regional Check)</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="form-grid-full text-center" style="margin-top: 20px;">
@@ -1318,6 +1332,14 @@ window.renderTeacherSchedule = function() {
         loadClasses(e.target.value);
     });
 
+    const reqGpsCheck = document.getElementById("att-require-gps");
+    const gpsRadCont = document.getElementById("gps-radius-container");
+    if (reqGpsCheck && gpsRadCont) {
+        reqGpsCheck.addEventListener("change", (e) => {
+            gpsRadCont.style.display = e.target.checked ? "block" : "none";
+        });
+    }
+
     const activeCard = document.getElementById("code-active-display-card");
     const formCard = document.getElementById("code-generation-form-card");
     const genForm = document.getElementById("attendance-gen-form");
@@ -1335,6 +1357,7 @@ window.renderTeacherSchedule = function() {
             const duration = document.getElementById("att-duration").value;
             const requireGps = document.getElementById("att-require-gps").checked;
             const isRolling = document.getElementById("att-is-rolling").checked;
+            const geofenceRadius = document.getElementById("att-gps-radius").value;
 
             if (requireGps) {
                 if (!navigator.geolocation) {
@@ -1342,17 +1365,17 @@ window.renderTeacherSchedule = function() {
                     return;
                 }
                 navigator.geolocation.getCurrentPosition(async (position) => {
-                    await sendCreateSession(className, subject, division, program, duration, true, position.coords.latitude, position.coords.longitude, isRolling);
+                    await sendCreateSession(className, subject, division, program, duration, true, position.coords.latitude, position.coords.longitude, isRolling, geofenceRadius);
                 }, (err) => {
                     alert("Failed to acquire coordinates. Please allow location permissions and try again.");
-                });
+                }, { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 });
             } else {
-                await sendCreateSession(className, subject, division, program, duration, false, null, null, isRolling);
+                await sendCreateSession(className, subject, division, program, duration, false, null, null, isRolling, 50);
             }
         });
     }
 
-    async function sendCreateSession(class_name, subject, division, program, duration_minutes, require_gps, lat, lon, is_rolling) {
+    async function sendCreateSession(class_name, subject, division, program, duration_minutes, require_gps, lat, lon, is_rolling, geofence_radius) {
         try {
             const res = await fetch('/api/attendance/create', {
                 method: 'POST',
@@ -1367,7 +1390,8 @@ window.renderTeacherSchedule = function() {
                     require_gps,
                     creator_lat: lat,
                     creator_lon: lon,
-                    is_rolling
+                    is_rolling,
+                    geofence_radius: parseInt(geofence_radius)
                 })
             });
             const data = await res.json();
