@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const { DatabaseSync } = require('node:sqlite');
 
 const app = express();
@@ -63,6 +64,47 @@ db.exec(`
         combined_division TEXT DEFAULT '',
         notes TEXT DEFAULT '',
         UNIQUE(date, program, division, slot)
+    );
+
+    CREATE TABLE IF NOT EXISTS courses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        program TEXT NOT NULL,
+        syllabus TEXT DEFAULT ''
+    );
+
+    CREATE TABLE IF NOT EXISTS assignments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT DEFAULT '',
+        due_date TEXT NOT NULL,
+        file_name TEXT,
+        file_path TEXT,
+        program TEXT NOT NULL,
+        class_name TEXT NOT NULL,
+        subject TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS study_materials (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT DEFAULT '',
+        file_name TEXT,
+        file_path TEXT,
+        program TEXT NOT NULL,
+        class_name TEXT NOT NULL,
+        subject TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS marks_registry (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        student_id INTEGER NOT NULL,
+        subject TEXT NOT NULL,
+        exam_name TEXT NOT NULL,
+        marks_obtained INTEGER NOT NULL,
+        marks_total INTEGER NOT NULL,
+        FOREIGN KEY(student_id) REFERENCES users(id)
     );
 `);
 
@@ -786,6 +828,237 @@ app.post('/api/daily-lectures/delete', (req, res) => {
     } catch (err) {
         console.error('Error deleting override:', err);
         res.status(500).json({ error: 'Failed to delete lecture override.' });
+    }
+});
+
+// --- SYLLABUS, ASSIGNMENTS, STUDY MATERIALS, AND MARKS REGISTRY API ENDPOINTS ---
+
+// Courses & Syllabus
+app.get('/api/courses', (req, res) => {
+    const { program } = req.query;
+    try {
+        let rows;
+        if (program) {
+            rows = db.prepare('SELECT * FROM courses WHERE program = ?').all(program);
+        } else {
+            rows = db.prepare('SELECT * FROM courses').all();
+        }
+        res.json({ success: true, courses: rows });
+    } catch (err) {
+        console.error('Error fetching courses:', err);
+        res.status(500).json({ error: 'Failed to fetch courses list.' });
+    }
+});
+
+app.post('/api/courses/save', (req, res) => {
+    const { code, name, program, syllabus } = req.body;
+    if (!code || !name || !program) {
+        return res.status(400).json({ error: 'Missing required course fields.' });
+    }
+    try {
+        const stmt = db.prepare(`
+            INSERT INTO courses (code, name, program, syllabus)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(code) DO UPDATE SET
+                name = excluded.name,
+                program = excluded.program,
+                syllabus = excluded.syllabus
+        `);
+        stmt.run(code, name, program, syllabus || '');
+        res.json({ success: true, message: 'Course details saved successfully.' });
+    } catch (err) {
+        console.error('Error saving course:', err);
+        res.status(500).json({ error: 'Failed to save course details.' });
+    }
+});
+
+// Assignments
+app.get('/api/assignments', (req, res) => {
+    const { program, class_name } = req.query;
+    try {
+        let rows;
+        if (program && class_name) {
+            rows = db.prepare('SELECT * FROM assignments WHERE program = ? AND class_name = ?').all(program, class_name);
+        } else if (program) {
+            rows = db.prepare('SELECT * FROM assignments WHERE program = ?').all(program);
+        } else {
+            rows = db.prepare('SELECT * FROM assignments').all();
+        }
+        res.json({ success: true, assignments: rows });
+    } catch (err) {
+        console.error('Error fetching assignments:', err);
+        res.status(500).json({ error: 'Failed to fetch assignments list.' });
+    }
+});
+
+app.post('/api/assignments/upload', (req, res) => {
+    const { title, description, due_date, file_name, file_data, program, class_name, subject } = req.body;
+    if (!title || !due_date || !program || !class_name || !subject) {
+        return res.status(400).json({ error: 'Missing required assignment fields.' });
+    }
+
+    let filePath = null;
+    if (file_name && file_data) {
+        try {
+            const base64Data = file_data.replace(/^data:.*;base64,/, "");
+            const uploadDir = path.join(__dirname, 'public', 'uploads');
+            if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+            }
+            const cleanFileName = path.basename(file_name);
+            const fullPath = path.join(uploadDir, cleanFileName);
+            fs.writeFileSync(fullPath, base64Data, 'base64');
+            filePath = `/uploads/${cleanFileName}`;
+        } catch (fileErr) {
+            console.error('Error saving file upload:', fileErr);
+            return res.status(500).json({ error: 'Failed to upload attachment.' });
+        }
+    }
+
+    try {
+        const stmt = db.prepare(`
+            INSERT INTO assignments (title, description, due_date, file_name, file_path, program, class_name, subject)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        stmt.run(title, description || '', due_date, file_name || null, filePath, program, class_name, subject);
+        res.json({ success: true, message: 'Assignment uploaded successfully.' });
+    } catch (err) {
+        console.error('Error creating assignment:', err);
+        res.status(500).json({ error: 'Failed to create assignment record.' });
+    }
+});
+
+app.post('/api/assignments/delete', (req, res) => {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ error: 'Assignment ID is required.' });
+    try {
+        const item = db.prepare('SELECT file_path FROM assignments WHERE id = ?').get(id);
+        if (item && item.file_path) {
+            const fullPath = path.join(__dirname, 'public', item.file_path);
+            if (fs.existsSync(fullPath)) {
+                fs.unlinkSync(fullPath);
+            }
+        }
+        db.prepare('DELETE FROM assignments WHERE id = ?').run(id);
+        res.json({ success: true, message: 'Assignment deleted successfully.' });
+    } catch (err) {
+        console.error('Error deleting assignment:', err);
+        res.status(500).json({ error: 'Failed to delete assignment.' });
+    }
+});
+
+// Study Materials
+app.get('/api/study-materials', (req, res) => {
+    const { program, class_name } = req.query;
+    try {
+        let rows;
+        if (program && class_name) {
+            rows = db.prepare('SELECT * FROM study_materials WHERE program = ? AND class_name = ?').all(program, class_name);
+        } else if (program) {
+            rows = db.prepare('SELECT * FROM study_materials WHERE program = ?').all(program);
+        } else {
+            rows = db.prepare('SELECT * FROM study_materials').all();
+        }
+        res.json({ success: true, materials: rows });
+    } catch (err) {
+        console.error('Error fetching study materials:', err);
+        res.status(500).json({ error: 'Failed to fetch study materials.' });
+    }
+});
+
+app.post('/api/study-materials/upload', (req, res) => {
+    const { title, description, file_name, file_data, program, class_name, subject } = req.body;
+    if (!title || !program || !class_name || !subject) {
+        return res.status(400).json({ error: 'Missing required fields.' });
+    }
+
+    let filePath = null;
+    if (file_name && file_data) {
+        try {
+            const base64Data = file_data.replace(/^data:.*;base64,/, "");
+            const uploadDir = path.join(__dirname, 'public', 'uploads');
+            if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+            }
+            const cleanFileName = path.basename(file_name);
+            const fullPath = path.join(uploadDir, cleanFileName);
+            fs.writeFileSync(fullPath, base64Data, 'base64');
+            filePath = `/uploads/${cleanFileName}`;
+        } catch (fileErr) {
+            console.error('Error saving study material file:', fileErr);
+            return res.status(500).json({ error: 'Failed to upload study file.' });
+        }
+    }
+
+    try {
+        const stmt = db.prepare(`
+            INSERT INTO study_materials (title, description, file_name, file_path, program, class_name, subject)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
+        stmt.run(title, description || '', file_name || null, filePath, program, class_name, subject);
+        res.json({ success: true, message: 'Study material uploaded successfully.' });
+    } catch (err) {
+        console.error('Error creating study material:', err);
+        res.status(500).json({ error: 'Failed to create study material record.' });
+    }
+});
+
+app.post('/api/study-materials/delete', (req, res) => {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ error: 'Material ID is required.' });
+    try {
+        const item = db.prepare('SELECT file_path FROM study_materials WHERE id = ?').get(id);
+        if (item && item.file_path) {
+            const fullPath = path.join(__dirname, 'public', item.file_path);
+            if (fs.existsSync(fullPath)) {
+                fs.unlinkSync(fullPath);
+            }
+        }
+        db.prepare('DELETE FROM study_materials WHERE id = ?').run(id);
+        res.json({ success: true, message: 'Study material deleted successfully.' });
+    } catch (err) {
+        console.error('Error deleting study material:', err);
+        res.status(500).json({ error: 'Failed to delete study material.' });
+    }
+});
+
+// Marks Registry
+app.get('/api/marks/:student_id', (req, res) => {
+    const { student_id } = req.params;
+    try {
+        const rows = db.prepare(`
+            SELECT m.id, m.subject, m.exam_name, m.marks_obtained, m.marks_total, u.name as student_name
+            FROM marks_registry m
+            JOIN users u ON m.student_id = u.id
+            WHERE m.student_id = ?
+        `).all(student_id);
+        res.json({ success: true, marks: rows });
+    } catch (err) {
+        console.error('Error fetching student marks:', err);
+        res.status(500).json({ error: 'Failed to fetch student marks registry.' });
+    }
+});
+
+app.post('/api/marks/save', (req, res) => {
+    const { student_id, subject, exam_name, marks_obtained, marks_total } = req.body;
+    if (!student_id || !subject || !exam_name || marks_obtained === undefined || !marks_total) {
+        return res.status(400).json({ error: 'Missing required marks fields.' });
+    }
+    try {
+        const checkStmt = db.prepare('SELECT id FROM marks_registry WHERE student_id = ? AND subject = ? AND exam_name = ?');
+        const existing = checkStmt.get(student_id, subject, exam_name);
+
+        if (existing) {
+            db.prepare('UPDATE marks_registry SET marks_obtained = ?, marks_total = ? WHERE id = ?')
+              .run(parseInt(marks_obtained), parseInt(marks_total), existing.id);
+        } else {
+            db.prepare('INSERT INTO marks_registry (student_id, subject, exam_name, marks_obtained, marks_total) VALUES (?, ?, ?, ?, ?)')
+              .run(student_id, subject, exam_name, parseInt(marks_obtained), parseInt(marks_total));
+        }
+        res.json({ success: true, message: 'Marks saved successfully.' });
+    } catch (err) {
+        console.error('Error saving marks:', err);
+        res.status(500).json({ error: 'Failed to save student marks.' });
     }
 });
 

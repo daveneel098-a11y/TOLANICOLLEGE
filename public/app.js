@@ -166,6 +166,10 @@ const ROLE_NAV = {
         { id: "dashboard", label: "Overview", icon: "fa-chart-pie" },
         { id: "timetable", label: "Class Timetable", icon: "fa-calendar-days" },
         { id: "attendance", label: "Attendance Record", icon: "fa-calendar-check" },
+        { id: "syllabus", label: "Syllabus & Courses", icon: "fa-book-open" },
+        { id: "assignments", label: "Assignments", icon: "fa-pen-to-square" },
+        { id: "study_materials", label: "Study Materials", icon: "fa-book" },
+        { id: "student_marks", label: "Marks Sheet", icon: "fa-graduation-cap" },
         { id: "fees", label: "Fee Payment", icon: "fa-credit-card" },
         { id: "profile", label: "Profile Settings", icon: "fa-user-gear" }
     ],
@@ -175,6 +179,7 @@ const ROLE_NAV = {
         { id: "timetable", label: "Class Timetable", icon: "fa-calendar" },
         { id: "schedule", label: "Manage Attendance", icon: "fa-calendar-plus" },
         { id: "attendance_report", label: "Attendance Excel", icon: "fa-file-excel" },
+        { id: "coursework_manager", label: "Coursework Suite", icon: "fa-folder-open" },
         { id: "profile", label: "Profile Settings", icon: "fa-user-gear" }
     ],
     admin: [
@@ -185,6 +190,7 @@ const ROLE_NAV = {
         { id: "students", label: "User Registry", icon: "fa-users" },
         { id: "schedule", label: "Manage Attendance", icon: "fa-calendar-plus" },
         { id: "attendance_report", label: "Attendance Excel", icon: "fa-file-excel" },
+        { id: "coursework_manager", label: "Coursework Suite", icon: "fa-folder-open" },
         { id: "fees", label: "Fees Setup", icon: "fa-wallet" },
         { id: "database", label: "Postgres Console", icon: "fa-database" },
         { id: "profile", label: "Profile Settings", icon: "fa-user-gear" }
@@ -3052,4 +3058,953 @@ window.renderTeacherAttendance_report = function() {
 
 window.renderAdminAttendance_report = function() {
     window.renderUnifiedAttendanceReport(false);
+};
+
+
+// =========================================================================
+// STUDENT COURSEWORK PORTAL MODULES
+// =========================================================================
+
+window.renderStudentSyllabus = async function() {
+    dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
+    try {
+        const res = await fetch(`/api/courses?program=${encodeURIComponent(currentUser.program)}`);
+        const data = await res.json();
+        const courses = data.courses || [];
+
+        let coursesHTML = courses.map(c => `
+            <div class="glass-card mb-16" style="border: 1px solid rgba(255,255,255,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 12px;">
+                    <div>
+                        <span style="font-size: 11px; text-transform: uppercase; color: var(--accent); letter-spacing: 1px;">Course Code: ${c.code}</span>
+                        <h4 style="margin: 4px 0 0 0; font-size: 18px; color: #ffffff;">${c.name}</h4>
+                    </div>
+                    <span class="attendance-status-pill status-active" style="font-size: 11px;">Active Course</span>
+                </div>
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
+                    <strong>Course Syllabus / Topics covered:</strong><br>
+                    <p style="margin-top: 8px; white-space: pre-line; background: rgba(255,255,255,0.01); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">${c.syllabus || 'No syllabus uploaded yet.'}</p>
+                </div>
+            </div>
+        `).join("");
+
+        dynamicContentArea.innerHTML = `
+            <div class="glass-card mb-24">
+                <h3 class="card-title mb-8"><i class="fa-solid fa-book-open mr-8"></i> Academic Syllabus</h3>
+                <p style="color: var(--text-muted); font-size: 13px;">View course structures and syllabus topics for ${currentUser.program}.</p>
+            </div>
+            ${coursesHTML.length > 0 ? coursesHTML : `<div class="glass-card text-center"><p style="color: var(--text-muted);">No syllabus records found for this program.</p></div>`}
+        `;
+    } catch (e) {
+        dynamicContentArea.innerHTML = `<div class="glass-card text-center"><p style="color: var(--danger);">Failed to load syllabus.</p></div>`;
+    }
+};
+
+window.renderStudentAssignments = async function() {
+    dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
+    try {
+        const cleanClass = currentUser.class.split(' - ')[0]; // B.Com. Sem-V
+        const res = await fetch(`/api/assignments?program=${encodeURIComponent(currentUser.program)}&class_name=${encodeURIComponent(cleanClass)}`);
+        const data = await res.json();
+        const list = data.assignments || [];
+
+        let listHTML = list.map(a => `
+            <div class="glass-card mb-16" style="border-left: 4px solid var(--warning);">
+                <div class="card-header-flex mb-12">
+                    <div>
+                        <h4 style="margin: 0; font-size: 16px; color: #ffffff;">${a.title}</h4>
+                        <span style="font-size: 12px; color: var(--text-muted);">${a.subject} | Sem: ${a.class_name}</span>
+                    </div>
+                    <span style="font-size: 12px; font-weight: 600; color: var(--warning);"><i class="fa-solid fa-calendar-xmark mr-4"></i> Due Date: ${a.due_date}</span>
+                </div>
+                <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">${a.description || 'No instructions provided.'}</p>
+                ${a.file_path ? `
+                    <a href="${a.file_path}" download class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 12px; max-width: 220px; background: rgba(255,255,255,0.03);">
+                        <i class="fa-solid fa-cloud-arrow-down" style="color: var(--accent);"></i> Download File (${a.file_name})
+                    </a>
+                ` : '<span style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-info-circle mr-4"></i> No attachment file</span>'}
+            </div>
+        `).join("");
+
+        dynamicContentArea.innerHTML = `
+            <div class="glass-card mb-24">
+                <h3 class="card-title mb-8"><i class="fa-solid fa-pen-to-square mr-8"></i> Coursework Assignments</h3>
+                <p style="color: var(--text-muted); font-size: 13px;">Pending homework, sheets, and assignments for your active semester.</p>
+            </div>
+            ${listHTML.length > 0 ? listHTML : `<div class="glass-card text-center"><p style="color: var(--text-muted);">No assignments posted yet. You are all caught up!</p></div>`}
+        `;
+    } catch (e) {
+        dynamicContentArea.innerHTML = `<div class="glass-card text-center"><p style="color: var(--danger);">Failed to load assignments.</p></div>`;
+    }
+};
+
+window.renderStudentStudy_materials = async function() {
+    dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
+    try {
+        const cleanClass = currentUser.class.split(' - ')[0];
+        const res = await fetch(`/api/study-materials?program=${encodeURIComponent(currentUser.program)}&class_name=${encodeURIComponent(cleanClass)}`);
+        const data = await res.json();
+        const list = data.materials || [];
+
+        let listHTML = list.map(m => `
+            <div class="glass-card mb-16" style="border-left: 4px solid var(--accent);">
+                <div class="card-header-flex mb-12">
+                    <div>
+                        <h4 style="margin: 0; font-size: 16px; color: #ffffff;">${m.title}</h4>
+                        <span style="font-size: 12px; color: var(--text-muted);">${m.subject} | Resource Handout</span>
+                    </div>
+                </div>
+                <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">${m.description || 'Lecture resources for exam reference.'}</p>
+                ${m.file_path ? `
+                    <a href="${m.file_path}" download class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 12px; max-width: 220px; background: rgba(255,255,255,0.03);">
+                        <i class="fa-solid fa-file-pdf" style="color: var(--danger);"></i> Download Material (${m.file_name})
+                    </a>
+                ` : '<span style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-circle-exclamation mr-4"></i> No attached material</span>'}
+            </div>
+        `).join("");
+
+        dynamicContentArea.innerHTML = `
+            <div class="glass-card mb-24">
+                <h3 class="card-title mb-8"><i class="fa-solid fa-book mr-8"></i> Study Material Notes</h3>
+                <p style="color: var(--text-muted); font-size: 13px;">Reference lecture notes, slides, and files uploaded by faculty.</p>
+            </div>
+            ${listHTML.length > 0 ? listHTML : `<div class="glass-card text-center"><p style="color: var(--text-muted);">No study materials uploaded for your class yet.</p></div>`}
+        `;
+    } catch (e) {
+        dynamicContentArea.innerHTML = `<div class="glass-card text-center"><p style="color: var(--danger);">Failed to load study materials.</p></div>`;
+    }
+};
+
+window.renderStudentStudent_marks = async function() {
+    dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
+    try {
+        const res = await fetch(`/api/marks/${currentUser.id}`);
+        const data = await res.json();
+        const marks = data.marks || [];
+
+        let totalObtained = 0;
+        let totalMax = 0;
+        marks.forEach(m => {
+            totalObtained += m.marks_obtained;
+            totalMax += m.marks_total;
+        });
+
+        const percentage = totalMax > 0 ? ((totalObtained / totalMax) * 100).toFixed(1) : null;
+        let statusColor = "var(--text-muted)";
+        let statusText = "No grades yet";
+        if (percentage !== null) {
+            const p = parseFloat(percentage);
+            if (p >= 75) { statusColor = "var(--success)"; statusText = "First Class with Distinction"; }
+            else if (p >= 60) { statusColor = "var(--accent)"; statusText = "First Class"; }
+            else if (p >= 40) { statusColor = "var(--warning)"; statusText = "Pass Class"; }
+            else { statusColor = "var(--danger)"; statusText = "Fail / Needs Improvement"; }
+        }
+
+        let marksHTML = marks.map(m => `
+            <tr>
+                <td><strong>${m.subject}</strong></td>
+                <td>${m.exam_name}</td>
+                <td><strong style="color: var(--accent);">${m.marks_obtained}</strong> / ${m.marks_total}</td>
+                <td>${((m.marks_obtained / m.marks_total) * 100).toFixed(0)}%</td>
+                <td>
+                    <span class="attendance-status-pill status-active" style="background: ${(m.marks_obtained / m.marks_total) >= 0.4 ? 'rgba(20,184,166,0.1)' : 'rgba(239,68,68,0.1)'}; color: ${(m.marks_obtained / m.marks_total) >= 0.4 ? 'var(--accent)' : 'var(--danger)'};">
+                        ${(m.marks_obtained / m.marks_total) >= 0.4 ? 'PASS' : 'FAIL'}
+                    </span>
+                </td>
+            </tr>
+        `).join("");
+
+        dynamicContentArea.innerHTML = `
+            <div class="stats-grid mb-24">
+                <div class="stat-card" style="grid-column: span 1;">
+                    <div class="stat-header">
+                        <span class="stat-title">Average Score</span>
+                        <div class="stat-icon" style="background: rgba(20,184,166,0.1); color: var(--accent);"><i class="fa-solid fa-graduation-cap"></i></div>
+                    </div>
+                    <div class="stat-value">${percentage !== null ? percentage + '%' : 'N/A'}</div>
+                    <div class="stat-desc" style="color: ${statusColor}; font-weight: 600;">${statusText}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">Aggregate Marks</span>
+                        <div class="stat-icon" style="background: rgba(99,102,241,0.1); color: var(--primary);"><i class="fa-solid fa-award"></i></div>
+                    </div>
+                    <div class="stat-value" style="font-size: 26px; line-height: 38px;">${totalObtained} / ${totalMax}</div>
+                    <div class="stat-desc">Total scored across internal/external tests</div>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h3 class="card-title mb-16"><i class="fa-solid fa-file-invoice mr-8"></i> Semester Marks Registry</h3>
+                <div class="table-responsive">
+                    <table class="custom-table text-center" style="font-size: 13px;">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Examination Name</th>
+                                <th>Marks Scored</th>
+                                <th>Percentage</th>
+                                <th>Grade Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${marksHTML.length > 0 ? marksHTML : `<tr><td colspan="5" style="color: var(--text-muted); padding: 24px;">No examination marks recorded for your account yet.</td></tr>`}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    } catch (e) {
+        dynamicContentArea.innerHTML = `<div class="glass-card text-center"><p style="color: var(--danger);">Failed to load marks history.</p></div>`;
+    }
+};
+
+// =========================================================================
+// TEACHER & ADMIN COURSEWORK SUITE MANAGER PANEL
+// =========================================================================
+
+window.renderTeacherCoursework_manager = function() {
+    window.renderUnifiedCourseworkManager();
+};
+
+window.renderAdminCoursework_manager = function() {
+    window.renderUnifiedCourseworkManager();
+};
+
+window.renderUnifiedCourseworkManager = async function() {
+    dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
+    
+    try {
+        const coursesRes = await fetch('/api/courses');
+        const coursesData = await coursesRes.json();
+        const allCourses = coursesData.courses || [];
+
+        const assignRes = await fetch('/api/assignments');
+        const assignData = await assignRes.json();
+        const allAssignments = assignData.assignments || [];
+
+        const matRes = await fetch('/api/study-materials');
+        const matData = await matRes.json();
+        const allMaterials = matData.materials || [];
+
+        const usersRes = await fetch('/api/users');
+        const usersData = await usersRes.json();
+        const allStudents = (usersData.users || []).filter(u => u.role === 'student');
+
+        dynamicContentArea.innerHTML = `
+            <div class="glass-card mb-24" style="padding: 12px 20px;">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="coursework-tabs-header">
+                    <button class="btn btn-primary active-tab" onclick="switchCourseworkTab('syllabus')" id="tab-btn-syllabus" style="flex-grow: 1; max-width: 180px;"><i class="fa-solid fa-book-open mr-4"></i> Syllabus</button>
+                    <button class="btn btn-secondary" onclick="switchCourseworkTab('assignments')" id="tab-btn-assignments" style="flex-grow: 1; max-width: 180px;"><i class="fa-solid fa-pen-to-square mr-4"></i> Assignments</button>
+                    <button class="btn btn-secondary" onclick="switchCourseworkTab('materials')" id="tab-btn-materials" style="flex-grow: 1; max-width: 180px;"><i class="fa-solid fa-book mr-4"></i> Study Materials</button>
+                    <button class="btn btn-secondary" onclick="switchCourseworkTab('marks')" id="tab-btn-marks" style="flex-grow: 1; max-width: 180px;"><i class="fa-solid fa-graduation-cap mr-4"></i> Marks Entry</button>
+                </div>
+            </div>
+
+            <!-- TAB 1: SYLLABUS -->
+            <div id="coursework-tab-syllabus" class="coursework-tab-content">
+                <div class="form-grid-2-1">
+                    <div class="glass-card">
+                        <h4 class="card-title mb-16"><i class="fa-solid fa-list-check mr-8"></i> Add / Edit Subject Course Info</h4>
+                        <form id="syllabus-form" style="display: flex; flex-direction: column; gap: 16px;">
+                            <div class="form-grid">
+                                <div>
+                                    <label>Course Code</label>
+                                    <input type="text" id="syl-code" class="form-control" placeholder="e.g. BCP-501" required autocomplete="off">
+                                </div>
+                                <div>
+                                    <label>Course Name</label>
+                                    <input type="text" id="syl-name" class="form-control" placeholder="e.g. Corporate Accounting" required autocomplete="off">
+                                </div>
+                                <div>
+                                    <label>Academic Program</label>
+                                    <select id="syl-program" class="form-control" required>
+                                        <option value="B.Com (Regular)">B.Com (Regular)</option>
+                                        <option value="B.Com (Professional)" selected>B.Com (Professional)</option>
+                                        <option value="M.Com">M.Com</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label>Detailed Syllabus Modules</label>
+                                <textarea id="syl-detail" class="form-control" style="height: 140px; font-family: monospace;" placeholder="Module 1: ...&#10;Module 2: ..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="max-width: 200px;"><i class="fa-solid fa-floppy-disk mr-4"></i> Save Course</button>
+                        </form>
+                    </div>
+
+                    <div class="glass-card">
+                        <h4 class="card-title mb-12">Existing Subjects</h4>
+                        <div style="max-height: 380px; overflow-y: auto;">
+                            <div id="syl-list-container">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: ASSIGNMENTS -->
+            <div id="coursework-tab-assignments" class="coursework-tab-content" style="display: none;">
+                <div class="form-grid-2-1">
+                    <div class="glass-card">
+                        <h4 class="card-title mb-16"><i class="fa-solid fa-file-circle-plus mr-8"></i> Upload New Homework Assignment</h4>
+                        <form id="assignment-form" style="display: flex; flex-direction: column; gap: 16px;">
+                            <div class="form-grid">
+                                <div>
+                                    <label>Program</label>
+                                    <select id="asg-program" class="form-control" required>
+                                        <option value="B.Com (Regular)">B.Com (Regular)</option>
+                                        <option value="B.Com (Professional)" selected>B.Com (Professional)</option>
+                                        <option value="M.Com">M.Com</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Semester Class</label>
+                                    <select id="asg-class" class="form-control" required>
+                                        <!-- Populated dynamically -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Subject</label>
+                                    <select id="asg-subject" class="form-control" required>
+                                        <!-- Populated dynamically -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Due Date</label>
+                                    <input type="date" id="asg-due" class="form-control" required>
+                                </div>
+                                <div style="grid-column: span 2;">
+                                    <label>Assignment Title</label>
+                                    <input type="text" id="asg-title" class="form-control" placeholder="e.g. Valuation of Goodwill Assignment Sheet" required autocomplete="off">
+                                </div>
+                            </div>
+                            <div>
+                                <label>Work instructions / Notes</label>
+                                <textarea id="asg-desc" class="form-control" style="height: 80px;" placeholder="Instructions for students..."></textarea>
+                            </div>
+                            <div>
+                                <label>Attachment Document (Optional)</label>
+                                <input type="file" id="asg-file" class="form-control" style="padding: 4px;">
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="max-width: 240px;"><i class="fa-solid fa-cloud-arrow-up mr-4"></i> Upload & Post Assignment</button>
+                        </form>
+                    </div>
+
+                    <div class="glass-card">
+                        <h4 class="card-title mb-12">Active Assignments</h4>
+                        <div style="max-height: 440px; overflow-y: auto;" id="asg-list-container">
+                            <!-- Loaded dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: STUDY MATERIALS -->
+            <div id="coursework-tab-materials" class="coursework-tab-content" style="display: none;">
+                <div class="form-grid-2-1">
+                    <div class="glass-card">
+                        <h4 class="card-title mb-16"><i class="fa-solid fa-file-zipper mr-8"></i> Upload Study Materials & Notes</h4>
+                        <form id="material-form" style="display: flex; flex-direction: column; gap: 16px;">
+                            <div class="form-grid">
+                                <div>
+                                    <label>Program</label>
+                                    <select id="mat-program" class="form-control" required>
+                                        <option value="B.Com (Regular)">B.Com (Regular)</option>
+                                        <option value="B.Com (Professional)" selected>B.Com (Professional)</option>
+                                        <option value="M.Com">M.Com</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Semester Class</label>
+                                    <select id="mat-class" class="form-control" required>
+                                        <!-- Populated dynamically -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Subject</label>
+                                    <select id="mat-subject" class="form-control" required>
+                                        <!-- Populated dynamically -->
+                                    </select>
+                                </div>
+                                <div style="grid-column: span 3;">
+                                    <label>Material Resource Title</label>
+                                    <input type="text" id="mat-title" class="form-control" placeholder="e.g. Amalgamation Lecture Handout" required autocomplete="off">
+                                </div>
+                            </div>
+                            <div>
+                                <label>Description / References</label>
+                                <textarea id="mat-desc" class="form-control" style="height: 80px;" placeholder="Slides, notes, etc. details..."></textarea>
+                            </div>
+                            <div>
+                                <label>PDF / Slide Document File</label>
+                                <input type="file" id="mat-file" class="form-control" style="padding: 4px;" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="max-width: 240px;"><i class="fa-solid fa-cloud-arrow-up mr-4"></i> Upload & Share Material</button>
+                        </form>
+                    </div>
+
+                    <div class="glass-card">
+                        <h4 class="card-title mb-12">Posted Resources</h4>
+                        <div style="max-height: 440px; overflow-y: auto;" id="mat-list-container">
+                            <!-- Loaded dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: MARKS ENTRY -->
+            <div id="coursework-tab-marks" class="coursework-tab-content" style="display: none;">
+                <div class="form-grid-2-1">
+                    <div class="glass-card">
+                        <h4 class="card-title mb-16"><i class="fa-solid fa-award mr-8"></i> Input Student Marks</h4>
+                        <form id="marks-form" style="display: flex; flex-direction: column; gap: 16px;">
+                            <div class="form-grid">
+                                <div>
+                                    <label>Filter Student Program</label>
+                                    <select id="mrk-program" class="form-control">
+                                        <option value="B.Com (Regular)">B.Com (Regular)</option>
+                                        <option value="B.Com (Professional)" selected>B.Com (Professional)</option>
+                                        <option value="M.Com">M.Com</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Filter Semester Class</label>
+                                    <select id="mrk-class" class="form-control">
+                                        <!-- Loaded dynamically -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Filter Student Division</label>
+                                    <select id="mrk-division" class="form-control">
+                                        <option value="A">Division A</option>
+                                        <option value="B">Division B</option>
+                                        <option value="C">Division C</option>
+                                        <option value="D">Division D</option>
+                                        <option value="E">Division E</option>
+                                        <option value="F">Division F</option>
+                                        <option value="G">Division G</option>
+                                    </select>
+                                </div>
+                                <div style="grid-column: span 3;">
+                                    <label style="color: var(--accent);">Choose Student Roll Number</label>
+                                    <select id="mrk-student-sel" class="form-control" required style="border-color: var(--accent);">
+                                        <!-- Loaded dynamically -->
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label>Subject</label>
+                                    <select id="mrk-subject" class="form-control" required>
+                                        <!-- Populated dynamically -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Exam / Test Name</label>
+                                    <select id="mrk-exam" class="form-control" required>
+                                        <option value="Internal Test 1">Internal Test 1</option>
+                                        <option value="Internal Test 2">Internal Test 2</option>
+                                        <option value="Mid-Semester Exam">Mid-Semester Exam</option>
+                                        <option value="Semester End Exam">Semester End Exam</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Marks Scored</label>
+                                    <input type="number" id="mrk-obtained" class="form-control" placeholder="e.g. 24" required min="0">
+                                </div>
+                                <div>
+                                    <label>Total Max Marks</label>
+                                    <input type="number" id="mrk-total" class="form-control" value="30" required min="1">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="max-width: 200px;"><i class="fa-solid fa-floppy-disk mr-4"></i> Save Grade Entry</button>
+                        </form>
+                    </div>
+
+                    <div class="glass-card">
+                        <h4 class="card-title mb-12" id="mrk-log-title">Student Grades Log</h4>
+                        <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+                            <table class="custom-table text-center" style="font-size: 11px;">
+                                <thead>
+                                    <tr>
+                                        <th>Subject</th>
+                                        <th>Exam Name</th>
+                                        <th>Marks</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mrk-log-tbody">
+                                    <tr><td colspan="4" style="color: var(--text-muted); padding: 12px;">Select a student from the filters list to inspect their record.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        window.switchCourseworkTab = function(tabName) {
+            document.querySelectorAll(".coursework-tab-content").forEach(el => el.style.display = "none");
+            document.getElementById(`coursework-tab-${tabName}`).style.display = "block";
+
+            document.querySelectorAll("#coursework-tabs-header button").forEach(btn => {
+                btn.className = "btn btn-secondary";
+            });
+            document.getElementById(`tab-btn-${tabName}`).className = "btn btn-primary active-tab";
+        };
+
+        const sylForm = document.getElementById("syllabus-form");
+        const sylCode = document.getElementById("syl-code");
+        const sylName = document.getElementById("syl-name");
+        const sylProg = document.getElementById("syl-program");
+        const sylDetail = document.getElementById("syl-detail");
+        const sylContainer = document.getElementById("syl-list-container");
+
+        let currentCourses = [...allCourses];
+        function renderCoursesList() {
+            if (currentCourses.length === 0) {
+                sylContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 13px;">No subjects recorded.</p>`;
+                return;
+            }
+            sylContainer.innerHTML = currentCourses.map(c => `
+                <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 12px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <strong>${c.code}: ${c.name}</strong>
+                        <span style="color: var(--accent);">${c.program}</span>
+                    </div>
+                    <div style="color: var(--text-muted); margin-top: 4px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${c.syllabus.substring(0, 100)}...
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="editCourseInline(${JSON.stringify(c).replace(/"/g, '&quot;')})" style="padding: 2px 6px; font-size: 10px; margin-top: 6px;">Load Info</button>
+                </div>
+            `).join("");
+        }
+        renderCoursesList();
+
+        window.editCourseInline = function(c) {
+            sylCode.value = c.code;
+            sylName.value = c.name;
+            sylProg.value = c.program;
+            sylDetail.value = c.syllabus;
+            sylCode.readOnly = true;
+        };
+
+        sylForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const code = sylCode.value.trim();
+            const name = sylName.value.trim();
+            const program = sylProg.value;
+            const syllabus = sylDetail.value.trim();
+
+            try {
+                const res = await fetch('/api/courses/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, name, program, syllabus })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    sylForm.reset();
+                    sylCode.readOnly = false;
+                    const reload = await fetch('/api/courses');
+                    const reloadData = await reload.json();
+                    currentCourses = reloadData.courses || [];
+                    renderCoursesList();
+                } else {
+                    alert(data.error);
+                }
+            } catch (err) {
+                alert("Failed to save course.");
+            }
+        });
+
+        const asgForm = document.getElementById("assignment-form");
+        const asgProg = document.getElementById("asg-program");
+        const asgClass = document.getElementById("asg-class");
+        const asgSubj = document.getElementById("asg-subject");
+        const asgDue = document.getElementById("asg-due");
+        const asgTitle = document.getElementById("asg-title");
+        const asgDesc = document.getElementById("asg-desc");
+        const asgFile = document.getElementById("asg-file");
+        const asgContainer = document.getElementById("asg-list-container");
+
+        let currentAssignments = [...allAssignments];
+
+        function renderAssignmentsList() {
+            if (currentAssignments.length === 0) {
+                asgContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 13px;">No assignments posted.</p>`;
+                return;
+            }
+            asgContainer.innerHTML = currentAssignments.map(a => `
+                <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 12px; position: relative;">
+                    <strong>${a.title}</strong>
+                    <div style="color: var(--text-muted); font-size: 11px; margin-top: 4px;">
+                        Subject: ${a.subject} | Sem: ${a.class_name} | Program: ${a.program}
+                    </div>
+                    <div style="color: var(--warning); font-size: 11px; margin-top: 2px;">
+                        Due Date: ${a.due_date}
+                    </div>
+                    <button class="btn btn-danger btn-sm" onclick="deleteAssignment(${a.id})" style="padding: 2px 6px; font-size: 10px; position: absolute; right: 10px; top: 10px;">Delete</button>
+                </div>
+            `).join("");
+        }
+        renderAssignmentsList();
+
+        window.deleteAssignment = async function(id) {
+            if (!confirm("Delete this assignment?")) return;
+            try {
+                const res = await fetch('/api/assignments/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    const reload = await fetch('/api/assignments');
+                    const reloadData = await reload.json();
+                    currentAssignments = reloadData.assignments || [];
+                    renderAssignmentsList();
+                }
+            } catch (err) {
+                alert("Failed to delete assignment.");
+            }
+        };
+
+        function setupDropdowns(programSelect, classSelect, subjectSelect) {
+            const loadFormClasses = (prog) => {
+                if (prog === 'M.Com') {
+                    classSelect.innerHTML = `
+                        <option value="M.Com. Sem-I">M.Com. Sem-I</option>
+                        <option value="M.Com. Sem-III">M.Com. Sem-III</option>
+                    `;
+                } else {
+                    classSelect.innerHTML = `
+                        <option value="B.Com. Sem-I">B.Com. Sem-I</option>
+                        <option value="B.Com. Sem-III">B.Com. Sem-III</option>
+                        <option value="B.Com. Sem-V" selected>B.Com. Sem-V</option>
+                    `;
+                }
+            };
+
+            const loadFormSubjects = async (prog) => {
+                subjectSelect.innerHTML = `<option value="">Loading subjects...</option>`;
+                try {
+                    const res = await fetch(`/api/subjects?program=${encodeURIComponent(prog)}`);
+                    const data = await res.json();
+                    const subjects = data.subjects || [];
+                    if (subjects.length === 0) {
+                        subjectSelect.innerHTML = `<option value="Corporate Accounting">Corporate Accounting</option><option value="Financial Management">Financial Management</option>`;
+                    } else {
+                        subjectSelect.innerHTML = subjects.map(s => `<option value="${s.name}">${s.name}</option>`).join("");
+                    }
+                } catch (e) {
+                    subjectSelect.innerHTML = `<option value="Corporate Accounting">Corporate Accounting</option>`;
+                }
+            };
+
+            programSelect.addEventListener("change", (e) => {
+                loadFormClasses(e.target.value);
+                loadFormSubjects(e.target.value);
+            });
+
+            loadFormClasses(programSelect.value);
+            loadFormSubjects(programSelect.value);
+        }
+
+        setupDropdowns(asgProg, asgClass, asgSubj);
+
+        asgForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const program = asgProg.value;
+            const class_name = asgClass.value;
+            const subject = asgSubj.value;
+            const due_date = asgDue.value;
+            const title = asgTitle.value.trim();
+            const description = asgDesc.value.trim();
+
+            const file = asgFile.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async function(evt) {
+                    const file_data = evt.target.result;
+                    await submitAssignmentUpload(title, description, due_date, file.name, file_data, program, class_name, subject);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                submitAssignmentUpload(title, description, due_date, null, null, program, class_name, subject);
+            }
+        });
+
+        async function submitAssignmentUpload(title, description, due_date, file_name, file_data, program, class_name, subject) {
+            try {
+                const res = await fetch('/api/assignments/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, description, due_date, file_name, file_data, program, class_name, subject })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    asgForm.reset();
+                    setupDropdowns(asgProg, asgClass, asgSubj);
+                    const reload = await fetch('/api/assignments');
+                    const reloadData = await reload.json();
+                    currentAssignments = reloadData.assignments || [];
+                    renderAssignmentsList();
+                } else {
+                    alert(data.error);
+                }
+            } catch (err) {
+                alert("Failed to upload assignment.");
+            }
+        }
+
+        const matForm = document.getElementById("material-form");
+        const matProg = document.getElementById("mat-program");
+        const matClass = document.getElementById("mat-class");
+        const matSubj = document.getElementById("mat-subject");
+        const matTitle = document.getElementById("mat-title");
+        const matDesc = document.getElementById("mat-desc");
+        const matFile = document.getElementById("mat-file");
+        const matContainer = document.getElementById("mat-list-container");
+
+        let currentMaterials = [...allMaterials];
+        function renderMaterialsList() {
+            if (currentMaterials.length === 0) {
+                matContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 13px;">No study resources posted.</p>`;
+                return;
+            }
+            matContainer.innerHTML = currentMaterials.map(m => `
+                <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 12px; position: relative;">
+                    <strong>${m.title}</strong>
+                    <div style="color: var(--text-muted); font-size: 11px; margin-top: 4px;">
+                        Subject: ${m.subject} | Sem: ${m.class_name} | Program: ${m.program}
+                    </div>
+                    <button class="btn btn-danger btn-sm" onclick="deleteMaterial(${m.id})" style="padding: 2px 6px; font-size: 10px; position: absolute; right: 10px; top: 10px;">Delete</button>
+                </div>
+            `).join("");
+        }
+        renderMaterialsList();
+
+        window.deleteMaterial = async function(id) {
+            if (!confirm("Delete this study material?")) return;
+            try {
+                const res = await fetch('/api/study-materials/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    const reload = await fetch('/api/study-materials');
+                    const reloadData = await reload.json();
+                    currentMaterials = reloadData.materials || [];
+                    renderMaterialsList();
+                }
+            } catch (err) {
+                alert("Failed to delete resource.");
+            }
+        };
+
+        setupDropdowns(matProg, matClass, matSubj);
+
+        matForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const program = matProg.value;
+            const class_name = matClass.value;
+            const subject = matSubj.value;
+            const title = matTitle.value.trim();
+            const description = matDesc.value.trim();
+
+            const file = matFile.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async function(evt) {
+                    const file_data = evt.target.result;
+                    await submitMaterialUpload(title, description, file.name, file_data, program, class_name, subject);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert("Attachment file is required for study materials.");
+            }
+        });
+
+        async function submitMaterialUpload(title, description, file_name, file_data, program, class_name, subject) {
+            try {
+                const res = await fetch('/api/study-materials/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, description, file_name, file_data, program, class_name, subject })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    matForm.reset();
+                    setupDropdowns(matProg, matClass, matSubj);
+                    const reload = await fetch('/api/study-materials');
+                    const reloadData = await reload.json();
+                    currentMaterials = reloadData.materials || [];
+                    renderMaterialsList();
+                } else {
+                    alert(data.error);
+                }
+            } catch (err) {
+                alert("Failed to upload study material.");
+            }
+        }
+
+        const marksForm = document.getElementById("marks-form");
+        const mrkProg = document.getElementById("mrk-program");
+        const mrkClass = document.getElementById("mrk-class");
+        const mrkDiv = document.getElementById("mrk-division");
+        const mrkStudent = document.getElementById("mrk-student-sel");
+        const mrkSubj = document.getElementById("mrk-subject");
+        const mrkExam = document.getElementById("mrk-exam");
+        const mrkObtained = document.getElementById("mrk-obtained");
+        const mrkTotal = document.getElementById("mrk-total");
+        const mrkLogTbody = document.getElementById("mrk-log-tbody");
+        const mrkLogTitle = document.getElementById("mrk-log-title");
+
+        function loadMarksClasses(prog) {
+            if (prog === 'M.Com') {
+                mrkClass.innerHTML = `
+                    <option value="M.Com. Sem-I">M.Com. Sem-I</option>
+                    <option value="M.Com. Sem-III">M.Com. Sem-III</option>
+                `;
+            } else {
+                mrkClass.innerHTML = `
+                    <option value="B.Com. Sem-I">B.Com. Sem-I</option>
+                    <option value="B.Com. Sem-III">B.Com. Sem-III</option>
+                    <option value="B.Com. Sem-V" selected>B.Com. Sem-V</option>
+                `;
+            }
+        }
+
+        async function loadMarksSubjects(prog) {
+            mrkSubj.innerHTML = `<option value="">Loading...</option>`;
+            try {
+                const res = await fetch(`/api/subjects?program=${encodeURIComponent(prog)}`);
+                const data = await res.json();
+                const subjects = data.subjects || [];
+                if (subjects.length === 0) {
+                    mrkSubj.innerHTML = `<option value="Corporate Accounting">Corporate Accounting</option><option value="Financial Management">Financial Management</option>`;
+                } else {
+                    mrkSubj.innerHTML = subjects.map(s => `<option value="${s.name}">${s.name}</option>`).join("");
+                }
+            } catch (e) {
+                mrkSubj.innerHTML = `<option value="Corporate Accounting">Corporate Accounting</option>`;
+            }
+        }
+
+        function populateStudentsFilter() {
+            const pVal = mrkProg.value;
+            const cVal = mrkClass.value;
+            const dVal = mrkDiv.value;
+
+            const matchedStudents = allStudents.filter(s => {
+                const matchProg = (s.program === pVal);
+                const matchClass = (s.class || '').startsWith(cVal);
+                const matchDiv = (s.division === dVal);
+                return matchProg && matchClass && matchDiv;
+            });
+
+            if (matchedStudents.length === 0) {
+                mrkStudent.innerHTML = `<option value="">No students match filters</option>`;
+                mrkLogTbody.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted); padding: 12px;">No student records found.</td></tr>`;
+            } else {
+                mrkStudent.innerHTML = `<option value="">-- Select Student --</option>` + matchedStudents.map(s => `
+                    <option value="${s.id}">${s.username} - ${s.name}</option>
+                `).join("");
+            }
+        }
+
+        mrkProg.addEventListener("change", (e) => {
+            loadMarksClasses(e.target.value);
+            loadMarksSubjects(e.target.value);
+            populateStudentsFilter();
+        });
+        mrkClass.addEventListener("change", populateStudentsFilter);
+        mrkDiv.addEventListener("change", populateStudentsFilter);
+
+        mrkStudent.addEventListener("change", async (e) => {
+            const studentId = e.target.value;
+            if (!studentId) {
+                mrkLogTbody.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted); padding: 12px;">Select a student from the filters list to inspect their record.</td></tr>`;
+                mrkLogTitle.textContent = "Student Grades Log";
+                return;
+            }
+
+            const chosenText = mrkStudent.options[mrkStudent.selectedIndex].text;
+            mrkLogTitle.textContent = `Grades Log: ${chosenText}`;
+            await loadStudentGradesLog(studentId);
+        });
+
+        async function loadStudentGradesLog(studentId) {
+            mrkLogTbody.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted); padding: 12px;">Loading grades...</td></tr>`;
+            try {
+                const res = await fetch(`/api/marks/${studentId}`);
+                const data = await res.json();
+                const marksList = data.marks || [];
+
+                if (marksList.length === 0) {
+                    mrkLogTbody.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted); padding: 12px;">No marks recorded yet for this student.</td></tr>`;
+                } else {
+                    mrkLogTbody.innerHTML = marksList.map(m => `
+                        <tr>
+                            <td><strong>${m.subject}</strong></td>
+                            <td>${m.exam_name}</td>
+                            <td><strong style="color: var(--accent);">${m.marks_obtained}</strong> / ${m.marks_total}</td>
+                            <td>${((m.marks_obtained / m.marks_total) * 100).toFixed(0)}%</td>
+                        </tr>
+                    `).join("");
+                }
+            } catch (err) {
+                mrkLogTbody.innerHTML = `<tr><td colspan="4" style="color: var(--danger); padding: 12px;">Failed to load marks.</td></tr>`;
+            }
+        }
+
+        loadMarksClasses(mrkProg.value);
+        loadMarksSubjects(mrkProg.value);
+        populateStudentsFilter();
+
+        marksForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const student_id = mrkStudent.value;
+            if (!student_id) {
+                alert("Please select a student from the dropdown.");
+                return;
+            }
+
+            const subject = mrkSubj.value;
+            const exam_name = mrkExam.value;
+            const marks_obtained = mrkObtained.value;
+            const marks_total = mrkTotal.value;
+
+            try {
+                const res = await fetch('/api/marks/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ student_id: parseInt(student_id), subject, exam_name, marks_obtained, marks_total })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    mrkObtained.value = "";
+                    await loadStudentGradesLog(student_id);
+                } else {
+                    alert(data.error);
+                }
+            } catch (err) {
+                alert("Failed to save grade entry.");
+            }
+        });
+
+    } catch (err) {
+        console.error(err);
+        dynamicContentArea.innerHTML = `<div class="glass-card text-center"><p style="color: var(--danger);">Failed to load coursework manager console.</p></div>`;
+    }
 };

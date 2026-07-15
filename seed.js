@@ -128,6 +128,47 @@ db.exec(`
         FOREIGN KEY(student_id) REFERENCES users(id),
         UNIQUE(session_id, student_id)
     );
+
+    CREATE TABLE courses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        program TEXT NOT NULL,
+        syllabus TEXT DEFAULT ''
+    );
+
+    CREATE TABLE assignments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT DEFAULT '',
+        due_date TEXT NOT NULL,
+        file_name TEXT,
+        file_path TEXT,
+        program TEXT NOT NULL,
+        class_name TEXT NOT NULL,
+        subject TEXT NOT NULL
+    );
+
+    CREATE TABLE study_materials (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT DEFAULT '',
+        file_name TEXT,
+        file_path TEXT,
+        program TEXT NOT NULL,
+        class_name TEXT NOT NULL,
+        subject TEXT NOT NULL
+    );
+
+    CREATE TABLE marks_registry (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        student_id INTEGER NOT NULL,
+        subject TEXT NOT NULL,
+        exam_name TEXT NOT NULL,
+        marks_obtained INTEGER NOT NULL,
+        marks_total INTEGER NOT NULL,
+        FOREIGN KEY(student_id) REFERENCES users(id)
+    );
 `);
 console.log('Database tables created successfully.');
 
@@ -342,8 +383,38 @@ try {
         );
     });
 
+    // Seed Courses & Syllabus
+    const insertCourse = db.prepare("INSERT INTO courses (code, name, program, syllabus) VALUES (?, ?, ?, ?)");
+    insertCourse.run("BCP-501", "Corporate Accounting", "B.Com (Professional)", "Module 1: Holding Company Accounts.\nModule 2: Amalgamation & External Reconstruction.\nModule 3: Valuation of Shares & Goodwill.\nModule 4: Liquidator's Final Statement of Accounts.");
+    insertCourse.run("BCP-502", "Financial Management", "B.Com (Professional)", "Module 1: Capital Budgeting Decisions.\nModule 2: Cost of Capital & Leverage.\nModule 3: Dividend Policy Decisions.\nModule 4: Working Capital Management.");
+    insertCourse.run("BCP-503", "Auditing & Assurance", "B.Com (Professional)", "Module 1: Audit Framework & Standards.\nModule 2: Internal Control & Risk Assessment.\nModule 3: Vouching & Verification of Assets.\nModule 4: Audit Reports & Certifications.");
+    insertCourse.run("BCP-504", "Direct Tax", "B.Com (Professional)", "Module 1: Basic concepts & residential status.\nModule 2: Heads of Income (Salary, House Property).\nModule 3: Profits & Gains of Business or Profession.\nModule 4: Computation of Total Income & Tax Liability.");
+
+    // Seed Assignments
+    const insertAssignment = db.prepare("INSERT INTO assignments (title, description, due_date, file_name, file_path, program, class_name, subject) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    insertAssignment.run("Holding Company Problems Sheet", "Please complete questions 1 to 5 from Chapter 3 and submit standard calculations.", "2026-07-25", "holding_company_practice.pdf", "/uploads/holding_company_practice.pdf", "B.Com (Professional)", "B.Com. Sem-V", "Corporate Accounting");
+    insertAssignment.run("Capital Budgeting Case Study", "Analyze the NPV and IRR cashflows for the project scenarios in the case document.", "2026-07-28", "capital_budgeting_scenarios.pdf", "/uploads/capital_budgeting_scenarios.pdf", "B.Com (Professional)", "B.Com. Sem-V", "Financial Management");
+
+    // Seed Study Materials
+    const insertMaterial = db.prepare("INSERT INTO study_materials (title, description, file_name, file_path, program, class_name, subject) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    insertMaterial.run("Amalgamation Lecture Handout", "Classroom slides covering accounting treatment for Amalgamation in the nature of purchase vs merger.", "amalgamation_slides.pdf", "/uploads/amalgamation_slides.pdf", "B.Com (Professional)", "B.Com. Sem-V", "Corporate Accounting");
+    insertMaterial.run("Levrages and FM Formulas Sheet", "Quick reference PDF listing formulas for Operating Leverage, Financial Leverage, and Combined Leverage.", "leverage_formulas.pdf", "/uploads/leverage_formulas.pdf", "B.Com (Professional)", "B.Com. Sem-V", "Financial Management");
+
+    // Seed Marks for Students 3 and 4 (Aaditya & Abhishek)
+    const insertMark = db.prepare("INSERT INTO marks_registry (student_id, subject, exam_name, marks_obtained, marks_total) VALUES (?, ?, ?, ?, ?)");
+    // Student 3 (roll 1) marks
+    insertMark.run(3, "Corporate Accounting", "Internal Test 1", 24, 30);
+    insertMark.run(3, "Corporate Accounting", "Mid-Semester Exam", 58, 70);
+    insertMark.run(3, "Financial Management", "Internal Test 1", 26, 30);
+    insertMark.run(3, "Financial Management", "Mid-Semester Exam", 62, 70);
+    // Student 4 (roll 2) marks
+    insertMark.run(4, "Corporate Accounting", "Internal Test 1", 22, 30);
+    insertMark.run(4, "Corporate Accounting", "Mid-Semester Exam", 52, 70);
+    insertMark.run(4, "Financial Management", "Internal Test 1", 25, 30);
+    insertMark.run(4, "Financial Management", "Mid-Semester Exam", 60, 70);
+
     db.exec('COMMIT');
-    console.log(`Database transaction completed. Successfully seeded ${students.length + 2} users.`);
+    console.log(`Database transaction completed. Successfully seeded ${students.length + 2} users and course management resources.`);
 } catch (err) {
     db.exec('ROLLBACK');
     console.error('Error seeding database, transaction rolled back:', err);
