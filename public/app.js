@@ -1255,6 +1255,7 @@ window.renderTeacherSchedule = function() {
                 <h3 class="card-title">Live Attendance Session Log</h3>
                 <div style="display: flex; gap: 8px;">
                     <button class="btn btn-secondary btn-sm" id="launch-projector-btn" style="padding: 6px 12px; display: none;"><i class="fa-solid fa-expand"></i> Launch Projector View</button>
+                    <button class="btn btn-secondary btn-sm" id="export-session-btn" style="padding: 6px 12px; background: var(--success); border-color: var(--success); color: white;"><i class="fa-solid fa-file-excel mr-4"></i> Export Session</button>
                     <button class="btn btn-danger btn-sm" id="close-session-btn" style="padding: 6px 12px;"><i class="fa-solid fa-power-off"></i> Close Session Early</button>
                 </div>
             </div>
@@ -1438,6 +1439,40 @@ window.renderTeacherSchedule = function() {
         });
     }
 
+    const exportSessionBtn = document.getElementById("export-session-btn");
+    if (exportSessionBtn) {
+        exportSessionBtn.addEventListener("click", () => {
+            const records = window.currentActiveSessionRecords || [];
+            if (records.length === 0) {
+                alert("No student check-ins to export yet.");
+                return;
+            }
+            const headers = ["Roll Number", "Student Name", "Gender", "Division", "Marked At"];
+            const rows = records.map(r => [
+                r.roll_no,
+                r.name,
+                r.gender || 'Male',
+                `Division ${r.division}`,
+                new Date(r.marked_at).toLocaleTimeString()
+            ]);
+            
+            const csvContent = "\uFEFF" + [
+                headers.join(','),
+                ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Attendance_Session_${activeSessionCode || 'Code'}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
+
     const closeBtn = document.getElementById("close-session-btn");
     if (closeBtn) {
         closeBtn.addEventListener("click", async () => {
@@ -1613,6 +1648,7 @@ async function pollCheckedInStudents(code) {
 
         if (data.success) {
             const records = data.records || [];
+            window.currentActiveSessionRecords = records;
             document.getElementById("checked-in-count").textContent = records.length;
 
             const tbody = document.getElementById("checked-in-records-list");

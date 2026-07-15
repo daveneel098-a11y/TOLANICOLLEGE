@@ -18,6 +18,7 @@ try {
 }
 
 // 2. Create Schema Tables
+db.exec('PRAGMA foreign_keys = OFF;');
 db.exec(`
     DROP TABLE IF EXISTS attendance_records;
     DROP TABLE IF EXISTS attendance_sessions;
@@ -27,6 +28,10 @@ db.exec(`
     DROP TABLE IF EXISTS timetables;
     DROP TABLE IF EXISTS notices;
     DROP TABLE IF EXISTS daily_lectures;
+    DROP TABLE IF EXISTS courses;
+    DROP TABLE IF EXISTS assignments;
+    DROP TABLE IF EXISTS study_materials;
+    DROP TABLE IF EXISTS marks_registry;
 
     CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -321,6 +326,46 @@ try {
         'Commerce & Accountancy',
         'All',
         'B.Com (Regular)',
+        'N/A',
+        'N/A',
+        0, 0, 0
+    );
+
+    // Insert Teacher (Assigned to B.Com Professional)
+    insertUser.run(
+        'teacherpro',
+        'okokokok',
+        'teacher',
+        'Prof. Rahul Sharma',
+        'rahul.sharma@tolani.edu',
+        '+91 99999 66666',
+        'Male',
+        'General',
+        'Corporate Accounting',
+        'B.Com. Sem-V',
+        'Commerce & Accountancy',
+        'All',
+        'B.Com (Professional)',
+        'N/A',
+        'N/A',
+        0, 0, 0
+    );
+
+    // Insert Teacher (Assigned to M.Com)
+    insertUser.run(
+        'teachermcom',
+        'okokokok',
+        'teacher',
+        'Dr. Jennifer Smith',
+        'jennifer.smith@tolani.edu',
+        '+91 99999 55555',
+        'Female',
+        'General',
+        'Managerial Economics',
+        'M.Com. Sem-I',
+        'Commerce & Accountancy',
+        'All',
+        'M.Com',
         'N/A',
         'N/A',
         0, 0, 0
