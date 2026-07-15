@@ -404,6 +404,36 @@ app.get('/api/attendance/student/:student_id/history', (req, res) => {
     }
 });
 
+// 7.5. Retrieve Unified Attendance History Logs
+app.get('/api/attendance/history', (req, res) => {
+    const { creator_id } = req.query;
+    try {
+        let sql = `
+            SELECT r.id, r.marked_at, u.username as roll_no, u.name as student_name, 
+                   u.gender, u.program, u.class as student_class, u.division as student_division,
+                   s.subject, s.class_name as session_class, s.division as session_division,
+                   s.code as session_code, t.name as teacher_name
+            FROM attendance_records r
+            JOIN users u ON r.student_id = u.id
+            JOIN attendance_sessions s ON r.session_id = s.id
+            JOIN users t ON s.creator_id = t.id
+        `;
+        let params = [];
+        if (creator_id) {
+            sql += ` WHERE s.creator_id = ? `;
+            params.push(creator_id);
+        }
+        sql += ` ORDER BY r.marked_at DESC `;
+
+        const stmt = db.prepare(sql);
+        const records = stmt.all(...params);
+        res.json({ success: true, records });
+    } catch (err) {
+        console.error('Error fetching attendance history:', err);
+        res.status(500).json({ error: 'Failed to fetch attendance history.' });
+    }
+});
+
 // 8. Get All Users (Admin GUI)
 app.get('/api/users', (req, res) => {
     try {

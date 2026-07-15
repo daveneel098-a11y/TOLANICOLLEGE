@@ -174,6 +174,7 @@ const ROLE_NAV = {
         { id: "students", label: "Student Registry", icon: "fa-users" },
         { id: "timetable", label: "Class Timetable", icon: "fa-calendar" },
         { id: "schedule", label: "Manage Attendance", icon: "fa-calendar-plus" },
+        { id: "attendance_report", label: "Attendance Excel", icon: "fa-file-excel" },
         { id: "profile", label: "Profile Settings", icon: "fa-user-gear" }
     ],
     admin: [
@@ -183,6 +184,7 @@ const ROLE_NAV = {
         { id: "mcom", label: "M.Com Management", icon: "fa-award" },
         { id: "students", label: "User Registry", icon: "fa-users" },
         { id: "schedule", label: "Manage Attendance", icon: "fa-calendar-plus" },
+        { id: "attendance_report", label: "Attendance Excel", icon: "fa-file-excel" },
         { id: "fees", label: "Fees Setup", icon: "fa-wallet" },
         { id: "database", label: "Postgres Console", icon: "fa-database" },
         { id: "profile", label: "Profile Settings", icon: "fa-user-gear" }
@@ -2808,4 +2810,222 @@ id | name | role | program
             }
         });
     }
+};
+
+window.renderUnifiedAttendanceReport = async function(isTeacherOnly) {
+    dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
+    
+    try {
+        const url = isTeacherOnly ? `/api/attendance/history?creator_id=${currentUser.id}` : '/api/attendance/history';
+        const res = await fetch(url);
+        const data = await res.json();
+        const records = data.records || [];
+
+        function renderRows(filtered) {
+            if (filtered.length === 0) {
+                return `<tr><td colspan="9" style="color: var(--text-muted); padding: 24px;">No matching attendance logs found.</td></tr>`;
+            }
+            return filtered.map(r => `
+                <tr>
+                    <td><strong>${r.roll_no}</strong></td>
+                    <td>${r.student_name}</td>
+                    <td>${r.gender}</td>
+                    <td>${r.program}</td>
+                    <td>${r.student_class}</td>
+                    <td>Division ${r.student_division}</td>
+                    <td><strong>${r.subject}</strong></td>
+                    <td>${new Date(r.marked_at).toLocaleString()}</td>
+                    <td>${r.teacher_name}</td>
+                </tr>
+            `).join("");
+        }
+
+        dynamicContentArea.innerHTML = `
+            <div class="glass-card mb-24">
+                <h3 class="card-title mb-16"><i class="fa-solid fa-filter mr-8"></i> Filter Attendance Records</h3>
+                <div class="form-grid">
+                    <div>
+                        <label>Academic Program</label>
+                        <select id="rep-program" class="form-control">
+                            <option value="All">All Programs</option>
+                            <option value="B.Com (Regular)">B.Com (Regular)</option>
+                            <option value="B.Com (Professional)">B.Com (Professional)</option>
+                            <option value="M.Com">M.Com</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Class Semester</label>
+                        <select id="rep-class" class="form-control">
+                            <option value="All">All Semesters</option>
+                            <option value="B.Com. Sem-I">B.Com. Sem-I</option>
+                            <option value="B.Com. Sem-III">B.Com. Sem-III</option>
+                            <option value="B.Com. Sem-V">B.Com. Sem-V</option>
+                            <option value="M.Com. Sem-I">M.Com. Sem-I</option>
+                            <option value="M.Com. Sem-III">M.Com. Sem-III</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Division</label>
+                        <select id="rep-division" class="form-control">
+                            <option value="All">All Divisions</option>
+                            <option value="A">Division A</option>
+                            <option value="B">Division B</option>
+                            <option value="C">Division C</option>
+                            <option value="D">Division D</option>
+                            <option value="E">Division E</option>
+                            <option value="F">Division F</option>
+                            <option value="G">Division G</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Subject Search</label>
+                        <input type="text" id="rep-subject" class="form-control" placeholder="e.g. Statistics" autocomplete="off">
+                    </div>
+                    <div>
+                        <label>Filter Date</label>
+                        <input type="date" id="rep-date" class="form-control">
+                    </div>
+                    <div style="display: flex; align-items: flex-end;">
+                        <button class="btn btn-secondary" id="rep-reset" style="width: 100%;"><i class="fa-solid fa-rotate-left mr-4"></i> Reset Filters</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div class="card-header-flex mb-16" style="flex-wrap: wrap; gap: 12px;">
+                    <h3 class="card-title"><i class="fa-solid fa-table-list mr-8"></i> Historical Records Monitor</h3>
+                    <button class="btn btn-primary" id="rep-export-btn" style="background: var(--success); border-color: var(--success); color: white;">
+                        <i class="fa-solid fa-file-excel mr-8"></i> Export to Excel (CSV)
+                    </button>
+                </div>
+
+                <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+                    <table class="custom-table text-center" style="font-size: 12px;">
+                        <thead>
+                            <tr>
+                                <th>Roll No</th>
+                                <th>Student Name</th>
+                                <th>Gender</th>
+                                <th>Program</th>
+                                <th>Class</th>
+                                <th>Division</th>
+                                <th>Subject</th>
+                                <th>Checked-in At</th>
+                                <th>Taken By</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rep-tbody">
+                            ${renderRows(records)}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        const progFil = document.getElementById("rep-program");
+        const classFil = document.getElementById("rep-class");
+        const divFil = document.getElementById("rep-division");
+        const subjFil = document.getElementById("rep-subject");
+        const dateFil = document.getElementById("rep-date");
+        const resetBtn = document.getElementById("rep-reset");
+        const exportBtn = document.getElementById("rep-export-btn");
+        const tbody = document.getElementById("rep-tbody");
+
+        // List of current active filtered records
+        let currentFilteredRecords = [...records];
+
+        const runFilter = () => {
+            const pVal = progFil.value;
+            const cVal = classFil.value;
+            const dVal = divFil.value;
+            const sVal = subjFil.value.trim().toLowerCase();
+            const dateVal = dateFil.value;
+
+            currentFilteredRecords = records.filter(r => {
+                const matchesP = (pVal === "All") || (r.program === pVal);
+                const matchesC = (cVal === "All") || (r.student_class || '').startsWith(cVal);
+                const matchesD = (dVal === "All") || (r.student_division === dVal);
+                const matchesS = (!sVal) || (r.subject || '').toLowerCase().includes(sVal);
+                
+                let matchesDate = true;
+                if (dateVal) {
+                    const rDate = new Date(r.marked_at).toISOString().split('T')[0];
+                    matchesDate = (rDate === dateVal);
+                }
+
+                return matchesP && matchesC && matchesD && matchesS && matchesDate;
+            });
+
+            tbody.innerHTML = renderRows(currentFilteredRecords);
+        };
+
+        // Hook up handlers
+        progFil.addEventListener("change", runFilter);
+        classFil.addEventListener("change", runFilter);
+        divFil.addEventListener("change", runFilter);
+        subjFil.addEventListener("input", runFilter);
+        dateFil.addEventListener("change", runFilter);
+
+        resetBtn.addEventListener("click", () => {
+            progFil.value = "All";
+            classFil.value = "All";
+            divFil.value = "All";
+            subjFil.value = "";
+            dateFil.value = "";
+            runFilter();
+        });
+
+        // Export Functionality
+        exportBtn.addEventListener("click", () => {
+            if (currentFilteredRecords.length === 0) {
+                alert("No records to export.");
+                return;
+            }
+
+            const headers = [
+                "Roll Number", "Student Name", "Gender", "Program", 
+                "Class", "Division", "Subject", "Checked-in At", "Taken By Faculty"
+            ];
+
+            const rows = currentFilteredRecords.map(r => [
+                r.roll_no,
+                r.student_name,
+                r.gender,
+                r.program,
+                r.student_class,
+                r.student_division,
+                r.subject,
+                new Date(r.marked_at).toLocaleString(),
+                r.teacher_name
+            ]);
+
+            // Format to CSV with double quotes and escaping
+            const csvContent = "\uFEFF" + [
+                headers.join(','),
+                ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Attendance_Export_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+    } catch (err) {
+        console.error(err);
+        dynamicContentArea.innerHTML = `<div class="glass-card text-center"><p style="color: var(--danger);">Failed to load attendance report.</p></div>`;
+    }
+};
+
+window.renderTeacherAttendance_report = function() {
+    window.renderUnifiedAttendanceReport(true);
+};
+
+window.renderAdminAttendance_report = function() {
+    window.renderUnifiedAttendanceReport(false);
 };
