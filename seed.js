@@ -190,6 +190,7 @@ try {
                 const program = fileData.program || 'B.Com (Regular)';
                 const year = fileData.year || '1st Year';
                 const semester = fileData.semester || 'Semester 1';
+                const fileDivision = fileData.division || 'A';
                 const fileStudents = fileData.students || [];
                 
                 fileStudents.forEach(s => {
@@ -205,7 +206,8 @@ try {
                         class: s.class || 'B.Com. Sem-I',
                         program: program,
                         year: year,
-                        semester: semester
+                        semester: semester,
+                        division: s.division || fileDivision
                     });
                 });
                 console.log(`Loaded ${fileStudents.length} students from ${file} (${program} - ${semester}).`);
@@ -428,19 +430,7 @@ try {
         const username = s.username;
         const password = s.password;
         const gender = s.gender || 'Male';
-        
-        // Calculate division based on roll number (7 divisions: A to G)
-        const rollNum = parseInt(s.username);
-        let division = 'A';
-        if (!isNaN(rollNum) && rollNum < 5000) {
-            if (rollNum <= 125) division = 'A';
-            else if (rollNum <= 250) division = 'B';
-            else if (rollNum <= 375) division = 'C';
-            else if (rollNum <= 500) division = 'D';
-            else if (rollNum <= 625) division = 'E';
-            else if (rollNum <= 750) division = 'F';
-            else division = 'G';
-        }
+        const division = s.division || 'A';
 
         // Gender-based fees
         let baselineFee = 6200;
