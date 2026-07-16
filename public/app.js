@@ -1879,6 +1879,7 @@ window.renderAdminStudents = async function() {
                             <option value="B.Com (Professional)">B.Com (Professional)</option>
                             <option value="M.Com">M.Com</option>
                         </select>
+                        <button class="btn btn-secondary btn-sm" id="admin-user-export-btn" style="background: var(--success); border-color: var(--success); color: white;"><i class="fa-solid fa-file-excel mr-4"></i> Export Rosters</button>
                         <button class="btn btn-primary btn-sm" onclick="openAddUserModal()"><i class="fa-solid fa-user-plus"></i> Add User</button>
                     </div>
                 </div>
@@ -1924,6 +1925,70 @@ window.renderAdminStudents = async function() {
 
         rFilter.addEventListener("change", filterHandler);
         pFilter.addEventListener("change", filterHandler);
+
+        const exportBtn = document.getElementById("admin-user-export-btn");
+        if (exportBtn) {
+            exportBtn.addEventListener("click", () => {
+                const students = users.filter(u => u.role === 'student');
+                if (students.length === 0) {
+                    alert("No students registered to export.");
+                    return;
+                }
+
+                // Group students by program, year, semester, and division
+                const groups = {};
+                students.forEach(s => {
+                    const prog = s.program || 'B.Com (Regular)';
+                    const yr = s.year || '1st Year';
+                    const sem = s.semester || 'Semester 1';
+                    const div = s.division || 'A';
+                    
+                    const groupKey = `${prog}_${yr}_${sem}_Div_${div}`;
+                    if (!groups[groupKey]) {
+                        groups[groupKey] = [];
+                    }
+                    groups[groupKey].push(s);
+                });
+
+                // Download each group as a separate file
+                Object.keys(groups).forEach(key => {
+                    const groupStudents = groups[key];
+                    const headers = ["Roll Number / Username", "Student Name", "Gender", "Category", "Class / Division", "Stream / Program", "Academic Year", "Semester", "Email", "Phone", "Fee Total", "Fee Paid", "Fee Due"];
+                    const rows = groupStudents.map(s => [
+                        s.username,
+                        s.name,
+                        s.gender || 'Male',
+                        s.category || 'General',
+                        `${s.class || 'B.Com'} - Div ${s.division || 'A'}`,
+                        s.program || 'B.Com (Regular)',
+                        s.year || '1st Year',
+                        s.semester || 'Semester 1',
+                        s.email || 'N/A',
+                        s.phone || 'N/A',
+                        s.fee_total || 0,
+                        s.fee_paid || 0,
+                        s.fee_due || 0
+                    ]);
+
+                    const csvContent = "\uFEFF" + [
+                        headers.join(','),
+                        ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+                    ].join('\n');
+
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement("a");
+                    const url = URL.createObjectURL(blob);
+                    
+                    const safeName = key.replace(/[^a-zA-Z0-9]/g, '_');
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", `Roster_${safeName}.csv`);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                });
+            });
+        }
 
     } catch (err) {
         console.error(err);

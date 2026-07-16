@@ -12,8 +12,26 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Connect to SQLite
-const db = new DatabaseSync(path.join(__dirname, 'database.db'));
+// Connect to SQLite (with Render Persistent Disk support)
+const RENDER_DATA_DIR = '/var/data';
+let dbPath = path.join(__dirname, 'database.db');
+if (fs.existsSync(RENDER_DATA_DIR)) {
+    dbPath = path.join(RENDER_DATA_DIR, 'database.db');
+    // If persistent database does not exist, copy from local directory as baseline
+    const localDbPath = path.join(__dirname, 'database.db');
+    if (!fs.existsSync(dbPath) && fs.existsSync(localDbPath)) {
+        try {
+            fs.copyFileSync(localDbPath, dbPath);
+            console.log('Copied baseline database to Render persistent volume:', dbPath);
+        } catch (copyErr) {
+            console.error('Failed to copy baseline database to Render persistent volume:', copyErr);
+        }
+    }
+    console.log('Using persistent volume database:', dbPath);
+} else {
+    console.log('Using local directory database:', dbPath);
+}
+const db = new DatabaseSync(dbPath);
 console.log('Server connected to SQLite database successfully.');
 
 // --- DATABASE AUTO-MIGRATIONS (If not run via seed.js) ---
