@@ -383,6 +383,35 @@ app.get('/api/attendance/session/:code/records', (req, res) => {
     }
 });
 
+// 4.5. Retrieve active attendance session for a teacher
+app.get('/api/attendance/session/active', (req, res) => {
+    const { creator_id } = req.query;
+
+    if (!creator_id) {
+        return res.status(400).json({ error: 'Creator ID is required.' });
+    }
+
+    try {
+        const now = Date.now();
+        // Retrieve the most recent active session that hasn't expired yet
+        const sessionStmt = db.prepare(`
+            SELECT * FROM attendance_sessions 
+            WHERE creator_id = ? AND is_active = 1 AND expires_at > ?
+            ORDER BY created_at DESC LIMIT 1
+        `);
+        const session = sessionStmt.get(creator_id, now);
+
+        if (session) {
+            res.json({ success: true, session });
+        } else {
+            res.json({ success: false, message: 'No active session found.' });
+        }
+    } catch (err) {
+        console.error('Error fetching active session:', err);
+        res.status(500).json({ error: 'Failed to fetch active session.' });
+    }
+});
+
 // 5. Close attendance session manually
 app.post('/api/attendance/session/close', (req, res) => {
     const { code } = req.body;

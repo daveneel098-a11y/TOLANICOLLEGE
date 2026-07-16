@@ -1498,6 +1498,35 @@ window.renderTeacherSchedule = function() {
             }
         });
     }
+
+    // Auto-recover active attendance session for this teacher if one is running
+    async function recoverActiveSession() {
+        try {
+            const res = await fetch(`/api/attendance/session/active?creator_id=${currentUser.id}`);
+            const data = await res.json();
+            if (data.success && data.session) {
+                activeSessionCode = data.session.code;
+                currentSessionObj = data.session;
+
+                document.getElementById("active-code-display").textContent = activeSessionCode;
+                const expiryTime = new Date(data.session.expires_at).toLocaleTimeString();
+                document.getElementById("active-session-timer").textContent = `Expires at: ${expiryTime}`;
+                document.getElementById("active-session-label").innerHTML = `<i class="fa-solid fa-circle-dot fa-fade"></i> ACTIVE | ${data.session.subject} (${data.session.division})`;
+
+                formCard.style.display = "none";
+                activeCard.style.display = "block";
+                projectorBtn.style.display = "block";
+
+                // Resume Polling records
+                pollCheckedInStudents(activeSessionCode);
+                if (activeSessionPollingInterval) clearInterval(activeSessionPollingInterval);
+                activeSessionPollingInterval = setInterval(() => pollCheckedInStudents(activeSessionCode), 3000);
+            }
+        } catch (e) {
+            console.error("Failed to recover active session:", e);
+        }
+    }
+    recoverActiveSession();
 };
 
 // --- DYNAMIC PROJECTOR VIEW FULLSCREEN MODAL ---
