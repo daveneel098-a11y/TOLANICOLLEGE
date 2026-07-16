@@ -194,9 +194,10 @@ try {
                 const fileStudents = fileData.students || [];
                 
                 fileStudents.forEach(s => {
+                    const isSem1 = semester === 'Semester 1';
                     studentsList.push({
                         username: s.rollNo ? s.rollNo.toString().trim() : (s.username ? s.username.toString().trim() : ""),
-                        password: s.spdid ? s.spdid.toString().trim() : (s.password ? s.password.toString().trim() : ""),
+                        password: isSem1 ? (s.rollNo ? s.rollNo.toString().trim() : "") : (s.spdid ? s.spdid.toString().trim() : (s.password ? s.password.toString().trim() : "")),
                         name: s.name,
                         gender: s.gender || 'Male',
                         category: s.category || 'General',
