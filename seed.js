@@ -17,6 +17,23 @@ try {
     process.exit(1);
 }
 
+// Check if database is already initialized and has users
+let isSeeded = false;
+try {
+    const stmt = db.prepare("SELECT count(*) as count FROM users");
+    const row = stmt.get();
+    if (row && row.count > 0) {
+        isSeeded = true;
+    }
+} catch (e) {
+    // Table doesn't exist yet, we must seed
+}
+
+if (isSeeded && !process.argv.includes('--force')) {
+    console.log('Database already initialized. Skipping seeding to prevent data loss.');
+    process.exit(0);
+}
+
 // 2. Create Schema Tables
 db.exec('PRAGMA foreign_keys = OFF;');
 db.exec(`

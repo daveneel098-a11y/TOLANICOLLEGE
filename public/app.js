@@ -178,6 +178,7 @@ const ROLE_NAV = {
         { id: "students", label: "Student Registry", icon: "fa-users" },
         { id: "timetable", label: "Class Timetable", icon: "fa-calendar" },
         { id: "schedule", label: "Manage Attendance", icon: "fa-calendar-plus" },
+        { id: "projector", label: "Classroom Projector", icon: "fa-display" },
         { id: "attendance_report", label: "Attendance Excel", icon: "fa-file-excel" },
         { id: "coursework_manager", label: "Coursework Suite", icon: "fa-folder-open" },
         { id: "profile", label: "Profile Settings", icon: "fa-user-gear" }
@@ -189,6 +190,7 @@ const ROLE_NAV = {
         { id: "mcom", label: "M.Com Management", icon: "fa-award" },
         { id: "students", label: "User Registry", icon: "fa-users" },
         { id: "schedule", label: "Manage Attendance", icon: "fa-calendar-plus" },
+        { id: "projector", label: "Classroom Projector", icon: "fa-display" },
         { id: "attendance_report", label: "Attendance Excel", icon: "fa-file-excel" },
         { id: "coursework_manager", label: "Coursework Suite", icon: "fa-folder-open" },
         { id: "fees", label: "Fees Setup", icon: "fa-wallet" },
@@ -214,6 +216,10 @@ function buildSidebarMenu(role) {
         `;
         
         li.addEventListener("click", () => {
+            if (item.id === "projector") {
+                window.open('projector.html', '_blank');
+                return;
+            }
             document.querySelectorAll(".sidebar-menu-item").forEach(el => el.classList.remove("active"));
             li.classList.add("active");
             navigateTo(item.id);
@@ -227,6 +233,10 @@ function buildSidebarMenu(role) {
 }
 
 function navigateTo(viewId) {
+    if (viewId === "projector") {
+        window.open('projector.html', '_blank');
+        return;
+    }
     if (activeSessionPollingInterval) {
         clearInterval(activeSessionPollingInterval);
         activeSessionPollingInterval = null;
@@ -1434,7 +1444,7 @@ window.renderTeacherSchedule = function() {
     if (projectorBtn) {
         projectorBtn.addEventListener("click", () => {
             if (currentSessionObj) {
-                openProjectorMode(currentSessionObj);
+                window.open(`projector.html?code=${currentSessionObj.code}`, '_blank');
             }
         });
     }
@@ -1700,8 +1710,111 @@ async function pollCheckedInStudents(code) {
     }
 }
 
+window.renderStaffProfile = async function() {
+    dynamicContentArea.innerHTML = `
+        <div class="glass-card mb-24">
+            <h3 class="card-title mb-16"><i class="fa-solid fa-user-tie mr-8"></i> Security & Details</h3>
+            <div class="form-grid mb-24">
+                <div>
+                    <label>Full Name</label>
+                    <input type="text" class="form-control" value="${currentUser.name}" disabled>
+                </div>
+                <div>
+                    <label>Username / ID</label>
+                    <input type="text" class="form-control" value="${currentUser.username}" disabled>
+                </div>
+                <div>
+                    <label>Email ID</label>
+                    <input type="text" class="form-control" value="${currentUser.email || 'N/A'}" disabled>
+                </div>
+                <div>
+                    <label>Contact Phone</label>
+                    <input type="text" class="form-control" value="${currentUser.phone || 'N/A'}" disabled>
+                </div>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted);">
+                <i class="fa-solid fa-circle-info"></i> Profile modification is locked. Please contact the college registrar office for changes.
+            </p>
+        </div>
+
+        <div class="glass-card">
+            <h3 class="card-title mb-16"><i class="fa-brands fa-google-drive mr-8" style="color: var(--accent);"></i> Google Drive Attendance Sync</h3>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+                EduSphere automatically syncs all finalized classroom attendance rosters to your Google Drive folder.
+            </p>
+
+            <div style="background: rgba(45, 212, 191, 0.05); border: 1px dashed var(--accent); border-radius: 12px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <strong style="color: #ffffff; font-size: 14px; display: block; margin-bottom: 4px;">Target Google Drive Folder</strong>
+                    <span style="font-size: 12px; color: var(--text-muted);">Click to open target folder on Google Drive.</span>
+                </div>
+                <a href="https://drive.google.com/drive/folders/1CVXvcVhY19ebf2xUu4HsHviksoHywjHA" target="_blank" class="btn btn-secondary btn-sm" style="border-color: var(--accent); color: var(--accent);">
+                    <i class="fa-solid fa-up-right-from-square mr-4"></i> Open Folder
+                </a>
+            </div>
+
+            <div class="mb-24">
+                <label style="font-weight: 600; display: block; margin-bottom: 8px;">Google Apps Script Web App URL</label>
+                <input type="text" id="drive-script-url" class="form-control" style="background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.1);" placeholder="https://script.google.com/macros/s/.../exec">
+                <button class="btn btn-primary mt-12" id="save-drive-settings-btn" style="padding: 8px 16px;">Save Sync Settings</button>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; font-size: 13px;">
+                <h4 style="color: #ffffff; font-weight: 700; margin-bottom: 12px;"><i class="fa-solid fa-circle-question mr-4"></i> Setup Instructions (1 Minute)</h4>
+                <ol style="margin-left: 20px; color: var(--text-muted); line-height: 1.6; text-align: left;">
+                    <li>Open your Google account and go to <a href="https://script.google.com" target="_blank" style="color: var(--accent);">Google Apps Script</a>.</li>
+                    <li>Create a <strong>New Project</strong> and replace the code block with the following handler script:
+                        <pre style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; font-size: 11px; color: #a5f3fc; overflow-x: auto; margin: 8px 0; font-family: monospace;">
+function doPost(e) {
+  var data = JSON.parse(e.postData.contents);
+  var folder = DriveApp.getFolderById("1CVXvcVhY19ebf2xUu4HsHviksoHywjHA");
+  var file = folder.createFile(data.filename, data.content, "text/csv");
+  return ContentService.createTextOutput(JSON.stringify({ success: true, url: file.getUrl() })).setMimeType(ContentService.MimeType.JSON);
+}</pre>
+                    </li>
+                    <li>Click <strong>Deploy > New Deployment</strong> in Google Apps Script.</li>
+                    <li>Choose <strong>Web App</strong> as the type.</li>
+                    <li>Set <strong>Execute as:</strong> <i>Me</i>, and <strong>Who has access:</strong> <i>Anyone</i> (crucial for local server authorization).</li>
+                    <li>Click <strong>Deploy</strong>, authorize the permissions, then copy the generated <strong>Web App URL</strong> and paste it above!</li>
+                </ol>
+            </div>
+        </div>
+    `;
+
+    // Fetch existing settings
+    try {
+        const res = await fetch('/api/settings/drive');
+        const data = await res.json();
+        if (data.success && data.url) {
+            document.getElementById("drive-script-url").value = data.url;
+        }
+    } catch (e) {
+        console.error("Failed to load drive settings:", e);
+    }
+
+    document.getElementById("save-drive-settings-btn").addEventListener("click", async () => {
+        const url = document.getElementById("drive-script-url").value.trim();
+        try {
+            const res = await fetch('/api/settings/drive', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert("Google Drive sync settings successfully updated.");
+            } else {
+                alert("Failed to update settings.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error saving settings.");
+        }
+    });
+};
+
 window.renderTeacherProfile = function() {
-    window.renderStudentProfile(); // Profiles are identical
+    window.renderStaffProfile();
 };
 
 
@@ -2393,7 +2506,7 @@ window.renderAdminFees = async function() {
 };
 
 window.renderAdminProfile = function() {
-    window.renderStudentProfile();
+    window.renderStaffProfile();
 };
 
 

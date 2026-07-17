@@ -430,6 +430,77 @@ app.get('/api/attendance/session/active', (req, res) => {
     }
 });
 
+// 4.6. Retrieve all active attendance sessions for projector view
+app.get('/api/attendance/active-sessions', (req, res) => {
+    try {
+        const now = new Date().toISOString();
+        const sessionsStmt = db.prepare(`
+            SELECT s.*, u.name as creator_name 
+            FROM attendance_sessions s
+            JOIN users u ON s.creator_id = u.id
+            WHERE s.expires_at > ? AND s.is_active = 1
+            ORDER BY s.created_at DESC
+        `);
+        const sessions = sessionsStmt.all(now);
+        res.json({ success: true, sessions });
+    } catch (err) {
+        console.error('Error fetching active sessions:', err);
+        res.status(500).json({ error: 'Failed to fetch active sessions.' });
+    }
+});
+
+// Google Drive Auto-Sync Helper
+async function triggerGoogleDriveUpload(code) {
+    try {
+        const sessionStmt = db.prepare('SELECT * FROM attendance_sessions WHERE code = ?');
+        const session = sessionStmt.get(code);
+        if (!session) return;
+
+        const recordsStmt = db.prepare(`
+            SELECT r.*, u.name, u.gender 
+            FROM attendance_records r
+            JOIN users u ON r.student_id = u.id
+            WHERE r.session_id = ?
+            ORDER BY u.name ASC
+        `);
+        const records = recordsStmt.all(session.id);
+        if (records.length === 0) return;
+
+        const headers = ["Roll Number", "Student Name", "Gender", "Division", "Marked At"];
+        const csvRows = [headers.join(',')];
+        records.forEach(r => {
+            const student = db.prepare("SELECT username FROM users WHERE id = ?").get(r.student_id);
+            csvRows.push([
+                student ? student.username : '',
+                `"${r.name.replace(/"/g, '""')}"`,
+                r.gender || 'Male',
+                `Division ${session.division}`,
+                new Date(r.marked_at).toLocaleString()
+            ].join(','));
+        });
+        const csvContent = csvRows.join('\n');
+
+        const scriptUrlStmt = db.prepare("SELECT value FROM settings WHERE key = 'google_drive_script_url'");
+        const scriptUrlRow = scriptUrlStmt.get();
+        const scriptUrl = scriptUrlRow ? scriptUrlRow.value : null;
+        if (!scriptUrl) {
+            console.log("Google Drive script URL not configured. Skipping upload.");
+            return;
+        }
+
+        const filename = `Attendance_${session.subject.replace(/[^a-zA-Z0-9]/g, '_')}_${session.division}_${new Date().toISOString().split('T')[0]}.csv`;
+        
+        const response = await fetch(scriptUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename, content: csvContent })
+        });
+        console.log("Google Drive auto-upload trigger completed.");
+    } catch (err) {
+        console.error("Failed to upload to Google Drive:", err);
+    }
+}
+
 // 5. Close attendance session manually
 app.post('/api/attendance/session/close', (req, res) => {
     const { code } = req.body;
@@ -446,10 +517,33 @@ app.post('/api/attendance/session/close', (req, res) => {
             return res.status(404).json({ error: 'No active session found with this code.' });
         }
 
+        // Trigger Google Drive auto-sync in the background
+        triggerGoogleDriveUpload(code);
+
         res.json({ success: true, message: 'Attendance session successfully closed.' });
     } catch (err) {
         console.error('Error closing session:', err);
         res.status(500).json({ error: 'Failed to close session.' });
+    }
+});
+
+// Google Drive Settings Configuration
+app.get('/api/settings/drive', (req, res) => {
+    try {
+        const row = db.prepare("SELECT value FROM settings WHERE key = 'google_drive_script_url'").get();
+        res.json({ success: true, url: row ? row.value : "" });
+    } catch (e) {
+        res.status(500).json({ error: "Failed to read drive settings." });
+    }
+});
+
+app.post('/api/settings/drive', (req, res) => {
+    const { url } = req.body;
+    try {
+        db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('google_drive_script_url', ?)").run(url || "");
+        res.json({ success: true, message: "Drive settings saved." });
+    } catch (e) {
+        res.status(500).json({ error: "Failed to save drive settings." });
     }
 });
 
