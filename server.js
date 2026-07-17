@@ -295,7 +295,7 @@ app.post('/api/attendance/check-in', (req, res) => {
             });
         }
 
-        // 2. GPS Geofencing Protection (Locked to Tolani Commerce College Campus)
+        // 2. GPS Geofencing Protection (Smart Host Device Location with Campus Fallback)
         if (session.require_gps) {
             if (student_lat === null || student_lon === null || student_lat === undefined || student_lon === undefined) {
                 return res.status(400).json({ 
@@ -307,13 +307,27 @@ app.post('/api/attendance/check-in', (req, res) => {
             const CAMPUS_LAT = 23.0760625;
             const CAMPUS_LON = 70.1311875;
 
-            const distance = getDistanceKm(CAMPUS_LAT, CAMPUS_LON, student_lat, student_lon);
-            const radiusMeters = session.geofence_radius || 200; // default to 200m (campus-wide coverage)
+            let refLat = CAMPUS_LAT;
+            let refLon = CAMPUS_LON;
+            let targetName = "the college campus";
+
+            // If teacher/host location is available and accurate (within 1km of campus)
+            if (session.creator_lat !== null && session.creator_lon !== null) {
+                const hostDistFromCampus = getDistanceKm(CAMPUS_LAT, CAMPUS_LON, session.creator_lat, session.creator_lon);
+                if (hostDistFromCampus <= 1.0) {
+                    refLat = session.creator_lat;
+                    refLon = session.creator_lon;
+                    targetName = "the instructor's device";
+                }
+            }
+
+            const distance = getDistanceKm(refLat, refLon, student_lat, student_lon);
+            const radiusMeters = session.geofence_radius || 50; 
             const radiusKm = radiusMeters / 1000;
 
             if (distance > radiusKm) { 
                 return res.status(403).json({ 
-                    error: `Geofencing failure. You must be physically present on the college campus (within ${radiusMeters}m) to check in. (Your calculated distance is ${(distance * 1000).toFixed(0)} meters away from Tolani Commerce College).` 
+                    error: `Geofencing failure. You must be in close proximity to ${targetName} (within ${radiusMeters}m) to check in. (Your calculated distance is ${(distance * 1000).toFixed(0)} meters).` 
                 });
             }
         }
