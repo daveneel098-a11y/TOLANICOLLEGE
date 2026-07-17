@@ -308,7 +308,7 @@ app.post('/api/attendance/check-in', (req, res) => {
                 const radiusKm = radiusMeters / 1000;
                 if (distance > radiusKm) { 
                     return res.status(403).json({ 
-                        error: `Geofencing failure. You must be in close proximity to the instructor (within ${radiusMeters}m) to check in. (Calculated distance: ${(distance * 1000).toFixed(0)} meters).` 
+                        error: `Geofencing failure. You must be in close proximity to the instructor (within ${radiusMeters}m) to check in. (Calculated distance: ${(distance * 1000).toFixed(0)} meters).\n\nTip: If you are in the same room, your device's location accuracy may be low. Ask the instructor to recreate the session with a larger radius (e.g., 5 Kilometers) or disable 'Require GPS Check'.` 
                     });
                 }
             }
