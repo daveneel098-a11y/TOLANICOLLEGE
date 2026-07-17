@@ -295,22 +295,26 @@ app.post('/api/attendance/check-in', (req, res) => {
             });
         }
 
-        // 2. GPS Geofencing Protection
+        // 2. GPS Geofencing Protection (Locked to Tolani Commerce College Campus)
         if (session.require_gps) {
             if (student_lat === null || student_lon === null || student_lat === undefined || student_lon === undefined) {
                 return res.status(400).json({ 
                     error: 'GPS Geofencing is enabled. You must share your location coordinates to complete check-in.' 
                 });
             }
-            if (session.creator_lat !== null && session.creator_lon !== null) {
-                const distance = getDistanceKm(session.creator_lat, session.creator_lon, student_lat, student_lon);
-                const radiusMeters = session.geofence_radius || 50;
-                const radiusKm = radiusMeters / 1000;
-                if (distance > radiusKm) { 
-                    return res.status(403).json({ 
-                        error: `Geofencing failure. You must be in close proximity to the instructor (within ${radiusMeters}m) to check in. (Calculated distance: ${(distance * 1000).toFixed(0)} meters).\n\nTip: If you are in the same room, your device's location accuracy may be low. Ask the instructor to recreate the session with a larger radius (e.g., 5 Kilometers) or disable 'Require GPS Check'.` 
-                    });
-                }
+
+            // Fixed Tolani Commerce College GPS coordinates
+            const CAMPUS_LAT = 23.0760625;
+            const CAMPUS_LON = 70.1311875;
+
+            const distance = getDistanceKm(CAMPUS_LAT, CAMPUS_LON, student_lat, student_lon);
+            const radiusMeters = session.geofence_radius || 200; // default to 200m (campus-wide coverage)
+            const radiusKm = radiusMeters / 1000;
+
+            if (distance > radiusKm) { 
+                return res.status(403).json({ 
+                    error: `Geofencing failure. You must be physically present on the college campus (within ${radiusMeters}m) to check in. (Your calculated distance is ${(distance * 1000).toFixed(0)} meters away from Tolani Commerce College).` 
+                });
             }
         }
 
