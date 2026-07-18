@@ -1268,6 +1268,7 @@ app.post('/api/admin/clear-database', (req, res) => {
     }
 
     try {
+        db.exec('PRAGMA foreign_keys = OFF;');
         db.exec('BEGIN TRANSACTION;');
 
         // Delete all users except administrator
@@ -1286,6 +1287,7 @@ app.post('/api/admin/clear-database', (req, res) => {
         db.prepare("DELETE FROM marks_registry").run();
 
         db.exec('COMMIT;');
+        db.exec('PRAGMA foreign_keys = ON;');
 
         // Sync to MongoDB in the background
         const { saveDatabaseToMongo } = require('./mongoSync');
@@ -1296,7 +1298,8 @@ app.post('/api/admin/clear-database', (req, res) => {
             message: `Database cleaned successfully. Deleted ${usersInfo.changes} students/teachers. Timetables, notices, subjects, and schedules cleared. Baseline fees preserved.` 
         });
     } catch (err) {
-        db.exec('ROLLBACK;');
+        try { db.exec('ROLLBACK;'); } catch (e) {}
+        try { db.exec('PRAGMA foreign_keys = ON;'); } catch (e) {}
         console.error("Cleanup endpoint failed:", err);
         res.status(500).json({ error: `Cleanup failed: ${err.message}` });
     }
