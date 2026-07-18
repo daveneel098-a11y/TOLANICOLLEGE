@@ -1283,40 +1283,23 @@ app.get('/api/diagnostics', async (req, res) => {
     }
     
     // Check MongoDB
-    const API_KEY = process.env.MONGODB_DATA_API_KEY;
-    const API_URL = process.env.MONGODB_DATA_API_URL;
-    status.mongodb.configured = !!(API_KEY && API_URL);
+    const uri = process.env.MONGODB_DATA_API_URL || process.env.MONGODB_URI;
+    status.mongodb.configured = !!uri;
     
     if (status.mongodb.configured) {
         try {
-            const CLUSTER = process.env.MONGODB_CLUSTER || 'Cluster0';
-            const DATABASE = process.env.MONGODB_DB || 'college_portal';
-            const COLLECTION = process.env.MONGODB_COLLECTION || 'backups';
+            const { MongoClient } = require('mongodb');
+            const client = new MongoClient(uri);
+            await client.connect();
+            const dbName = process.env.MONGODB_DB || 'college_portal';
+            const collectionName = process.env.MONGODB_COLLECTION || 'backups';
+            const col = client.db(dbName).collection(collectionName);
+            const doc = await col.findOne({ key: 'sqlite_db' });
+            await client.close();
             
-            const response = await fetch(`${API_URL}/action/findOne`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Request-Headers': '*',
-                    'api-key': API_KEY
-                },
-                body: JSON.stringify({
-                    dataSource: CLUSTER,
-                    database: DATABASE,
-                    collection: COLLECTION,
-                    filter: { key: 'sqlite_db' },
-                    projection: { _id: 1, updated_at: 1 }
-                })
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                status.mongodb.connected = true;
-                status.mongodb.backup_found = !!(data && data.document);
-                status.mongodb.last_backup_time = data && data.document ? data.document.updated_at : null;
-            } else {
-                status.mongodb.error = `HTTP Status ${response.status}: ${await response.text()}`;
-            }
+            status.mongodb.connected = true;
+            status.mongodb.backup_found = !!doc;
+            status.mongodb.last_backup_time = doc ? doc.updated_at : null;
         } catch (err) {
             status.mongodb.error = err.message;
         }
