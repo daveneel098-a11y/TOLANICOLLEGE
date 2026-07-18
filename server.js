@@ -1260,6 +1260,71 @@ app.post('/api/sql', (req, res) => {
     }
 });
 
+// Diagnostics Endpoint to check SQLite and MongoDB status
+app.get('/api/diagnostics', async (req, res) => {
+    const status = {
+        sqlite: false,
+        mongodb: {
+            configured: false,
+            connected: false,
+            backup_found: false,
+            last_backup_time: null,
+            error: null
+        }
+    };
+    
+    // Check SQLite
+    try {
+        const stmt = db.prepare("SELECT count(*) as count FROM users");
+        const row = stmt.get();
+        status.sqlite = !!(row && row.count > 0);
+    } catch (e) {
+        status.sqlite_error = e.message;
+    }
+    
+    // Check MongoDB
+    const API_KEY = process.env.MONGODB_DATA_API_KEY;
+    const API_URL = process.env.MONGODB_DATA_API_URL;
+    status.mongodb.configured = !!(API_KEY && API_URL);
+    
+    if (status.mongodb.configured) {
+        try {
+            const CLUSTER = process.env.MONGODB_CLUSTER || 'Cluster0';
+            const DATABASE = process.env.MONGODB_DB || 'college_portal';
+            const COLLECTION = process.env.MONGODB_COLLECTION || 'backups';
+            
+            const response = await fetch(`${API_URL}/action/findOne`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Request-Headers': '*',
+                    'api-key': API_KEY
+                },
+                body: JSON.stringify({
+                    dataSource: CLUSTER,
+                    database: DATABASE,
+                    collection: COLLECTION,
+                    filter: { key: 'sqlite_db' },
+                    projection: { _id: 1, updated_at: 1 }
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                status.mongodb.connected = true;
+                status.mongodb.backup_found = !!(data && data.document);
+                status.mongodb.last_backup_time = data && data.document ? data.document.updated_at : null;
+            } else {
+                status.mongodb.error = `HTTP Status ${response.status}: ${await response.text()}`;
+            }
+        } catch (err) {
+            status.mongodb.error = err.message;
+        }
+    }
+    
+    res.json({ success: true, diagnostics: status });
+});
+
 // Catch-all route to serve SPA
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
