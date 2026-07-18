@@ -1260,6 +1260,48 @@ app.post('/api/sql', (req, res) => {
     }
 });
 
+// Database Purge / Cleanup Endpoint for Administrator
+app.post('/api/admin/clear-database', (req, res) => {
+    const { confirm } = req.body;
+    if (confirm !== 'yes') {
+        return res.status(400).json({ error: "Missing confirmation. Please set confirm to 'yes'." });
+    }
+
+    try {
+        db.exec('BEGIN TRANSACTION;');
+
+        // Delete all users except administrator
+        const usersInfo = db.prepare("DELETE FROM users WHERE role != 'admin'").run();
+        
+        // Clear schedules, logs, notices and registers
+        db.prepare("DELETE FROM subjects").run();
+        db.prepare("DELETE FROM timetables").run();
+        db.prepare("DELETE FROM daily_lectures").run();
+        db.prepare("DELETE FROM attendance_sessions").run();
+        db.prepare("DELETE FROM attendance_records").run();
+        db.prepare("DELETE FROM notices").run();
+        db.prepare("DELETE FROM courses").run();
+        db.prepare("DELETE FROM assignments").run();
+        db.prepare("DELETE FROM study_materials").run();
+        db.prepare("DELETE FROM marks_registry").run();
+
+        db.exec('COMMIT;');
+
+        // Sync to MongoDB in the background
+        const { saveDatabaseToMongo } = require('./mongoSync');
+        saveDatabaseToMongo();
+
+        res.json({ 
+            success: true, 
+            message: `Database cleaned successfully. Deleted ${usersInfo.changes} students/teachers. Timetables, notices, subjects, and schedules cleared. Baseline fees preserved.` 
+        });
+    } catch (err) {
+        db.exec('ROLLBACK;');
+        console.error("Cleanup endpoint failed:", err);
+        res.status(500).json({ error: `Cleanup failed: ${err.message}` });
+    }
+});
+
 // Diagnostics Endpoint to check SQLite and MongoDB status
 app.get('/api/diagnostics', async (req, res) => {
     const status = {

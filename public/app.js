@@ -1940,9 +1940,44 @@ window.renderAdminDashboard = async function() {
                         <i class="fa-solid fa-terminal mr-8"></i>
                         <span>SQL CLI Terminal</span>
                     </button>
+                    <button class="btn btn-danger" id="reset-database-btn" style="flex-grow: 1; max-width: 250px; background: #b91c1c; border-color: #b91c1c;">
+                        <i class="fa-solid fa-trash-can mr-8"></i>
+                        <span>Reset Portal Database</span>
+                    </button>
                 </div>
             </div>
         `;
+
+        const resetBtn = document.getElementById("reset-database-btn");
+        if (resetBtn) {
+            resetBtn.addEventListener("click", async () => {
+                const conf = prompt("WARNING: This will permanently delete all student profiles, teachers, subjects, classes, timetables, and notice logs.\n\nYour administrator account and baseline fee configurations will be preserved.\n\nType YES in all capitals to confirm:");
+                if (conf === "YES") {
+                    try {
+                        resetBtn.disabled = true;
+                        resetBtn.textContent = "Processing Reset...";
+                        const response = await fetch('/api/admin/clear-database', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ confirm: 'yes' })
+                        });
+                        const resData = await response.json();
+                        if (resData.success) {
+                            alert(resData.message);
+                            window.location.reload();
+                        } else {
+                            alert(resData.error || "Reset failed.");
+                            resetBtn.disabled = false;
+                            resetBtn.innerHTML = `<i class="fa-solid fa-trash-can mr-8"></i><span>Reset Portal Database</span>`;
+                        }
+                    } catch (e) {
+                        alert("Error connecting to server.");
+                        resetBtn.disabled = false;
+                        resetBtn.innerHTML = `<i class="fa-solid fa-trash-can mr-8"></i><span>Reset Portal Database</span>`;
+                    }
+                }
+            });
+        }
     } catch (err) {
         console.error(err);
         dynamicContentArea.innerHTML = `<div class="glass-card text-center"><p style="color: var(--danger);">Failed to load admin stats.</p></div>`;
