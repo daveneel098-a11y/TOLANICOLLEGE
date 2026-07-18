@@ -1438,6 +1438,194 @@ app.post('/api/admin/import-sem1', (req, res) => {
     }
 });
 
+// Bulk Import B.Com Regular Semester 3 and Semester 5 Student Rosters Endpoint
+app.post('/api/admin/import-sem3-sem5', (req, res) => {
+    try {
+        const filePathSem3 = path.join(__dirname, 'bcom_regular_sem3.txt');
+        const filePathSem5 = path.join(__dirname, 'bcom_regular_sem5.txt');
+        
+        if (!fs.existsSync(filePathSem3) || !fs.existsSync(filePathSem5)) {
+            return res.status(400).json({ error: 'Roster files bcom_regular_sem3.txt or bcom_regular_sem5.txt not found.' });
+        }
+        
+        db.exec('PRAGMA foreign_keys = OFF;');
+        db.exec('BEGIN TRANSACTION;');
+        
+        const insertUser = db.prepare(`
+            INSERT INTO users (
+                username, password, role, name, email, phone, gender, category, 
+                subject, class, department, division, program, year, semester, 
+                fee_due, fee_paid, fee_total
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            )
+        `);
+        
+        const program = "B.Com (Regular)";
+        let countSem3 = 0;
+        let countSem5 = 0;
+        
+        // 1. Process Semester 3
+        const ocrTextSem3 = fs.readFileSync(filePathSem3, 'utf8');
+        const linesSem3 = ocrTextSem3.trim().split('\n');
+        for (const line of linesSem3) {
+            const parts = line.trim().split(/\s+/);
+            if (parts.length < 4) continue;
+            
+            const rollNo = parseInt(parts[0]);
+            const enrollmentNo = parts[1];
+            const spdid = parts[2];
+            const name = parts.slice(3).join(' ');
+            
+            // Credentials: username & password matching SPDID
+            const username = spdid;
+            const password = spdid;
+            
+            // Division assignments for Semester 3
+            let division = 'A';
+            if (rollNo >= 1 && rollNo <= 190) {
+                division = 'A';
+            } else if ((rollNo >= 191 && rollNo <= 322) || (rollNo >= 401 && rollNo <= 450)) {
+                division = 'B';
+            } else if (rollNo >= 451 && rollNo <= 640) {
+                division = 'C';
+            } else if (rollNo >= 641 && rollNo <= 830) {
+                division = 'D';
+            } else if (rollNo >= 831 && rollNo <= 1021) {
+                division = 'E';
+            }
+            
+            let gender = 'Male';
+            const nameLower = name.toLowerCase();
+            if (
+                nameLower.endsWith('ben') || 
+                nameLower.endsWith('kumari') || 
+                nameLower.endsWith('a') || 
+                nameLower.endsWith('i') || 
+                nameLower.endsWith('y') ||
+                nameLower.includes('kumari') ||
+                nameLower.includes('devi') ||
+                nameLower.includes('ba')
+            ) {
+                if (!nameLower.endsWith('kumar') && !nameLower.endsWith('sinh') && !nameLower.endsWith('bhai') && !nameLower.endsWith('ji')) {
+                    gender = 'Female';
+                }
+            }
+            
+            const baselineFee = gender === 'Female' ? 5000 : 6000;
+            
+            insertUser.run(
+                username,
+                password,
+                'student',
+                name,
+                `${username}@tolani.edu`,
+                '+91 99000 0' + String(rollNo).padStart(4, '0'),
+                gender,
+                'General',
+                'Commerce',
+                `B.Com. Sem-III`,
+                'Commerce Department',
+                division,
+                program,
+                '2nd Year',
+                'Semester 3',
+                baselineFee,
+                0,
+                baselineFee
+            );
+            countSem3++;
+        }
+        
+        // 2. Process Semester 5
+        const ocrTextSem5 = fs.readFileSync(filePathSem5, 'utf8');
+        const linesSem5 = ocrTextSem5.trim().split('\n');
+        for (const line of linesSem5) {
+            const parts = line.trim().split(/\s+/);
+            if (parts.length < 4) continue;
+            
+            const rollNo = parseInt(parts[0]);
+            const enrollmentNo = parts[1];
+            const spdid = parts[2];
+            const name = parts.slice(3).join(' ');
+            
+            // Credentials: username & password matching SPDID
+            const username = spdid;
+            const password = spdid;
+            
+            // Division assignments for Semester 5
+            let division = 'A';
+            if (rollNo >= 1 && rollNo <= 200) {
+                division = 'A';
+            } else if ((rollNo >= 201 && rollNo <= 307) || (rollNo >= 351 && rollNo <= 500)) {
+                division = 'B';
+            } else if (rollNo >= 501 && rollNo <= 725) {
+                division = 'C';
+            } else if (rollNo >= 726 && rollNo <= 954) {
+                division = 'D';
+            }
+            
+            let gender = 'Male';
+            const nameLower = name.toLowerCase();
+            if (
+                nameLower.endsWith('ben') || 
+                nameLower.endsWith('kumari') || 
+                nameLower.endsWith('a') || 
+                nameLower.endsWith('i') || 
+                nameLower.endsWith('y') ||
+                nameLower.includes('kumari') ||
+                nameLower.includes('devi') ||
+                nameLower.includes('ba')
+            ) {
+                if (!nameLower.endsWith('kumar') && !nameLower.endsWith('sinh') && !nameLower.endsWith('bhai') && !nameLower.endsWith('ji')) {
+                    gender = 'Female';
+                }
+            }
+            
+            const baselineFee = gender === 'Female' ? 5000 : 6000;
+            
+            insertUser.run(
+                username,
+                password,
+                'student',
+                name,
+                `${username}@tolani.edu`,
+                '+91 98000 0' + String(rollNo).padStart(4, '0'),
+                gender,
+                'General',
+                'Commerce',
+                `B.Com. Sem-V`,
+                'Commerce Department',
+                division,
+                program,
+                '3rd Year',
+                'Semester 5',
+                baselineFee,
+                0,
+                baselineFee
+            );
+            countSem5++;
+        }
+        
+        db.exec('COMMIT;');
+        db.exec('PRAGMA foreign_keys = ON;');
+        
+        // Sync to MongoDB in the background
+        const { saveDatabaseToMongo } = require('./mongoSync');
+        saveDatabaseToMongo();
+        
+        res.json({ 
+            success: true, 
+            message: `Successfully imported ${countSem3} Sem 3 students and ${countSem5} Sem 5 students. MongoDB backup updated.` 
+        });
+    } catch (err) {
+        try { db.exec('ROLLBACK;'); } catch (e) {}
+        try { db.exec('PRAGMA foreign_keys = ON;'); } catch (e) {}
+        console.error("Bulk Sem3/5 import failed:", err);
+        res.status(500).json({ error: `Import failed: ${err.message}` });
+    }
+});
+
 // Diagnostics Endpoint to check SQLite and MongoDB status
 app.get('/api/diagnostics', async (req, res) => {
     const status = {
