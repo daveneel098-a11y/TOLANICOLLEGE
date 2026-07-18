@@ -377,10 +377,29 @@ try {
         'Commerce & Accountancy',
         'All',
         'B.Com (Regular)',
-        'N/A',
-        'N/A',
-        0, 0, 0
     );
+
+    // Insert 5 Custom Teachers
+    for (let tNum = 101; tNum <= 105; tNum++) {
+        insertUser.run(
+            String(tNum),
+            '1405',
+            'teacher',
+            `Instructor ${tNum}`,
+            `instructor${tNum}@tolani.edu`,
+            `+91 99000 00${tNum}`,
+            'Male',
+            'General',
+            'Commerce',
+            'B.Com. Sem-I',
+            'Commerce & Accountancy',
+            'All',
+            'B.Com (Regular)',
+            'N/A',
+            'N/A',
+            0, 0, 0
+        );
+    }
 
     // Insert Teacher (Assigned to B.Com Professional)
     insertUser.run(
