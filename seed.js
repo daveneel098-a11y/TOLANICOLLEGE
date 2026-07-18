@@ -7,18 +7,24 @@ const ROSTER_PATH = path.join(__dirname, 'q', 'students_data.js');
 
 console.log('Starting Database Initialization & Seeding...');
 
-// 1. Initialize SQLite Database
-let db;
-try {
-    db = new DatabaseSync(DB_PATH);
-    console.log('Connected to SQLite database at:', DB_PATH);
-} catch (err) {
-    console.error('Failed to connect to database:', err);
-    process.exit(1);
-}
+const { loadDatabaseFromMongo, saveDatabaseToMongo } = require('./mongoSync');
 
-// Check if database is already initialized and has users
-let isSeeded = false;
+async function main() {
+    // Pull latest state from MongoDB Atlas if active
+    await loadDatabaseFromMongo();
+
+    // 1. Initialize SQLite Database
+    let db;
+    try {
+        db = new DatabaseSync(DB_PATH);
+        console.log('Connected to SQLite database at:', DB_PATH);
+    } catch (err) {
+        console.error('Failed to connect to database:', err);
+        process.exit(1);
+    }
+
+    // Check if database is already initialized and has users
+    let isSeeded = false;
 try {
     const stmt = db.prepare("SELECT count(*) as count FROM users");
     const row = stmt.get();
@@ -541,15 +547,16 @@ try {
     process.exit(1);
 }
 
-console.log('Seeding finished successfully.');
-db.close();
+    console.log('Seeding finished successfully.');
+    db.close();
 
-// Sync seeded database to MongoDB Atlas
-const { saveDatabaseToMongo } = require('./mongoSync');
-saveDatabaseToMongo().then(() => {
+    // Sync seeded database to MongoDB Atlas
+    await saveDatabaseToMongo();
     console.log("Seeded database successfully synced to MongoDB Atlas.");
     process.exit(0);
-}).catch(err => {
-    console.error("Failed to sync seeded database to MongoDB Atlas:", err);
-    process.exit(0);
+}
+
+main().catch(err => {
+    console.error("Critical seeder failure:", err);
+    process.exit(1);
 });
