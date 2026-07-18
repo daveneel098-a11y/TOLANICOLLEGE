@@ -2028,6 +2028,7 @@ window.renderAdminStudents = async function() {
                             <option value="M.Com">M.Com</option>
                         </select>
                         <button class="btn btn-secondary btn-sm" id="admin-user-export-btn" style="background: var(--success); border-color: var(--success); color: white;"><i class="fa-solid fa-file-excel mr-4"></i> Export Rosters</button>
+                        <button class="btn btn-secondary btn-sm" id="admin-user-import-btn" style="background: var(--primary); border-color: var(--primary); color: white;"><i class="fa-solid fa-file-import mr-4"></i> Bulk Import CSV</button>
                         <button class="btn btn-primary btn-sm" onclick="openAddUserModal()"><i class="fa-solid fa-user-plus"></i> Add User</button>
                     </div>
                 </div>
@@ -2134,6 +2135,220 @@ window.renderAdminStudents = async function() {
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
+                });
+            });
+        }
+
+        const importBtn = document.getElementById("admin-user-import-btn");
+        if (importBtn) {
+            importBtn.addEventListener("click", () => {
+                generalModalTitle.textContent = "Bulk Import Student Roster (CSV)";
+                generalModalBody.innerHTML = `
+                    <form id="bulk-import-form" style="display: flex; flex-direction: column; gap: 16px;">
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label><strong>1. Select Program</strong></label>
+                            <select id="import-program" class="form-control" required>
+                                <option value="B.Com (Regular)">B.Com (Regular)</option>
+                                <option value="B.Com (Professional)">B.Com (Professional)</option>
+                                <option value="M.Com">M.Com</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label><strong>2. Academic Year</strong></label>
+                            <select id="import-year" class="form-control" required>
+                                <option value="1st Year">1st Year</option>
+                                <option value="2nd Year">2nd Year</option>
+                                <option value="3rd Year">3rd Year</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label><strong>3. Semester</strong></label>
+                            <select id="import-semester" class="form-control" required>
+                                <option value="Semester 1">Semester 1</option>
+                                <option value="Semester 2">Semester 2</option>
+                                <option value="Semester 3">Semester 3</option>
+                                <option value="Semester 4">Semester 4</option>
+                                <option value="Semester 5">Semester 5</option>
+                                <option value="Semester 6">Semester 6</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label><strong>4. Class Division</strong></label>
+                            <select id="import-division" class="form-control" required>
+                                <option value="A">Division A</option>
+                                <option value="B">Division B</option>
+                                <option value="C">Division C</option>
+                                <option value="D">Division D</option>
+                                <option value="E">Division E</option>
+                                <option value="F">Division F</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label><strong>5. Choose CSV File</strong></label>
+                            <input type="file" id="import-file" accept=".csv" class="form-control" required>
+                            <span style="font-size: 11px; color: var(--text-muted);">Must contain headers like: <code>SR.NO.</code> (or <code>Roll No</code>), <code>Name</code>, <code>Gender</code>.</span>
+                        </div>
+                        <div id="import-progress-area" style="display: none; padding: 12px; background: rgba(99, 102, 241, 0.1); border-radius: 6px; font-size: 13px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span id="import-progress-text">Processing...</span>
+                                <span id="import-progress-percent">0%</span>
+                            </div>
+                            <div style="width: 100%; height: 6px; background: rgba(0,0,0,0.2); border-radius: 3px; overflow: hidden;">
+                                <div id="import-progress-bar" style="width: 0%; height: 100%; background: var(--primary); transition: width 0.1s;"></div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
+                            <i class="fa-solid fa-file-import mr-8"></i> Start Bulk Import
+                        </button>
+                    </form>
+                `;
+                generalModal.classList.add("active");
+
+                const form = document.getElementById("bulk-import-form");
+                form.addEventListener("submit", async (e) => {
+                    e.preventDefault();
+                    const program = document.getElementById("import-program").value;
+                    const year = document.getElementById("import-year").value;
+                    const semester = document.getElementById("import-semester").value;
+                    const division = document.getElementById("import-division").value;
+                    const fileInput = document.getElementById("import-file");
+                    
+                    if (fileInput.files.length === 0) return;
+                    const file = fileInput.files[0];
+                    
+                    const reader = new FileReader();
+                    reader.onload = async (event) => {
+                        const csvText = event.target.result;
+                        
+                        const lines = csvText.split(/\r?\n/);
+                        if (lines.length <= 1) {
+                            alert("CSV file is empty or missing data rows.");
+                            return;
+                        }
+                        
+                        const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, '').toUpperCase());
+                        
+                        let srNoIdx = headers.findIndex(h => h.includes('SR.NO') || h.includes('SR NO') || h.includes('ROLL') || h.includes('USERNAME') || h.includes('SERIAL') || h.includes('ID'));
+                        let nameIdx = headers.findIndex(h => h.includes('NAME') || h.includes('STUDENT') || h.includes('FULLNAME'));
+                        let genderIdx = headers.findIndex(h => h.includes('GENDER') || h.includes('SEX'));
+                        let emailIdx = headers.findIndex(h => h.includes('EMAIL') || h.includes('MAIL'));
+                        let phoneIdx = headers.findIndex(h => h.includes('PHONE') || h.includes('CONTACT') || h.includes('MOBILE'));
+                        
+                        if (srNoIdx === -1) srNoIdx = 0;
+                        if (nameIdx === -1) nameIdx = 1;
+                        if (genderIdx === -1) genderIdx = 2;
+                        
+                        const students = [];
+                        for (let i = 1; i < lines.length; i++) {
+                            const line = lines[i].trim();
+                            if (!line) continue;
+                            
+                            const cols = [];
+                            let current = '';
+                            let inQuotes = false;
+                            for (let c = 0; c < line.length; c++) {
+                                const char = line[c];
+                                if (char === '"') {
+                                    inQuotes = !inQuotes;
+                                } else if (char === ',' && !inQuotes) {
+                                    cols.push(current.trim().replace(/^["']|["']$/g, ''));
+                                    current = '';
+                                } else {
+                                    current += char;
+                                }
+                            }
+                            cols.push(current.trim().replace(/^["']|["']$/g, ''));
+                            
+                            if (cols.length < 2 || !cols[srNoIdx]) continue;
+                            
+                            students.push({
+                                rollNo: cols[srNoIdx].trim(),
+                                name: cols[nameIdx] ? cols[nameIdx].trim() : `Student ${cols[srNoIdx]}`,
+                                gender: cols[genderIdx] ? cols[genderIdx].trim() : 'Male',
+                                email: emailIdx !== -1 && cols[emailIdx] ? cols[emailIdx].trim() : '',
+                                phone: phoneIdx !== -1 && cols[phoneIdx] ? cols[phoneIdx].trim() : ''
+                            });
+                        }
+                        
+                        if (students.length === 0) {
+                            alert("No valid student rows found in the CSV.");
+                            return;
+                        }
+                        
+                        if (!confirm(`Found ${students.length} students. Proceed to import?`)) return;
+                        
+                        const progressArea = document.getElementById("import-progress-area");
+                        const progressText = document.getElementById("import-progress-text");
+                        const progressPercent = document.getElementById("import-progress-percent");
+                        const progressBar = document.getElementById("import-progress-bar");
+                        const submitBtn = form.querySelector("button[type='submit']");
+                        
+                        progressArea.style.display = "block";
+                        submitBtn.disabled = true;
+                        
+                        let successCount = 0;
+                        let errorCount = 0;
+                        
+                        for (let idx = 0; idx < students.length; idx++) {
+                            const s = students[idx];
+                            
+                            let baselineFee = 0;
+                            const progLower = program.toLowerCase();
+                            const genderLower = s.gender.toLowerCase();
+                            if (progLower.includes('professional')) {
+                                baselineFee = genderLower === 'female' ? 14000 : 15000;
+                            } else if (progLower.includes('m.com') || progLower.includes('mcom')) {
+                                baselineFee = genderLower === 'female' ? 8000 : 9000;
+                            } else {
+                                baselineFee = genderLower === 'female' ? 5000 : 6000;
+                            }
+                            
+                            try {
+                                const addRes = await fetch('/api/users/add', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        username: s.rollNo,
+                                        password: s.rollNo,
+                                        role: 'student',
+                                        name: s.name,
+                                        email: s.email,
+                                        phone: s.phone,
+                                        gender: s.gender,
+                                        category: 'General',
+                                        subject: 'Commerce',
+                                        class_name: `${program} - Div ${division}`,
+                                        department: 'Commerce Department',
+                                        division: division,
+                                        program: program,
+                                        year: year,
+                                        semester: semester,
+                                        fee_total: baselineFee,
+                                        fee_paid: 0,
+                                        fee_due: baselineFee
+                                    })
+                                });
+                                const resJSON = await addRes.json();
+                                if (resJSON.success) {
+                                    successCount++;
+                                } else {
+                                    errorCount++;
+                                }
+                            } catch (err) {
+                                errorCount++;
+                            }
+                            
+                            const pct = Math.round(((idx + 1) / students.length) * 100);
+                            progressPercent.textContent = `${pct}%`;
+                            progressText.textContent = `Importing ${idx + 1} of ${students.length}...`;
+                            progressBar.style.width = `${pct}%`;
+                        }
+                        
+                        alert(`Roster import completed!\n\nSuccessfully Imported: ${successCount} students.\nFailed/Duplicates: ${errorCount}.`);
+                        generalModal.classList.remove("active");
+                        window.renderAdminStudents();
+                    };
+                    reader.readAsText(file);
                 });
             });
         }
