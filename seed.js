@@ -524,3 +524,13 @@ try {
 
 console.log('Seeding finished successfully.');
 db.close();
+
+// Sync seeded database to MongoDB Atlas
+const { saveDatabaseToMongo } = require('./mongoSync');
+saveDatabaseToMongo().then(() => {
+    console.log("Seeded database successfully synced to MongoDB Atlas.");
+    process.exit(0);
+}).catch(err => {
+    console.error("Failed to sync seeded database to MongoDB Atlas:", err);
+    process.exit(0);
+});

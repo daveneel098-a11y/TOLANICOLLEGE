@@ -31,11 +31,11 @@ if (fs.existsSync(RENDER_DATA_DIR)) {
 } else {
     console.log('Using local directory database:', dbPath);
 }
-const db = new DatabaseSync(dbPath);
-console.log('Server connected to SQLite database successfully.');
+let db;
 
-// --- DATABASE AUTO-MIGRATIONS (If not run via seed.js) ---
-db.exec(`
+// --- DATABASE AUTO-MIGRATIONS ---
+function runMigrations() {
+    db.exec(`
     CREATE TABLE IF NOT EXISTS settings (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
@@ -146,6 +146,7 @@ try {
     db.exec("ALTER TABLE users ADD COLUMN gender TEXT DEFAULT 'Male'");
 } catch (e) {
     // Column already exists, ignore
+}
 }
 
 // --- HELPER FUNCTIONS ---
@@ -1264,7 +1265,43 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start Server
-app.listen(PORT, () => {
-    console.log(`EduSphere Server is listening on http://localhost:${PORT}`);
+// MongoDB Persistence Middleware
+let dbChanged = false;
+app.use((req, res, next) => {
+    if (['POST', 'PUT', 'DELETE'].includes(req.method)) {
+        dbChanged = true;
+    }
+    next();
 });
+
+// Periodic database upload to MongoDB Atlas
+setInterval(async () => {
+    if (dbChanged) {
+        dbChanged = false;
+        const { saveDatabaseToMongo } = require('./mongoSync');
+        await saveDatabaseToMongo();
+    }
+}, 10000); // sync database to MongoDB every 10 seconds if any changes occur
+
+// Start Server Bootstrap
+(async () => {
+    try {
+        const { loadDatabaseFromMongo } = require('./mongoSync');
+        // Pull latest database state from MongoDB Atlas
+        await loadDatabaseFromMongo();
+
+        // Connect to local SQLite database
+        db = new DatabaseSync(dbPath);
+        console.log('Server connected to SQLite database successfully.');
+
+        // Initialize schema tables & migrations
+        runMigrations();
+
+        app.listen(PORT, () => {
+            console.log(`EduSphere Server is listening on http://localhost:${PORT}`);
+        });
+    } catch (err) {
+        console.error("Critical: Server failed to start:", err);
+        process.exit(1);
+    }
+})();
