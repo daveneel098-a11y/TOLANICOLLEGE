@@ -1305,6 +1305,139 @@ app.post('/api/admin/clear-database', (req, res) => {
     }
 });
 
+// Bulk Import B.Com Regular Sem 1 Student Roster Endpoint
+app.post('/api/admin/import-sem1', (req, res) => {
+    try {
+        const filePath = path.join(__dirname, 'bcom_regular_sem1.txt');
+        if (!fs.existsSync(filePath)) {
+            return res.status(400).json({ error: 'Roster text file not found.' });
+        }
+        
+        const ocrText = fs.readFileSync(filePath, 'utf8');
+        const lines = ocrText.trim().split('\n');
+        
+        db.exec('PRAGMA foreign_keys = OFF;');
+        db.exec('BEGIN TRANSACTION;');
+        
+        const insertUser = db.prepare(`
+            INSERT INTO users (
+                username, password, role, name, email, phone, gender, category, 
+                subject, class, department, division, program, year, semester, 
+                fee_due, fee_paid, fee_total
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            )
+        `);
+        
+        const program = "B.Com (Regular)";
+        const year = "1st Year";
+        const semester = "Semester 1";
+        let count = 0;
+        
+        for (const line of lines) {
+            const parts = line.trim().split(/\s+/);
+            if (parts.length < 4) continue;
+            
+            const srNo = parseInt(parts[0]);
+            const subjectCode = parts[parts.length - 1];
+            
+            const nameParts = parts.slice(2, parts.length - 1);
+            const name = nameParts.join(' ');
+            
+            let division = 'A';
+            const username = String(srNo);
+            const password = String(srNo); // password matching SR.NO.
+            
+            let subject = 'Commerce';
+            if (subjectCode === 'STAT') {
+                subject = 'Statistics';
+                if (srNo <= 190) {
+                    division = 'A';
+                } else {
+                    division = 'B';
+                }
+            } else if (subjectCode === 'BA') {
+                subject = 'Business Administration';
+                if (srNo >= 351 && srNo <= 400) {
+                    division = 'B';
+                } else if (srNo >= 401 && srNo <= 590) {
+                    division = 'C';
+                } else if (srNo >= 591 && srNo <= 780) {
+                    division = 'D';
+                } else {
+                    division = 'E';
+                }
+            } else if (subjectCode === 'CA') {
+                subject = 'Computer Applications';
+                if (srNo >= 901 && srNo <= 1020) {
+                    division = 'E';
+                } else {
+                    division = 'F';
+                }
+            }
+            
+            let gender = 'Male';
+            const nameLower = name.toLowerCase();
+            if (
+                nameLower.endsWith('ben') || 
+                nameLower.endsWith('kumari') || 
+                nameLower.endsWith('a') || 
+                nameLower.endsWith('i') || 
+                nameLower.endsWith('y') ||
+                nameLower.includes('kumari') ||
+                nameLower.includes('devi') ||
+                nameLower.includes('ba')
+            ) {
+                if (!nameLower.endsWith('kumar') && !nameLower.endsWith('sinh') && !nameLower.endsWith('bhai') && !nameLower.endsWith('ji')) {
+                    gender = 'Female';
+                }
+            }
+            
+            const baselineFee = gender === 'Female' ? 5000 : 6000;
+            
+            insertUser.run(
+                username,
+                password,
+                'student',
+                name,
+                `${username}@tolani.edu`,
+                '+91 99000 0' + username.padStart(4, '0'),
+                gender,
+                'General',
+                subject,
+                `B.Com. Sem-I`,
+                'Commerce Department',
+                division,
+                program,
+                year,
+                semester,
+                baselineFee,
+                0,
+                baselineFee
+            );
+            
+            count++;
+        }
+        
+        db.exec('COMMIT;');
+        db.exec('PRAGMA foreign_keys = ON;');
+        
+        // Sync to MongoDB in the background
+        const { saveDatabaseToMongo } = require('./mongoSync');
+        saveDatabaseToMongo();
+        
+        res.json({ 
+            success: true, 
+            message: `Successfully imported ${count} students to B.Com Regular Sem 1 and updated MongoDB backup.` 
+        });
+    } catch (err) {
+        try { db.exec('ROLLBACK;'); } catch (e) {}
+        try { db.exec('PRAGMA foreign_keys = ON;'); } catch (e) {}
+        console.error("Bulk Sem1 import failed:", err);
+        res.status(500).json({ error: `Import failed: ${err.message}` });
+    }
+});
+
 // Diagnostics Endpoint to check SQLite and MongoDB status
 app.get('/api/diagnostics', async (req, res) => {
     const status = {
