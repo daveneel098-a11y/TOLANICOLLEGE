@@ -12,6 +12,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// MongoDB Persistence Middleware
+let dbChanged = false;
+app.use((req, res, next) => {
+    if (['POST', 'PUT', 'DELETE'].includes(req.method)) {
+        dbChanged = true;
+    }
+    next();
+});
+
 // Connect to SQLite (with Render Persistent Disk support)
 const RENDER_DATA_DIR = '/var/data';
 let dbPath = path.join(__dirname, 'database.db');
@@ -1832,14 +1841,7 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// MongoDB Persistence Middleware
-let dbChanged = false;
-app.use((req, res, next) => {
-    if (['POST', 'PUT', 'DELETE'].includes(req.method)) {
-        dbChanged = true;
-    }
-    next();
-});
+
 
 // Periodic database upload to MongoDB Atlas
 setInterval(async () => {
