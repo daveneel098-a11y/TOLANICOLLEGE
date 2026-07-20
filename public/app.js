@@ -1326,13 +1326,27 @@ window.renderTeacherSchedule = function() {
         if (program === 'M.Com') {
             classSel.innerHTML = `
                 <option value="M.Com. Sem-I">M.Com. Sem-I</option>
+                <option value="M.Com. Sem-II">M.Com. Sem-II</option>
                 <option value="M.Com. Sem-III">M.Com. Sem-III</option>
+                <option value="M.Com. Sem-IV">M.Com. Sem-IV</option>
+            `;
+        } else if (program === 'B.Com (Professional)') {
+            classSel.innerHTML = `
+                <option value="B.Com. Prof. Sem-I">B.Com. Prof. Sem-I</option>
+                <option value="B.Com. Prof. Sem-II">B.Com. Prof. Sem-II</option>
+                <option value="B.Com. Prof. Sem-III">B.Com. Prof. Sem-III</option>
+                <option value="B.Com. Prof. Sem-IV">B.Com. Prof. Sem-IV</option>
+                <option value="B.Com. Prof. Sem-V">B.Com. Prof. Sem-V</option>
+                <option value="B.Com. Prof. Sem-VI">B.Com. Prof. Sem-VI</option>
             `;
         } else {
             classSel.innerHTML = `
                 <option value="B.Com. Sem-I">B.Com. Sem-I</option>
+                <option value="B.Com. Sem-II">B.Com. Sem-II</option>
                 <option value="B.Com. Sem-III">B.Com. Sem-III</option>
+                <option value="B.Com. Sem-IV">B.Com. Sem-IV</option>
                 <option value="B.Com. Sem-V">B.Com. Sem-V</option>
+                <option value="B.Com. Sem-VI">B.Com. Sem-VI</option>
             `;
         }
     }
@@ -3381,10 +3395,21 @@ window.renderUnifiedAttendanceReport = async function(isTeacherOnly) {
                         <select id="rep-class" class="form-control">
                             <option value="All">All Semesters</option>
                             <option value="B.Com. Sem-I">B.Com. Sem-I</option>
+                            <option value="B.Com. Sem-II">B.Com. Sem-II</option>
                             <option value="B.Com. Sem-III">B.Com. Sem-III</option>
+                            <option value="B.Com. Sem-IV">B.Com. Sem-IV</option>
                             <option value="B.Com. Sem-V">B.Com. Sem-V</option>
+                            <option value="B.Com. Sem-VI">B.Com. Sem-VI</option>
+                            <option value="B.Com. Prof. Sem-I">B.Com. Prof. Sem-I</option>
+                            <option value="B.Com. Prof. Sem-II">B.Com. Prof. Sem-II</option>
+                            <option value="B.Com. Prof. Sem-III">B.Com. Prof. Sem-III</option>
+                            <option value="B.Com. Prof. Sem-IV">B.Com. Prof. Sem-IV</option>
+                            <option value="B.Com. Prof. Sem-V">B.Com. Prof. Sem-V</option>
+                            <option value="B.Com. Prof. Sem-VI">B.Com. Prof. Sem-VI</option>
                             <option value="M.Com. Sem-I">M.Com. Sem-I</option>
+                            <option value="M.Com. Sem-II">M.Com. Sem-II</option>
                             <option value="M.Com. Sem-III">M.Com. Sem-III</option>
+                            <option value="M.Com. Sem-IV">M.Com. Sem-IV</option>
                         </select>
                     </div>
                     <div>
@@ -4171,13 +4196,27 @@ window.renderUnifiedCourseworkManager = async function() {
                 if (prog === 'M.Com') {
                     classSelect.innerHTML = `
                         <option value="M.Com. Sem-I">M.Com. Sem-I</option>
+                        <option value="M.Com. Sem-II">M.Com. Sem-II</option>
                         <option value="M.Com. Sem-III">M.Com. Sem-III</option>
+                        <option value="M.Com. Sem-IV">M.Com. Sem-IV</option>
+                    `;
+                } else if (prog === 'B.Com (Professional)') {
+                    classSelect.innerHTML = `
+                        <option value="B.Com. Prof. Sem-I">B.Com. Prof. Sem-I</option>
+                        <option value="B.Com. Prof. Sem-II">B.Com. Prof. Sem-II</option>
+                        <option value="B.Com. Prof. Sem-III">B.Com. Prof. Sem-III</option>
+                        <option value="B.Com. Prof. Sem-IV">B.Com. Prof. Sem-IV</option>
+                        <option value="B.Com. Prof. Sem-V">B.Com. Prof. Sem-V</option>
+                        <option value="B.Com. Prof. Sem-VI">B.Com. Prof. Sem-VI</option>
                     `;
                 } else {
                     classSelect.innerHTML = `
                         <option value="B.Com. Sem-I">B.Com. Sem-I</option>
+                        <option value="B.Com. Sem-II">B.Com. Sem-II</option>
                         <option value="B.Com. Sem-III">B.Com. Sem-III</option>
+                        <option value="B.Com. Sem-IV">B.Com. Sem-IV</option>
                         <option value="B.Com. Sem-V" selected>B.Com. Sem-V</option>
+                        <option value="B.Com. Sem-VI">B.Com. Sem-VI</option>
                     `;
                 }
             };
@@ -4366,13 +4405,27 @@ window.renderUnifiedCourseworkManager = async function() {
             if (prog === 'M.Com') {
                 mrkClass.innerHTML = `
                     <option value="M.Com. Sem-I">M.Com. Sem-I</option>
+                    <option value="M.Com. Sem-II">M.Com. Sem-II</option>
                     <option value="M.Com. Sem-III">M.Com. Sem-III</option>
+                    <option value="M.Com. Sem-IV">M.Com. Sem-IV</option>
+                `;
+            } else if (prog === 'B.Com (Professional)') {
+                mrkClass.innerHTML = `
+                    <option value="B.Com. Prof. Sem-I">B.Com. Prof. Sem-I</option>
+                    <option value="B.Com. Prof. Sem-II">B.Com. Prof. Sem-II</option>
+                    <option value="B.Com. Prof. Sem-III">B.Com. Prof. Sem-III</option>
+                    <option value="B.Com. Prof. Sem-IV">B.Com. Prof. Sem-IV</option>
+                    <option value="B.Com. Prof. Sem-V">B.Com. Prof. Sem-V</option>
+                    <option value="B.Com. Prof. Sem-VI">B.Com. Prof. Sem-VI</option>
                 `;
             } else {
                 mrkClass.innerHTML = `
                     <option value="B.Com. Sem-I">B.Com. Sem-I</option>
+                    <option value="B.Com. Sem-II">B.Com. Sem-II</option>
                     <option value="B.Com. Sem-III">B.Com. Sem-III</option>
+                    <option value="B.Com. Sem-IV">B.Com. Sem-IV</option>
                     <option value="B.Com. Sem-V" selected>B.Com. Sem-V</option>
+                    <option value="B.Com. Sem-VI">B.Com. Sem-VI</option>
                 `;
             }
         }
