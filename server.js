@@ -1626,6 +1626,159 @@ app.post('/api/admin/import-sem3-sem5', (req, res) => {
     }
 });
 
+// Bulk Import B.Com Professional Semester 3 and Semester 5 Student Rosters Endpoint
+app.post('/api/admin/import-prof-sem3-sem5', (req, res) => {
+    try {
+        const filePathSem3 = path.join(__dirname, 'bcom_prof_sem3_raw.txt');
+        const filePathSem5 = path.join(__dirname, 'bcom_prof_sem5_raw.txt');
+        
+        if (!fs.existsSync(filePathSem3) || !fs.existsSync(filePathSem5)) {
+            return res.status(400).json({ error: 'Roster files bcom_prof_sem3_raw.txt or bcom_prof_sem5_raw.txt not found.' });
+        }
+        
+        db.exec('PRAGMA foreign_keys = OFF;');
+        db.exec('BEGIN TRANSACTION;');
+        
+        const insertUser = db.prepare(`
+            INSERT INTO users (
+                username, password, role, name, email, phone, gender, category, 
+                subject, class, department, division, program, year, semester, 
+                fee_due, fee_paid, fee_total
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            )
+        `);
+        
+        // Dynamically get baseline fees for B.Com Professional
+        let feeBoy = 9500;
+        let feeGirl = 8500;
+        try {
+            const rowBoy = db.prepare("SELECT value FROM settings WHERE key = 'fee_baseline_bcom_professional_boy'").get();
+            const rowGirl = db.prepare("SELECT value FROM settings WHERE key = 'fee_baseline_bcom_professional_girl'").get();
+            if (rowBoy) feeBoy = parseFloat(rowBoy.value);
+            if (rowGirl) feeGirl = parseFloat(rowGirl.value);
+        } catch (e) {
+            console.error("Failed to query settings for baseline fees:", e.message);
+        }
+        
+        const program = "B.Com (Professional)";
+        let countSem3 = 0;
+        let countSem5 = 0;
+        
+        // 1. Process Semester 3
+        const ocrTextSem3 = fs.readFileSync(filePathSem3, 'utf8');
+        const linesSem3 = ocrTextSem3.trim().split('\n');
+        for (const line of linesSem3) {
+            const parts = line.trim().split(/\s+/);
+            if (parts.length < 7) continue;
+            
+            const rollNo = parseInt(parts[0]);
+            const enrollmentNo = parts[1];
+            const spdid = parts[2];
+            const gender = parts[3];
+            const category = parts[parts.length - 1];
+            const phone = parts[parts.length - 2];
+            const email = parts[parts.length - 3];
+            
+            const nameParts = parts.slice(4, parts.length - 3);
+            const name = nameParts.join(' ');
+            
+            const username = spdid;
+            const password = spdid;
+            const division = 'A';
+            const subject = 'Commerce';
+            
+            const baselineFee = gender === 'Female' ? feeGirl : feeBoy;
+            
+            insertUser.run(
+                username,
+                password,
+                'student',
+                name,
+                email,
+                phone,
+                gender,
+                category,
+                subject,
+                `B.Com. Prof. Sem-III`,
+                'Commerce Department',
+                division,
+                program,
+                '2nd Year',
+                'Semester 3',
+                baselineFee,
+                0,
+                baselineFee
+            );
+            countSem3++;
+        }
+        
+        // 2. Process Semester 5
+        const ocrTextSem5 = fs.readFileSync(filePathSem5, 'utf8');
+        const linesSem5 = ocrTextSem5.trim().split('\n');
+        for (const line of linesSem5) {
+            const parts = line.trim().split(/\s+/);
+            if (parts.length < 6) continue;
+            
+            const rollNo = parseInt(parts[0]);
+            const spdid = parts[1];
+            const gender = parts[2];
+            const category = parts[3];
+            const phone = parts[parts.length - 1];
+            const email = parts[parts.length - 2];
+            
+            const nameParts = parts.slice(4, parts.length - 2);
+            const name = nameParts.join(' ');
+            
+            const username = spdid;
+            const password = spdid;
+            const division = 'A';
+            const subject = 'Commerce';
+            
+            const baselineFee = gender === 'Female' ? feeGirl : feeBoy;
+            
+            insertUser.run(
+                username,
+                password,
+                'student',
+                name,
+                email,
+                phone,
+                gender,
+                category,
+                subject,
+                `B.Com. Prof. Sem-V`,
+                'Commerce Department',
+                division,
+                program,
+                '3rd Year',
+                'Semester 5',
+                baselineFee,
+                0,
+                baselineFee
+            );
+            countSem5++;
+        }
+        
+        db.exec('COMMIT;');
+        db.exec('PRAGMA foreign_keys = ON;');
+        
+        // Sync to MongoDB in the background
+        const { saveDatabaseToMongo } = require('./mongoSync');
+        saveDatabaseToMongo();
+        
+        res.json({ 
+            success: true, 
+            message: `Successfully imported ${countSem3} Sem 3 and ${countSem5} Sem 5 B.Com Professional students. MongoDB backup updated.` 
+        });
+    } catch (err) {
+        try { db.exec('ROLLBACK;'); } catch (e) {}
+        try { db.exec('PRAGMA foreign_keys = ON;'); } catch (e) {}
+        console.error("Bulk B.Com Prof Sem3/5 import failed:", err);
+        res.status(500).json({ error: `Import failed: ${err.message}` });
+    }
+});
+
 // Diagnostics Endpoint to check SQLite and MongoDB status
 app.get('/api/diagnostics', async (req, res) => {
     const status = {
