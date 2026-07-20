@@ -1028,7 +1028,7 @@ window.renderTeacherStudents = async function() {
                     <td><strong>${s.username}</strong></td>
                     <td>${s.name}</td>
                     <td>${s.gender || 'Male'}</td>
-                    <td>Division ${s.division}</td>
+                    <td>Division ${s.division} - ${s.year || '1st Year'}</td>
                     <td>${s.program || 'B.Com (Regular)'}</td>
                     <td><span class="attendance-status-pill status-active">${s.subject || 'Commerce'}</span></td>
                 </tr>
@@ -2000,7 +2000,7 @@ window.renderAdminStudents = async function() {
                     <td>${u.name}</td>
                     <td>${u.gender || 'Male'}</td>
                     <td><span class="attendance-status-pill ${u.role === 'admin' ? 'status-active' : (u.role === 'teacher' ? 'status-active' : 'status-active')}" style="background: ${u.role === 'admin' ? 'rgba(168,85,247,0.1)' : (u.role === 'teacher' ? 'rgba(99,102,241,0.1)' : 'rgba(20,184,166,0.1)')}; color: ${u.role === 'admin' ? 'var(--secondary)' : (u.role === 'teacher' ? 'var(--primary)' : 'var(--accent)')};">${u.role.toUpperCase()}</span></td>
-                    <td>Division ${u.division || 'N/A'}</td>
+                    <td>Division ${u.division || 'N/A'}${u.role === 'student' ? ' - ' + (u.year || '1st Year') : ''}</td>
                     <td>${u.program || 'N/A'}</td>
                     <td>
                         <button class="btn btn-secondary btn-sm" onclick="openEditUserModal(${JSON.stringify(u).replace(/"/g, '&quot;')})" style="padding: 4px 8px; font-size: 11px;">Edit</button>

@@ -662,6 +662,27 @@ app.get('/api/users', (req, res) => {
     }
 });
 
+// Helper to derive standard class format based on program and semester
+function getStandardClass(program, semester) {
+    let semRoman = 'I';
+    const sem = String(semester || 'Semester 1');
+    if (sem.includes('1')) semRoman = 'I';
+    else if (sem.includes('2')) semRoman = 'II';
+    else if (sem.includes('3')) semRoman = 'III';
+    else if (sem.includes('4')) semRoman = 'IV';
+    else if (sem.includes('5')) semRoman = 'V';
+    else if (sem.includes('6')) semRoman = 'VI';
+
+    const prog = String(program || 'B.Com (Regular)');
+    if (prog === 'B.Com (Professional)') {
+        return `B.Com. Prof. Sem-${semRoman}`;
+    } else if (prog === 'M.Com') {
+        return `M.Com. Sem-${semRoman}`;
+    } else {
+        return `B.Com. Sem-${semRoman}`;
+    }
+}
+
 // 9. Add User (Admin GUI)
 app.post('/api/users/add', (req, res) => {
     const { username, password, role, name, email, phone, division, class_name, department, program, year, semester, gender } = req.body;
@@ -672,6 +693,13 @@ app.post('/api/users/add', (req, res) => {
 
     const finalGender = gender || 'Male';
     const finalProgram = program || 'B.Com (Regular)';
+    const finalSemester = semester || 'Semester 1';
+    
+    // Automatically compute class name for students to keep it aligned with semester/program
+    let finalClass = class_name || 'B.Com. Sem-I';
+    if (role === 'student') {
+        finalClass = getStandardClass(finalProgram, finalSemester);
+    }
 
     // Determine fees for students
     let feeDue = 0;
@@ -689,8 +717,8 @@ app.post('/api/users/add', (req, res) => {
         `);
         stmt.run(
             username, password, role, name, email || null, phone || null, 
-            division || 'A', class_name || 'B.Com. Sem-I', department || 'B.Com (NEP)',
-            finalProgram, year || '1st Year', semester || 'Semester 1', finalGender, feeDue, feeTotal
+            division || 'A', finalClass, department || 'B.Com (NEP)',
+            finalProgram, year || '1st Year', finalSemester, finalGender, feeDue, feeTotal
         );
         res.json({ success: true, message: 'User added successfully.' });
     } catch (err) {
@@ -708,14 +736,28 @@ app.post('/api/users/edit', (req, res) => {
     }
 
     try {
+        // Fetch current user details to inspect role
+        const existing = db.prepare("SELECT role, program, semester, class FROM users WHERE id = ?").get(id);
+        const finalRole = existing ? existing.role : 'student';
+        
+        const finalProgram = program || (existing ? existing.program : 'B.Com (Regular)');
+        const finalSemester = semester || (existing ? existing.semester : 'Semester 1');
+        
+        let finalClass = class_name;
+        if (finalRole === 'student') {
+            finalClass = getStandardClass(finalProgram, finalSemester);
+        } else {
+            finalClass = finalClass || (existing ? existing.class : 'B.Com. Sem-I');
+        }
+
         const stmt = db.prepare(`
             UPDATE users 
             SET name = ?, email = ?, phone = ?, division = ?, class = ?, department = ?, program = ?, year = ?, semester = ?, gender = ?
             WHERE id = ?
         `);
         stmt.run(
-            name, email || null, phone || null, division || 'A', class_name || 'B.Com. Sem-I', 
-            department || 'B.Com (NEP)', program || 'B.Com (Regular)', year || '1st Year', semester || 'Semester 1',
+            name, email || null, phone || null, division || 'A', finalClass, 
+            department || 'B.Com (NEP)', finalProgram, year || '1st Year', finalSemester,
             gender || 'Male', id
         );
         res.json({ success: true, message: 'User updated successfully.' });
