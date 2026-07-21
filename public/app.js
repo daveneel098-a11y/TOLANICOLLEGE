@@ -490,9 +490,17 @@ window.renderStudentTimetable = async function() {
     dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
 
     try {
-        const res = await fetch(`/api/timetables?program=${encodeURIComponent(currentUser.program)}`);
+        const progKey = `${currentUser.program} - ${currentUser.semester} - Div ${currentUser.division}`;
+        const res = await fetch(`/api/timetables?program=${encodeURIComponent(progKey)}`);
         const data = await res.json();
-        const tRows = data.timetables || [];
+        let tRows = data.timetables || [];
+        
+        if (tRows.length === 0) {
+            // Fallback to default program timetable if division-specific one is not yet defined
+            const fallbackRes = await fetch(`/api/timetables?program=${encodeURIComponent(currentUser.program)}`);
+            const fallbackData = await fallbackRes.json();
+            tRows = fallbackData.timetables || [];
+        }
 
         // Build a map day -> slots
         const ttMap = {};
@@ -2948,22 +2956,73 @@ window.renderProgramManagement = async function(programName) {
         function showTimetableTab() {
             const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+            // Initialize default select values
+            let selectedSemester = 'Semester 1';
+            let selectedDivision = 'A';
+
+            async function refreshTimetableGrid() {
+                const progKey = `${programName} - ${selectedSemester} - Div ${selectedDivision}`;
+                const res = await fetch(`/api/timetables?program=${encodeURIComponent(progKey)}`);
+                const data = await res.json();
+                let currentRows = data.timetables || [];
+                
+                // Fallback to base program timetable if division/semester timetable does not exist
+                if (currentRows.length === 0) {
+                    const fallbackRes = await fetch(`/api/timetables?program=${encodeURIComponent(programName)}`);
+                    const fallbackData = await fallbackRes.json();
+                    currentRows = fallbackData.timetables || [];
+                }
+
+                const currentMap = {};
+                currentRows.forEach(r => {
+                    currentMap[r.day] = { slot_1: r.slot_1 || '', slot_2: r.slot_2 || '', slot_3: r.slot_3 || '', slot_4: r.slot_4 || '' };
+                });
+
+                days.forEach(day => {
+                    const s = currentMap[day] || { slot_1: '', slot_2: '', slot_3: '', slot_4: '' };
+                    document.getElementById(`tt-input-${day}-slot_1`).value = s.slot_1;
+                    document.getElementById(`tt-input-${day}-slot_2`).value = s.slot_2;
+                    document.getElementById(`tt-input-${day}-slot_3`).value = s.slot_3;
+                    document.getElementById(`tt-input-${day}-slot_4`).value = s.slot_4;
+                });
+            }
+
             let rowHTML = days.map(day => {
-                const s = ttMap[day] || { slot_1: '', slot_2: '', slot_3: '', slot_4: '' };
                 return `
                     <tr>
                         <td><strong>${day}</strong></td>
-                        <td><input type="text" class="form-control tt-input" data-day="${day}" data-slot="slot_1" value="${s.slot_1}" placeholder="Free Slot" style="font-size: 11px; padding: 4px; height: 28px;"></td>
-                        <td><input type="text" class="form-control tt-input" data-day="${day}" data-slot="slot_2" value="${s.slot_2}" placeholder="Free Slot" style="font-size: 11px; padding: 4px; height: 28px;"></td>
-                        <td><input type="text" class="form-control tt-input" data-day="${day}" data-slot="slot_3" value="${s.slot_3}" placeholder="Free Slot" style="font-size: 11px; padding: 4px; height: 28px;"></td>
-                        <td><input type="text" class="form-control tt-input" data-day="${day}" data-slot="slot_4" value="${s.slot_4}" placeholder="Free Slot" style="font-size: 11px; padding: 4px; height: 28px;"></td>
+                        <td><input type="text" class="form-control tt-input" id="tt-input-${day}-slot_1" data-day="${day}" data-slot="slot_1" value="" placeholder="Free Slot" style="font-size: 11px; padding: 4px; height: 28px;"></td>
+                        <td><input type="text" class="form-control tt-input" id="tt-input-${day}-slot_2" data-day="${day}" data-slot="slot_2" value="" placeholder="Free Slot" style="font-size: 11px; padding: 4px; height: 28px;"></td>
+                        <td><input type="text" class="form-control tt-input" id="tt-input-${day}-slot_3" data-day="${day}" data-slot="slot_3" value="" placeholder="Free Slot" style="font-size: 11px; padding: 4px; height: 28px;"></td>
+                        <td><input type="text" class="form-control tt-input" id="tt-input-${day}-slot_4" data-day="${day}" data-slot="slot_4" value="" placeholder="Free Slot" style="font-size: 11px; padding: 4px; height: 28px;"></td>
                     </tr>
                 `;
             }).join("");
 
             document.getElementById("program-tab-content").innerHTML = `
-                <div class="card-header-flex mb-16">
-                    <h4 style="margin: 0;">Weekly Lecture Schedule Registry</h4>
+                <div class="card-header-flex mb-16" style="flex-wrap: wrap; gap: 12px; align-items: center;">
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                        <h4 style="margin: 0; margin-right: 12px;">Weekly Lecture Schedule Registry</h4>
+                        <label style="font-size: 12px; color: var(--text-muted);">Semester:</label>
+                        <select id="tt-select-semester" class="form-control" style="width: 120px; padding: 4px; height: 28px; font-size: 11px;">
+                            <option value="Semester 1">Semester 1</option>
+                            <option value="Semester 2">Semester 2</option>
+                            <option value="Semester 3">Semester 3</option>
+                            <option value="Semester 4">Semester 4</option>
+                            <option value="Semester 5">Semester 5</option>
+                            <option value="Semester 6">Semester 6</option>
+                        </select>
+                        <label style="font-size: 12px; color: var(--text-muted); margin-left: 8px;">Division:</label>
+                        <select id="tt-select-division" class="form-control" style="width: 100px; padding: 4px; height: 28px; font-size: 11px;">
+                            <option value="A">Division A</option>
+                            <option value="B">Division B</option>
+                            <option value="C">Division C</option>
+                            <option value="D">Division D</option>
+                            <option value="E">Division E</option>
+                            <option value="F">Division F</option>
+                            <option value="G">Division G</option>
+                        </select>
+                    </div>
                     <button class="btn btn-primary btn-sm" id="save-program-timetable-btn"><i class="fa-solid fa-floppy-disk mr-4"></i> Save Timetable</button>
                 </div>
                 <div class="table-responsive">
@@ -2971,10 +3030,10 @@ window.renderProgramManagement = async function(programName) {
                         <thead>
                             <tr>
                                 <th>Day</th>
-                                <th>Slot 1 (9:00-9:55)</th>
-                                <th>Slot 2 (10:00-10:55)</th>
-                                <th>Slot 3 (11:00-11:55)</th>
-                                <th>Slot 4 (12:00-12:55)</th>
+                                <th>Slot 1 (8:00-9:00)</th>
+                                <th>Slot 2 (9:00-10:00)</th>
+                                <th>Slot 3 (10:20-11:20)</th>
+                                <th>Slot 4 (11:20-12:20)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -2984,12 +3043,31 @@ window.renderProgramManagement = async function(programName) {
                 </div>
             `;
 
+            // Setup Event Listeners for selectors
+            const semSelect = document.getElementById("tt-select-semester");
+            const divSelect = document.getElementById("tt-select-division");
+
+            semSelect.addEventListener("change", () => {
+                selectedSemester = semSelect.value;
+                refreshTimetableGrid();
+            });
+
+            divSelect.addEventListener("change", () => {
+                selectedDivision = divSelect.value;
+                refreshTimetableGrid();
+            });
+
+            // Initial load of grid
+            refreshTimetableGrid();
+
             document.getElementById("save-program-timetable-btn").addEventListener("click", async () => {
                 const inputs = document.querySelectorAll(".tt-input");
                 const gridData = {};
 
+                const targetProgName = `${programName} - ${selectedSemester} - Div ${selectedDivision}`;
+
                 days.forEach(d => {
-                    gridData[d] = { program: programName, day: d, slot_1: '', slot_2: '', slot_3: '', slot_4: '' };
+                    gridData[d] = { program: targetProgName, day: d, slot_1: '', slot_2: '', slot_3: '', slot_4: '' };
                 });
 
                 inputs.forEach(ip => {
@@ -3011,8 +3089,7 @@ window.renderProgramManagement = async function(programName) {
                     }
 
                     if (errors === 0) {
-                        alert("Weekly timetable saved successfully!");
-                        window.renderProgramManagement(programName);
+                        alert(`Weekly timetable for ${selectedSemester} (${selectedDivision}) saved successfully!`);
                     } else {
                         alert("Encountered errors while saving some slots.");
                     }

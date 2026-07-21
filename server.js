@@ -156,6 +156,122 @@ try {
 } catch (e) {
     // Column already exists, ignore
 }
+
+    // Auto-seed Semester 3 and Semester 5 timetables for B.Com Regular if missing
+    try {
+        const check = db.prepare("SELECT count(*) as count FROM timetables WHERE program LIKE '%Semester 3%' OR program LIKE '%Semester 5%'").get();
+        if (!check || check.count === 0) {
+            console.log("Seeding B.Com Regular Semester 3 and 5 timetables...");
+            const insertTimetable = db.prepare(`
+                INSERT INTO timetables (program, day, slot_1, slot_2, slot_3, slot_4)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(program, day) DO UPDATE SET
+                    slot_1 = excluded.slot_1,
+                    slot_2 = excluded.slot_2,
+                    slot_3 = excluded.slot_3,
+                    slot_4 = excluded.slot_4
+            `);
+
+            const sem3Timetables = {
+                'A': [
+                    ['Monday', 'BUSI. A/C (SAP)', 'Cost A/C (SDA)', 'MD/ECO (ABB)', 'VAC/RM (GD)'],
+                    ['Tuesday', 'SEC/SM (JRR)', 'MD/ECO (ABB)', 'TAX P. (SJT)', 'Free Slot'],
+                    ['Wednesday', 'Cost A/C (SDA)', 'TAX P. (SJT)', 'BUSI. A/C (KHK)', 'TAX P. (SAP)'],
+                    ['Thursday', 'BUSI. A/C (KHK)', 'Cost A/C (SAP)', 'MD301A (ABB)', 'Cost A/C (SDA)'],
+                    ['Friday', 'AEC/ENG (DRM)', 'MD/ECO (ABB)', 'SEC/SM (JRR)', 'DSC303 (SJT)'],
+                    ['Saturday', 'AEC/ENG (DRM)', 'BUSI. A/C (KHK)', 'VAC/RM (GD)', 'Free Slot']
+                ],
+                'B': [
+                    ['Monday', 'MD/ECO (ABB)', 'TAX P. (SJT)', 'BUSI. A/C (KHK)', 'Free Slot'],
+                    ['Tuesday', 'Cost A/C (SDA)', 'BUSI. A/C (KHK)', 'MD/ECO (ABB)', 'AEC/ENG (DRM)'],
+                    ['Wednesday', 'AEC/ENG (DRM)', 'TAX P. (SAP)', 'TAX P. (SAP)', 'MD/ECO (ABB)'],
+                    ['Thursday', 'Cost A/C (SDA)', 'VAC/RM (GD)', 'SEC/SM (JKR)', 'BUSI. A/C (KHK)'],
+                    ['Friday', 'TAX P. (SJT)', 'SEC/SM (JKR)', 'Cost A/C (SDA)', 'VAC/RM (GD)'],
+                    ['Saturday', 'Cost A/C (SDA)', 'MD/ECO (ABB)', 'BUSI. A/C (SAP)', 'Free Slot']
+                ],
+                'C': [
+                    ['Monday', 'DSC303 (SJT)', 'MD/ECO (ABB)', 'VAC/RM (GD)', 'Free Slot'],
+                    ['Tuesday', 'BUSI. A/C (SAP)', 'Cost A/C (SDA)', 'BUSI. A/C (KHK)', 'MD/ECO (ABB)'],
+                    ['Wednesday', 'TAX P. (SJT)', 'MD/ECO (ABB)', 'TAX P. (SAP)', 'SEC/SM (JKR)'],
+                    ['Thursday', 'AEC/ENG (DRM)', 'Cost A/C (SDA)', 'BUSI. A/C (KHK)', 'VAC/RM (GD)'],
+                    ['Friday', 'Cost A/C (SDA)', 'TAX P. (SJT)', 'MD/ECO (ABB)', 'Free Slot'],
+                    ['Saturday', 'BUSI. A/C (KHK)', 'Cost A/C (SAP)', 'SEC/SM (JKR)', 'AEC/ENG (DRM)']
+                ],
+                'D': [
+                    ['Monday', 'AEC/ENG (DRM)', 'TAX P. (SAP)', 'Cost A/C (SDA)', 'BUSI. A/C (KHK)'],
+                    ['Tuesday', 'MD/ECO (DJ)', 'DSC303 (SJT)', 'BUSI. A/C (SAP)', 'Free Slot'],
+                    ['Wednesday', 'BUSI. A/C (KHK)', 'AEC/ENG (DRM)', 'Cost A/C (SDA)', 'VAC/RM (GD)'],
+                    ['Thursday', 'MD/ECO (DJ)', 'TAX P. (SJT)', 'Cost A/C (SDA)', 'Free Slot'],
+                    ['Friday', 'BUSI. A/C (SAP)', 'Cost A/C (SDA)', 'MD/ECO (DJ)', 'SEC/SM (JKR)'],
+                    ['Saturday', 'SEC/SM (JKR)', 'VAC/RM (GD)', 'TAX P. (SJT)', 'MD/ECO (DJ)']
+                ],
+                'E': [
+                    ['Monday', 'Cost A/C (SDA)', 'BUSI. A/C (KHK)', 'SEC/SM (JKR)', 'TAX P. (SJT)'],
+                    ['Tuesday', 'TAX P. (SJT)', 'AEC/ENG (DRM)', 'Cost A/C (SDA)', 'VAC/RM (GD)'],
+                    ['Wednesday', 'VAC/RM (GD)', 'DSC302 (KHK)', 'MD/ECO (ABB)', 'Free Slot'],
+                    ['Thursday', 'TAX P. (SJT)', 'MD/ECO (ABB)', 'AEC/ENG (DRM)', 'Cost A/C (SAP)'],
+                    ['Friday', 'BUSI. A/C (SAP)', 'BUSI. A/C (KHK)', 'SEC/SM (JKR)', 'MD/ECO (ABB)'],
+                    ['Saturday', 'MD/ECO (ABB)', 'TAX P. (SJT)', 'Cost A/C (SDA)', 'Free Slot']
+                ]
+            };
+
+            const sem5Timetables = {
+                'A': [
+                    ['Monday', 'DC503 (PMC)', 'M501D (MG)', 'DC502 (RK)', 'DC501 (KT)'],
+                    ['Tuesday', 'DC503 (PMC)', 'M501D (MG)', 'DC501 (KT)', 'SEC (JR/RM)'],
+                    ['Wednesday', 'DC502 (RK)', 'M502D (MG)', 'SEC (JR/RM)', 'DC503 (PMC)'],
+                    ['Thursday', 'DC503 (PMC)', 'M502D (MG)', 'DC501 (KT)', 'Free Slot'],
+                    ['Friday', 'M502D (MG)', 'M502D (MG)', 'M501D (MG)', 'DC502 (RK)'],
+                    ['Saturday', 'M502D (MG)', 'DC502 (RK)', 'M501D (MG)', 'Free Slot']
+                ],
+                'B': [
+                    ['Monday', 'SEC (JR/RM)', 'DC501 (KT)', 'M501BD (MG/JRR)', 'M502BD (MG/JRR)'],
+                    ['Tuesday', 'DC502 (RK)', 'DC503 (PMC)', 'M502BD (MG/JRR)', 'M501BD (MG/PBC)'],
+                    ['Wednesday', 'DC503 (PMC)', 'SEC (JR/RM)', 'M501BD (MG/PBC)', 'M502BD (MG/JRR)'],
+                    ['Thursday', 'DC501 (KT)', 'DC502 (RK)', 'M502BD (MG/JRR)', 'M501BD (MG/PBC)'],
+                    ['Friday', 'DC501 (KT)', 'DC502 (RK)', 'DC503 (PMC)', 'Free Slot'],
+                    ['Saturday', 'DC503 (PMC)', 'DC501 (KT)', 'DC502 (RK)', 'Free Slot']
+                ],
+                'C': [
+                    ['Monday', 'M502A (PBC)', 'DC503 (PMC)', 'M501A (JRR)', 'DC502 (RK)'],
+                    ['Tuesday', 'SEC (JR/RM)', 'DC502 (RK)', 'M501A (PBC)', 'DC501 (KT)'],
+                    ['Wednesday', 'M501A (PBC)', 'DC503 (PMC)', 'DC501 (KT)', 'DC502 (RK)'],
+                    ['Thursday', 'DC502 (RK)', 'M502A (JRR)', 'DC503 (PMC)', 'SEC (JR/RM)'],
+                    ['Friday', 'M502A (JRR)', 'M501A (PBC)', 'DC501 (KT)', 'Free Slot'],
+                    ['Saturday', 'DC501 (KT)', 'M502A (JRR)', 'DC503 (PMC)', 'Free Slot']
+                ],
+                'D': [
+                    ['Monday', 'DC502 (RK)', 'SEC (JR/RM)', 'DC501 (KT)', 'DC503 (PMC)'],
+                    ['Tuesday', 'DC501 (KT)', 'M502A (JRR)', 'DC503 (PMC)', 'DC502 (RK)'],
+                    ['Wednesday', 'M502A (JRR)', 'DC501 (KT)', 'DC502 (RK)', 'M501A (PBC)'],
+                    ['Thursday', 'M501A (PBC)', 'DC502 (RK)', 'SEC (JR/RM)', 'DC501 (KT)'],
+                    ['Friday', 'DC503 (PMC)', 'M502A (JRR)', 'M501A (PBC)', 'Free Slot'],
+                    ['Saturday', 'M501A (PBC)', 'DC503 (PMC)', 'M502A (JRR)', 'Free Slot']
+                ]
+            };
+
+            // Seed Sem 3
+            for (const [div, rows] of Object.entries(sem3Timetables)) {
+                const programName = `B.Com (Regular) - Semester 3 - Div ${div}`;
+                rows.forEach(([day, s1, s2, s3, s4]) => {
+                    insertTimetable.run(programName, day, s1, s2, s3, s4);
+                });
+            }
+
+            // Seed Sem 5
+            for (const [div, rows] of Object.entries(sem5Timetables)) {
+                const programName = `B.Com (Regular) - Semester 5 - Div ${div}`;
+                rows.forEach(([day, s1, s2, s3, s4]) => {
+                    insertTimetable.run(programName, day, s1, s2, s3, s4);
+                });
+            }
+
+            dbChanged = true; // Mark as changed to trigger MongoDB upload
+            console.log("Auto-seeded Semester 3 and 5 timetables successfully!");
+        }
+    } catch (e) {
+        console.error("Failed to auto-seed timetables:", e);
+    }
 }
 
 // --- HELPER FUNCTIONS ---
