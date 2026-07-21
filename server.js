@@ -429,9 +429,9 @@ app.post('/api/attendance/check-in', (req, res) => {
                 });
             }
 
-            // Fixed Tolani Commerce College GPS coordinates
-            const CAMPUS_LAT = 23.0760625;
-            const CAMPUS_LON = 70.1311875;
+            // Fixed Tolani Commerce College GPS coordinates (Adipur)
+            const CAMPUS_LAT = 23.0765;
+            const CAMPUS_LON = 70.1537;
 
             let refLat = CAMPUS_LAT;
             let refLon = CAMPUS_LON;
