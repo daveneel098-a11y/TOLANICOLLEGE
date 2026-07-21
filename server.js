@@ -448,8 +448,8 @@ app.post('/api/attendance/check-in', (req, res) => {
             const distanceMeters = distance * 1000;
             const radiusMeters = session.geofence_radius || 50; 
 
-            // Subtract accuracy error margin from calculated distance (cap error margin at 150m to prevent spoofing)
-            const errorMargin = Math.min(student_accuracy || 0, 150);
+            // Subtract accuracy error margin from calculated distance (cap error margin at 30m to ensure strict boundaries)
+            const errorMargin = Math.min(student_accuracy || 0, 30);
             const adjustedDistance = Math.max(0, distanceMeters - errorMargin);
 
             if (adjustedDistance > radiusMeters) { 
