@@ -437,14 +437,11 @@ app.post('/api/attendance/check-in', (req, res) => {
             let refLon = CAMPUS_LON;
             let targetName = "the college campus";
 
-            // If teacher/host location is available and accurate (within 1km of campus)
+            // If teacher/host location is available, match directly against it to support matching matching cell/Wi-Fi tower gateway coordinates indoors
             if (session.creator_lat !== null && session.creator_lon !== null) {
-                const hostDistFromCampus = getDistanceKm(CAMPUS_LAT, CAMPUS_LON, session.creator_lat, session.creator_lon);
-                if (hostDistFromCampus <= 1.0) {
-                    refLat = session.creator_lat;
-                    refLon = session.creator_lon;
-                    targetName = "the instructor's device";
-                }
+                refLat = session.creator_lat;
+                refLon = session.creator_lon;
+                targetName = "the instructor's device";
             }
 
             const distance = getDistanceKm(refLat, refLon, student_lat, student_lon);
