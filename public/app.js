@@ -2574,6 +2574,10 @@ window.openEditUserModal = function(user) {
                         <option value="Semester 6" ${user.semester === 'Semester 6' ? 'selected' : ''}>Semester 6</option>
                     </select>
                 </div>
+                <div>
+                    <label>Change Password (leave blank to keep current)</label>
+                    <input type="password" id="edit-user-password" class="form-control" placeholder="Enter new password" autocomplete="new-password">
+                </div>
             </div>
             <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
                 <i class="fa-solid fa-save mr-8"></i>
@@ -2597,12 +2601,13 @@ window.openEditUserModal = function(user) {
         const program = document.getElementById("edit-user-program").value;
         const year = document.getElementById("edit-user-year").value;
         const semester = document.getElementById("edit-user-semester").value;
+        const password = document.getElementById("edit-user-password").value;
 
         try {
             const res = await fetch('/api/users/edit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: user.id, name, email, phone, division, class_name, department, program, year, semester, gender })
+                body: JSON.stringify({ id: user.id, name, email, phone, division, class_name, department, program, year, semester, gender, password })
             });
             const data = await res.json();
             if (data.success) {

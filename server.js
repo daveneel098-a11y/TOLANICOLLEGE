@@ -729,7 +729,7 @@ app.post('/api/users/add', (req, res) => {
 
 // 10. Edit User (Admin GUI)
 app.post('/api/users/edit', (req, res) => {
-    const { id, name, email, phone, division, class_name, department, program, year, semester, gender } = req.body;
+    const { id, name, email, phone, division, class_name, department, program, year, semester, gender, password } = req.body;
 
     if (!id) {
         return res.status(400).json({ error: 'User ID is required.' });
@@ -750,16 +750,27 @@ app.post('/api/users/edit', (req, res) => {
             finalClass = finalClass || (existing ? existing.class : 'B.Com. Sem-I');
         }
 
-        const stmt = db.prepare(`
+        let query = `
             UPDATE users 
             SET name = ?, email = ?, phone = ?, division = ?, class = ?, department = ?, program = ?, year = ?, semester = ?, gender = ?
-            WHERE id = ?
-        `);
-        stmt.run(
+        `;
+        const params = [
             name, email || null, phone || null, division || 'A', finalClass, 
             department || 'B.Com (NEP)', finalProgram, year || '1st Year', finalSemester,
-            gender || 'Male', id
-        );
+            gender || 'Male'
+        ];
+
+        if (password && password.trim() !== '') {
+            query += `, password = ?`;
+            params.push(password.trim());
+        }
+
+        query += ` WHERE id = ?`;
+        params.push(id);
+
+        const stmt = db.prepare(query);
+        stmt.run(...params);
+
         res.json({ success: true, message: 'User updated successfully.' });
     } catch (err) {
         console.error('Error updating user:', err);
