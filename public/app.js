@@ -139,6 +139,38 @@ function showLoading(show) {
     }
 }
 
+// Robust GPS Coordinate Retrieval Helper (low accuracy first for fast indoor lock, fallback to high accuracy)
+function getGPSCoordinates(onSuccess, onError) {
+    if (!navigator.geolocation) {
+        onError("GPS is not supported by your browser.");
+        return;
+    }
+    
+    // Try fast location acquisition first (low accuracy, works indoors immediately using Wi-Fi / Cell tower)
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            console.log("Acquired fast low-accuracy GPS location:", pos.coords.latitude, pos.coords.longitude);
+            onSuccess(pos);
+        },
+        (err) => {
+            console.warn("Fast GPS lock failed, attempting high accuracy fallback...", err);
+            // Try high accuracy fallback
+            navigator.geolocation.getCurrentPosition(
+                (pos2) => {
+                    console.log("Acquired high-accuracy GPS location:", pos2.coords.latitude, pos2.coords.longitude);
+                    onSuccess(pos2);
+                },
+                (err2) => {
+                    console.error("High accuracy GPS lock failed:", err2);
+                    onError(err2);
+                },
+                { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+            );
+        },
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+    );
+}
+
 // Helper: Get Initials
 function getInitials(name) {
     if (!name) return "US";
@@ -618,17 +650,15 @@ window.renderStudentAttendance = async function() {
                 e.preventDefault();
                 const code = document.getElementById("checkin-code-input").value.trim();
                 
-                // Get Geolocation if available
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(async (position) => {
+                getGPSCoordinates(
+                    async (position) => {
                         await submitCheckin(code, position.coords.latitude, position.coords.longitude);
-                    }, async (err) => {
-                        // Location query blocked/failed
+                    },
+                    async (err) => {
+                        console.warn("GPS lookup failed, submitting null coordinates:", err);
                         await submitCheckin(code, null, null);
-                    }, { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 });
-                } else {
-                    await submitCheckin(code, null, null);
-                }
+                    }
+                );
             });
         }
     } catch (err) {
@@ -1399,15 +1429,15 @@ window.renderTeacherSchedule = function() {
             const geofenceRadius = document.getElementById("att-gps-radius").value;
 
             if (requireGps) {
-                if (!navigator.geolocation) {
-                    alert("GPS is not supported by your browser. Disable GPS check or change browser.");
-                    return;
-                }
-                navigator.geolocation.getCurrentPosition(async (position) => {
-                    await sendCreateSession(className, subject, division, program, duration, true, position.coords.latitude, position.coords.longitude, isRolling, geofenceRadius);
-                }, (err) => {
-                    alert("Failed to acquire coordinates. Please allow location permissions and try again.");
-                }, { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 });
+                getGPSCoordinates(
+                    async (position) => {
+                        await sendCreateSession(className, subject, division, program, duration, true, position.coords.latitude, position.coords.longitude, isRolling, geofenceRadius);
+                    },
+                    async (err) => {
+                        alert("Note: Location coordinates lookup failed or timed out. Creating geofenced session using fixed Tolani College Campus coordinates instead.");
+                        await sendCreateSession(className, subject, division, program, duration, true, null, null, isRolling, geofenceRadius);
+                    }
+                );
             } else {
                 await sendCreateSession(className, subject, division, program, duration, false, null, null, isRolling, 50);
             }
