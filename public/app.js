@@ -1280,6 +1280,7 @@ window.renderTeacherSchedule = function() {
                     <div id="gps-radius-container" style="display: none; margin-top: 4px;">
                         <label for="att-gps-radius" style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">Geofence Radius Threshold</label>
                         <select id="att-gps-radius" class="form-control" style="max-width: 320px; font-size: 12px; height: 32px; padding: 4px 8px;">
+                            <option value="25">25 Meters (Ultra Strict - Same Classroom)</option>
                             <option value="50">50 Meters (Strict - Same Room)</option>
                             <option value="100">100 Meters (Same Building)</option>
                             <option value="200">200 Meters (Campus Wing)</option>
