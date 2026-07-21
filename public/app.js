@@ -152,7 +152,7 @@ function initializeDashboard() {
 
     // Set user profile info
     sidebarUserName.textContent = currentUser.name;
-    sidebarUserRole.textContent = currentUser.role.toUpperCase();
+    sidebarUserRole.textContent = currentUser.role === 'teacher' ? 'PROFESSOR' : currentUser.role.toUpperCase();
     sidebarUserAvatar.textContent = getInitials(currentUser.name);
 
     currentView = "dashboard";
@@ -871,7 +871,7 @@ window.renderTeacherDashboard = async function() {
                         <input type="text" id="adj-subject" class="form-control" placeholder="e.g. Statistics" required>
                     </div>
                     <div>
-                        <label>Original Teacher</label>
+                        <label>Original Professor</label>
                         <input type="text" id="adj-original-teacher" class="form-control" value="${currentUser.name}" required>
                     </div>
                     <div>
@@ -886,7 +886,7 @@ window.renderTeacherDashboard = async function() {
 
                     <!-- SUB CONTAINER FOR SUBSTITUTION -->
                     <div id="sub-teacher-container" class="form-grid-full" style="display: none; margin-top: 8px;">
-                        <label style="color: var(--warning);">Substitute Teacher Name</label>
+                        <label style="color: var(--warning);">Substitute Professor Name</label>
                         <input type="text" id="adj-substitute-teacher" class="form-control" placeholder="Enter name of professor taking this class">
                     </div>
 
@@ -926,7 +926,7 @@ window.renderTeacherDashboard = async function() {
                                 <th>Class Info</th>
                                 <th>Slot</th>
                                 <th>Subject</th>
-                                <th>Original Faculty</th>
+                                <th>Original Professor</th>
                                 <th>Status Today</th>
                                 <th>Adjustment Details</th>
                                 <th>Action</th>
@@ -1872,7 +1872,7 @@ window.renderAdminDashboard = async function() {
                     </span>
                 </td>
                 <td>
-                    ${o.status === 'Substituted' ? `Sub Faculty: <strong>${o.substitute_teacher}</strong>` : ''}
+                    ${o.status === 'Substituted' ? `Sub Professor: <strong>${o.substitute_teacher}</strong>` : ''}
                     ${o.status === 'Combined' ? `Combined Div: <strong>Division ${o.combined_division}</strong> ${o.notes ? `(${o.notes})` : ''}` : ''}
                     ${o.status === 'Scheduled' ? `Note: ${o.notes}` : ''}
                     ${o.status === 'Free' ? 'Cancelled' : ''}
@@ -1900,7 +1900,7 @@ window.renderAdminDashboard = async function() {
 
                 <div class="stat-card">
                     <div class="stat-header">
-                        <span class="stat-title">Faculty Instructors</span>
+                        <span class="stat-title">Faculty Professors</span>
                         <div class="stat-icon" style="background: rgba(99, 102, 241, 0.1); color: var(--primary);"><i class="fa-solid fa-user-tie"></i></div>
                     </div>
                     <div class="stat-value">${teacherCount}</div>
@@ -1930,7 +1930,7 @@ window.renderAdminDashboard = async function() {
                                 <th>Class Info</th>
                                 <th>Slot</th>
                                 <th>Subject</th>
-                                <th>Original Faculty</th>
+                                <th>Original Professor</th>
                                 <th>Status Today</th>
                                 <th>Adjustment Details</th>
                                 <th>Action</th>
@@ -2013,7 +2013,7 @@ window.renderAdminStudents = async function() {
                     <td><strong>${u.username}</strong></td>
                     <td>${u.name}</td>
                     <td>${u.gender || 'Male'}</td>
-                    <td><span class="attendance-status-pill ${u.role === 'admin' ? 'status-active' : (u.role === 'teacher' ? 'status-active' : 'status-active')}" style="background: ${u.role === 'admin' ? 'rgba(168,85,247,0.1)' : (u.role === 'teacher' ? 'rgba(99,102,241,0.1)' : 'rgba(20,184,166,0.1)')}; color: ${u.role === 'admin' ? 'var(--secondary)' : (u.role === 'teacher' ? 'var(--primary)' : 'var(--accent)')};">${u.role.toUpperCase()}</span></td>
+                    <td><span class="attendance-status-pill ${u.role === 'admin' ? 'status-active' : (u.role === 'teacher' ? 'status-active' : 'status-active')}" style="background: ${u.role === 'admin' ? 'rgba(168,85,247,0.1)' : (u.role === 'teacher' ? 'rgba(99,102,241,0.1)' : 'rgba(20,184,166,0.1)')}; color: ${u.role === 'admin' ? 'var(--secondary)' : (u.role === 'teacher' ? 'var(--primary)' : 'var(--accent)')};">${u.role === 'teacher' ? 'PROFESSOR' : u.role.toUpperCase()}</span></td>
                     <td>Division ${u.division || 'N/A'}${u.role === 'student' ? ' - ' + (u.year || '1st Year') : ''}</td>
                     <td>${u.program || 'N/A'}</td>
                     <td>
@@ -2032,7 +2032,7 @@ window.renderAdminStudents = async function() {
                         <select id="admin-user-role-filter" class="form-control" style="width: 120px; padding: 4px 8px; font-size: 13px; height: 32px;">
                             <option value="All">All Roles</option>
                             <option value="admin">Admins</option>
-                            <option value="teacher">Teachers</option>
+                            <option value="teacher">Professors</option>
                             <option value="student">Students</option>
                         </select>
                         <select id="admin-user-program-filter" class="form-control" style="width: 170px; padding: 4px 8px; font-size: 13px; height: 32px;">
@@ -2401,7 +2401,7 @@ window.openAddUserModal = function() {
                     <label>User Role</label>
                     <select id="add-user-role" class="form-control" required>
                         <option value="student">Student</option>
-                        <option value="teacher">Teacher</option>
+                        <option value="teacher">Professor</option>
                         <option value="admin">Administrator</option>
                     </select>
                 </div>
@@ -2814,7 +2814,7 @@ window.renderProgramManagement = async function(programName) {
                 <div class="card-header-flex mb-16" style="border-bottom: 1.5px solid var(--border-color); padding-bottom: 12px;">
                     <h3 class="card-title"><i class="fa-solid fa-graduation-cap mr-8"></i> ${programName} Console</h3>
                     <div class="tabs-group" style="display: flex; gap: 8px;">
-                        <button class="btn btn-secondary btn-sm active" id="btn-tab-teachers">Teachers</button>
+                        <button class="btn btn-secondary btn-sm active" id="btn-tab-teachers">Professors</button>
                         <button class="btn btn-secondary btn-sm" id="btn-tab-timetable">Timetable</button>
                         <button class="btn btn-secondary btn-sm" id="btn-tab-subjects">Subjects</button>
                         <button class="btn btn-secondary btn-sm" id="btn-tab-notices">Notices</button>
@@ -2845,8 +2845,8 @@ window.renderProgramManagement = async function(programName) {
 
             document.getElementById("program-tab-content").innerHTML = `
                 <div class="card-header-flex mb-16">
-                    <h4 style="margin: 0;">Assigned Faculty Instructors</h4>
-                    <button class="btn btn-primary btn-sm" id="add-program-teacher-btn"><i class="fa-solid fa-user-plus mr-4"></i> Add Teacher</button>
+                    <h4 style="margin: 0;">Assigned Professors</h4>
+                    <button class="btn btn-primary btn-sm" id="add-program-teacher-btn"><i class="fa-solid fa-user-plus mr-4"></i> Add Professor</button>
                 </div>
                 <div class="table-responsive">
                     <table class="custom-table" style="font-size: 12px;">
@@ -2868,7 +2868,7 @@ window.renderProgramManagement = async function(programName) {
             `;
 
             document.getElementById("add-program-teacher-btn").addEventListener("click", () => {
-                generalModalTitle.textContent = `Register Teacher for ${programName}`;
+                generalModalTitle.textContent = `Register Professor for ${programName}`;
                 generalModalBody.innerHTML = `
                     <form id="add-prog-teacher-form" style="display: flex; flex-direction: column; gap: 16px;">
                         <div class="form-grid">
@@ -2901,7 +2901,7 @@ window.renderProgramManagement = async function(programName) {
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
-                            <i class="fa-solid fa-save mr-8"></i> Save Faculty Record
+                            <i class="fa-solid fa-save mr-8"></i> Save Professor Record
                         </button>
                     </form>
                 `;
@@ -2938,7 +2938,7 @@ window.renderProgramManagement = async function(programName) {
                             alert(registerData.error);
                         }
                     } catch (e) {
-                        alert("Error saving teacher.");
+                        alert("Error saving professor.");
                     }
                 });
             });
