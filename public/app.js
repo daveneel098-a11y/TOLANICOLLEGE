@@ -652,11 +652,11 @@ window.renderStudentAttendance = async function() {
                 
                 getGPSCoordinates(
                     async (position) => {
-                        await submitCheckin(code, position.coords.latitude, position.coords.longitude);
+                        await submitCheckin(code, position.coords.latitude, position.coords.longitude, position.coords.accuracy);
                     },
                     async (err) => {
                         console.warn("GPS lookup failed, submitting null coordinates:", err);
-                        await submitCheckin(code, null, null);
+                        await submitCheckin(code, null, null, null);
                     }
                 );
             });
@@ -667,7 +667,7 @@ window.renderStudentAttendance = async function() {
     }
 };
 
-async function submitCheckin(code, lat, lon) {
+async function submitCheckin(code, lat, lon, accuracy) {
     try {
         const submitRes = await fetch('/api/attendance/check-in', {
             method: 'POST',
@@ -677,7 +677,8 @@ async function submitCheckin(code, lat, lon) {
                 student_id: currentUser.id, 
                 device_id: deviceId,
                 student_lat: lat,
-                student_lon: lon
+                student_lon: lon,
+                student_accuracy: accuracy
             })
         });
         const submitData = await submitRes.json();

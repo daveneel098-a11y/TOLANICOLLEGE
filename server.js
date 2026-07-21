@@ -386,7 +386,7 @@ app.post('/api/attendance/create', (req, res) => {
 
 // 3. Student Check-in (with anti-proxy validations)
 app.post('/api/attendance/check-in', (req, res) => {
-    const { code, student_id, device_id, student_lat, student_lon } = req.body;
+    const { code, student_id, device_id, student_lat, student_lon, student_accuracy } = req.body;
 
     if (!code || !student_id) {
         return res.status(400).json({ error: 'Code and Student ID are required.' });
@@ -445,12 +445,16 @@ app.post('/api/attendance/check-in', (req, res) => {
             }
 
             const distance = getDistanceKm(refLat, refLon, student_lat, student_lon);
+            const distanceMeters = distance * 1000;
             const radiusMeters = session.geofence_radius || 50; 
-            const radiusKm = radiusMeters / 1000;
 
-            if (distance > radiusKm) { 
+            // Subtract accuracy error margin from calculated distance (cap error margin at 150m to prevent spoofing)
+            const errorMargin = Math.min(student_accuracy || 0, 150);
+            const adjustedDistance = Math.max(0, distanceMeters - errorMargin);
+
+            if (adjustedDistance > radiusMeters) { 
                 return res.status(403).json({ 
-                    error: `Geofencing failure. You must be in close proximity to ${targetName} (within ${radiusMeters}m) to check in. (Your calculated distance is ${(distance * 1000).toFixed(0)} meters).` 
+                    error: `Geofencing failure. You must be in close proximity to ${targetName} (within ${radiusMeters}m) to check in. (Your calculated distance is ${distanceMeters.toFixed(0)}m, GPS error margin: -${errorMargin.toFixed(0)}m, Adjusted: ${adjustedDistance.toFixed(0)}m).` 
                 });
             }
         }
