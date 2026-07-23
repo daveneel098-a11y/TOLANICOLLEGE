@@ -270,9 +270,30 @@ try {
             console.log("Auto-seeded Semester 3 and 5 timetables successfully!");
     // Auto-seed first-year students from q/students directory if not present
     try {
-        const check = db.prepare("SELECT count(*) as count FROM users WHERE role = 'student' AND year = '1st Year'").get();
-        if (!check || check.count === 0) {
-            console.log("No first-year students found in database. Auto-seeding from q/students roster files...");
+        let isSeededSetting = false;
+        try {
+            const row = db.prepare("SELECT value FROM settings WHERE key = 'sem1_2026_seeded'").get();
+            if (row && row.value === 'true') {
+                isSeededSetting = true;
+            }
+        } catch (e) {
+            // Table might not exist or key missing
+        }
+
+        if (!isSeededSetting) {
+            console.log("Forcing first-year student data cleanup and re-seeding...");
+            
+            // Cleanup existing first-year students and associated records to prevent duplicates/leftovers
+            db.prepare("DELETE FROM users WHERE role = 'student' AND year = '1st Year'").run();
+            db.prepare(`
+                DELETE FROM attendance_records 
+                WHERE student_id IN (SELECT id FROM users WHERE role = 'student' AND year = '1st Year')
+            `).run();
+            db.prepare(`
+                DELETE FROM marks_registry 
+                WHERE student_id IN (SELECT id FROM users WHERE role = 'student' AND year = '1st Year')
+            `).run();
+
             const studentsDirectory = path.join(__dirname, 'q', 'students');
             if (fs.existsSync(studentsDirectory)) {
                 const files = fs.readdirSync(studentsDirectory);
@@ -332,6 +353,10 @@ try {
                         }
                     }
                 }
+                
+                // Record that we seeded it successfully
+                db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('sem1_2026_seeded', 'true')").run();
+                
                 db.exec('COMMIT;');
                 dbChanged = true; // Mark as changed to upload to MongoDB Atlas
                 console.log(`Successfully auto-seeded ${count} first-year students on startup!`);
