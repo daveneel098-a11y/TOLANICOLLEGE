@@ -476,6 +476,15 @@ app.post('/api/attendance/create', (req, res) => {
         res.status(500).json({ error: 'Failed to generate attendance session.' });
     }
 });
+app.get('/api/debug-db', (req, res) => {
+    try {
+        const settings = db.prepare("SELECT * FROM settings").all();
+        const firstYearCount = db.prepare("SELECT count(*) as count FROM users WHERE role = 'student' AND year = '1st Year'").get();
+        return res.json({ settings, firstYearCount });
+    } catch (e) {
+        return res.json({ error: e.message });
+    }
+});
 
 // 3. Student Check-in (with anti-proxy validations)
 app.post('/api/attendance/check-in', (req, res) => {
