@@ -268,25 +268,77 @@ try {
 
             dbChanged = true; // Mark as changed to trigger MongoDB upload
             console.log("Auto-seeded Semester 3 and 5 timetables successfully!");
-    // Auto-remove B.Com student data of first year if present
+    // Auto-seed first-year students from q/students directory if not present
     try {
         const check = db.prepare("SELECT count(*) as count FROM users WHERE role = 'student' AND year = '1st Year'").get();
-        if (check && check.count > 0) {
-            console.log(`Auto-removing ${check.count} first year students from database...`);
-            db.prepare(`
-                DELETE FROM attendance_records 
-                WHERE student_id IN (SELECT id FROM users WHERE role = 'student' AND year = '1st Year')
-            `).run();
-            db.prepare(`
-                DELETE FROM marks_registry 
-                WHERE student_id IN (SELECT id FROM users WHERE role = 'student' AND year = '1st Year')
-            `).run();
-            db.prepare("DELETE FROM users WHERE role = 'student' AND year = '1st Year'").run();
-            dbChanged = true; // Mark as changed to sync to Atlas
-            console.log("Successfully removed first year student records.");
+        if (!check || check.count === 0) {
+            console.log("No first-year students found in database. Auto-seeding from q/students roster files...");
+            const studentsDirectory = path.join(__dirname, 'q', 'students');
+            if (fs.existsSync(studentsDirectory)) {
+                const files = fs.readdirSync(studentsDirectory);
+                let count = 0;
+                
+                const insertUser = db.prepare(`
+                    INSERT INTO users (
+                        username, password, role, name, email, phone, gender, category, 
+                        subject, class, department, division, program, year, semester, 
+                        fee_due, fee_paid, fee_total
+                    ) VALUES (
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                    )
+                `);
+                
+                db.exec('BEGIN TRANSACTION;');
+                
+                for (const file of files) {
+                    if (file.endsWith('.json') && file.includes('1styear')) {
+                        const filePath = path.join(studentsDirectory, file);
+                        const fileData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+                        const fileStudents = fileData.students || [];
+                        const program = fileData.program;
+                        const year = fileData.year;
+                        const semester = fileData.semester;
+                        const division = fileData.division;
+                        
+                        for (const s of fileStudents) {
+                            let subject = 'Commerce';
+                            if (s.subject === 'STAT') subject = 'Statistics';
+                            else if (s.subject === 'BA') subject = 'Business Administration';
+                            else if (s.subject === 'CA') subject = 'Computer Applications';
+                            
+                            const baselineFee = s.gender === 'Female' ? 5000 : 6000;
+                            
+                            insertUser.run(
+                                s.rollNo,
+                                s.rollNo,
+                                'student',
+                                s.name,
+                                s.email,
+                                s.phone,
+                                s.gender,
+                                s.category,
+                                subject,
+                                s.class,
+                                'Commerce Department',
+                                division,
+                                program,
+                                year,
+                                semester,
+                                baselineFee,
+                                0,
+                                baselineFee
+                            );
+                            count++;
+                        }
+                    }
+                }
+                db.exec('COMMIT;');
+                dbChanged = true; // Mark as changed to upload to MongoDB Atlas
+                console.log(`Successfully auto-seeded ${count} first-year students on startup!`);
+            }
         }
     } catch (e) {
-        console.error("Failed to auto-remove first year students:", e);
+        console.error("Failed to auto-seed first-year students on boot:", e);
     }
 }
 
