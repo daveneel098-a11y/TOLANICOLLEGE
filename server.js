@@ -268,9 +268,25 @@ try {
 
             dbChanged = true; // Mark as changed to trigger MongoDB upload
             console.log("Auto-seeded Semester 3 and 5 timetables successfully!");
+    // Auto-remove B.Com student data of first year if present
+    try {
+        const check = db.prepare("SELECT count(*) as count FROM users WHERE role = 'student' AND year = '1st Year'").get();
+        if (check && check.count > 0) {
+            console.log(`Auto-removing ${check.count} first year students from database...`);
+            db.prepare(`
+                DELETE FROM attendance_records 
+                WHERE student_id IN (SELECT id FROM users WHERE role = 'student' AND year = '1st Year')
+            `).run();
+            db.prepare(`
+                DELETE FROM marks_registry 
+                WHERE student_id IN (SELECT id FROM users WHERE role = 'student' AND year = '1st Year')
+            `).run();
+            db.prepare("DELETE FROM users WHERE role = 'student' AND year = '1st Year'").run();
+            dbChanged = true; // Mark as changed to sync to Atlas
+            console.log("Successfully removed first year student records.");
         }
     } catch (e) {
-        console.error("Failed to auto-seed timetables:", e);
+        console.error("Failed to auto-remove first year students:", e);
     }
 }
 
