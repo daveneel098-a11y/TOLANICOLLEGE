@@ -268,6 +268,11 @@ try {
 
             dbChanged = true; // Mark as changed to trigger MongoDB upload
             console.log("Auto-seeded Semester 3 and 5 timetables successfully!");
+        }
+    } catch (e) {
+        console.error("Failed to auto-seed timetables:", e);
+    }
+
     // Auto-seed first-year students from q/students directory if not present
     try {
         let isSeededSetting = false;
