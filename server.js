@@ -288,8 +288,7 @@ try {
         if (!isSeededSetting) {
             console.log("Forcing first-year student data cleanup and re-seeding...");
             
-            // Cleanup existing first-year students and associated records to prevent duplicates/leftovers
-            db.prepare("DELETE FROM users WHERE role = 'student' AND year = '1st Year'").run();
+            // Cleanup existing first-year students and associated records (child tables first to satisfy foreign key constraints)
             db.prepare(`
                 DELETE FROM attendance_records 
                 WHERE student_id IN (SELECT id FROM users WHERE role = 'student' AND year = '1st Year')
@@ -298,6 +297,7 @@ try {
                 DELETE FROM marks_registry 
                 WHERE student_id IN (SELECT id FROM users WHERE role = 'student' AND year = '1st Year')
             `).run();
+            db.prepare("DELETE FROM users WHERE role = 'student' AND year = '1st Year'").run();
 
             const studentsDirectory = path.join(__dirname, 'q', 'students');
             if (fs.existsSync(studentsDirectory)) {
@@ -498,7 +498,6 @@ app.get('/api/trigger-seed', (req, res) => {
         
         db.exec('BEGIN TRANSACTION;');
         
-        db.prepare("DELETE FROM users WHERE role = 'student' AND year = '1st Year'").run();
         db.prepare(`
             DELETE FROM attendance_records 
             WHERE student_id IN (SELECT id FROM users WHERE role = 'student' AND year = '1st Year')
@@ -507,6 +506,7 @@ app.get('/api/trigger-seed', (req, res) => {
             DELETE FROM marks_registry 
             WHERE student_id IN (SELECT id FROM users WHERE role = 'student' AND year = '1st Year')
         `).run();
+        db.prepare("DELETE FROM users WHERE role = 'student' AND year = '1st Year'").run();
 
         const studentsDirectory = path.join(__dirname, 'q', 'students');
         if (!fs.existsSync(studentsDirectory)) {
