@@ -697,38 +697,19 @@ async function submitCheckin(code, lat, lon, accuracy) {
 
 window.renderStudentFees = function() {
     dynamicContentArea.innerHTML = `
-        <div class="glass-card mb-24">
-            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 24px; border-radius: 16px; margin-bottom: 24px;">
-                <div class="form-grid">
-                    <div>
-                        <span style="color: var(--text-muted); font-size: 12px; display: block;">Total Tuition Fees</span>
-                        <h2 style="color: var(--text-main); font-weight: 700;">₹${currentUser.fee_total}</h2>
-                    </div>
-                    <div>
-                        <span style="color: var(--text-muted); font-size: 12px; display: block;">Amount Paid</span>
-                        <h2 style="color: var(--success); font-weight: 700;">₹${currentUser.fee_paid}</h2>
-                    </div>
-                    <div>
-                        <span style="color: var(--text-muted); font-size: 12px; display: block;">Outstanding Balance</span>
-                        <h2 style="color: var(--danger); font-weight: 700;">₹${currentUser.fee_due}</h2>
-                    </div>
-                </div>
+        <div class="glass-card mb-24 text-center" style="padding: 40px 20px;">
+            <div style="margin-bottom: 24px;">
+                <i class="fa-solid fa-credit-card" style="font-size: 48px; color: var(--primary); margin-bottom: 16px;"></i>
+                <h3>Fee Payment Portal</h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin-top: 8px;">Access the online fee payment gateway to clear your semester dues.</p>
             </div>
-
-            ${currentUser.fee_due > 0 ? `
-                <div class="text-center">
-                    <a href="https://share.google/x83WwiwJV409pKHzP" target="_blank" class="btn btn-primary" style="text-decoration: none; max-width: 320px; margin: 0 auto; display: inline-flex; align-items: center;">
-                        <i class="fa-solid fa-credit-card mr-8"></i>
-                        <span>Pay Outstanding Fees (eShiksa)</span>
-                    </a>
-                </div>
-            ` : `
-                <div class="text-center" style="color: var(--success); padding: 10px;">
-                    <i class="fa-solid fa-circle-check" style="font-size: 32px; margin-bottom: 12px;"></i>
-                    <h4>All Fees Fully Paid</h4>
-                    <p style="color: var(--text-muted); font-size: 12px;">No outstanding balance for Semester 1.</p>
-                </div>
-            `}
+            
+            <div class="text-center">
+                <a href="https://share.google/x83WwiwJV409pKHzP" target="_blank" class="btn btn-primary" style="text-decoration: none; max-width: 320px; margin: 0 auto; display: inline-flex; align-items: center; justify-content: center; height: 44px; font-weight: 600;">
+                    <i class="fa-solid fa-wallet mr-8"></i>
+                    <span>Pay Now with eShiksa</span>
+                </a>
+            </div>
         </div>
     `;
 };
