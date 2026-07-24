@@ -422,6 +422,51 @@ try {
     } catch (e) {
         console.error("Failed to migrate student usernames:", e);
     }
+
+    // Auto-remove B.Com Regular Semester 3 students if migration flag is not set
+    try {
+        let isSem3Deleted = false;
+        try {
+            const row = db.prepare("SELECT value FROM settings WHERE key = 'sem3_deleted'").get();
+            if (row && row.value === 'true') {
+                isSem3Deleted = true;
+            }
+        } catch (e) {}
+
+        if (!isSem3Deleted) {
+            console.log("Forcing cleanup of Semester 3 B.Com Regular students...");
+            
+            // Delete attendance records of Semester 3 B.Com Regular students
+            db.prepare(`
+                DELETE FROM attendance_records 
+                WHERE student_id IN (
+                    SELECT id FROM users 
+                    WHERE role = 'student' AND semester = 'Semester 3' AND program = 'B.Com (Regular)'
+                )
+            `).run();
+
+            // Delete marks registry records of Semester 3 B.Com Regular students
+            db.prepare(`
+                DELETE FROM marks_registry 
+                WHERE student_id IN (
+                    SELECT id FROM users 
+                    WHERE role = 'student' AND semester = 'Semester 3' AND program = 'B.Com (Regular)'
+                )
+            `).run();
+
+            // Delete user accounts of Semester 3 B.Com Regular students
+            db.prepare(`
+                DELETE FROM users 
+                WHERE role = 'student' AND semester = 'Semester 3' AND program = 'B.Com (Regular)'
+            `).run();
+
+            db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('sem3_deleted', 'true')").run();
+            dbChanged = true;
+            console.log("Successfully cleared Semester 3 B.Com Regular student data.");
+        }
+    } catch (e) {
+        console.error("Failed to auto-remove Sem 3 student data:", e);
+    }
 }
 
 // --- HELPER FUNCTIONS ---
