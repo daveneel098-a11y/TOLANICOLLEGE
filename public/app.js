@@ -1085,6 +1085,12 @@ window.renderTeacherStudents = async function() {
                             <option value="B.Com (Professional)">B.Com (Professional)</option>
                             <option value="M.Com">M.Com</option>
                         </select>
+                        <select id="teacher-student-year-filter" class="form-control" style="width: 120px; padding: 4px 8px; font-size: 13px; height: 32px;">
+                            <option value="All">All Years</option>
+                            <option value="1st Year">1st Year</option>
+                            <option value="2nd Year">2nd Year</option>
+                            <option value="3rd Year">3rd Year</option>
+                        </select>
                         <select id="teacher-student-div-filter" class="form-control" style="width: 120px; padding: 4px 8px; font-size: 13px; height: 32px;">
                             <option value="All">All Divisions</option>
                             <option value="A">Division A</option>
@@ -1121,17 +1127,20 @@ window.renderTeacherStudents = async function() {
 
         const progFilter = document.getElementById("teacher-student-program-filter");
         const divFilter = document.getElementById("teacher-student-div-filter");
+        const yearFilter = document.getElementById("teacher-student-year-filter");
         const tbody = document.getElementById("teacher-student-tbody");
         const countSpan = document.getElementById("teacher-student-count");
 
         const filterHandler = () => {
             const pVal = progFilter.value;
             const dVal = divFilter.value;
+            const yVal = yearFilter.value;
 
             const filtered = allStudents.filter(s => {
                 const matchesP = (pVal === "All") || (s.program === pVal);
                 const matchesD = (dVal === "All") || (s.division === dVal);
-                return matchesP && matchesD;
+                const matchesY = (yVal === "All") || (s.year === yVal);
+                return matchesP && matchesD && matchesY;
             });
 
             tbody.innerHTML = renderRows(filtered);
@@ -1140,6 +1149,7 @@ window.renderTeacherStudents = async function() {
 
         progFilter.addEventListener("change", filterHandler);
         divFilter.addEventListener("change", filterHandler);
+        yearFilter.addEventListener("change", filterHandler);
 
     } catch (err) {
         console.error(err);
@@ -2083,6 +2093,22 @@ window.renderAdminStudents = async function() {
                             <option value="B.Com (Professional)">B.Com (Professional)</option>
                             <option value="M.Com">M.Com</option>
                         </select>
+                        <select id="admin-user-year-filter" class="form-control" style="width: 120px; padding: 4px 8px; font-size: 13px; height: 32px;">
+                            <option value="All">All Years</option>
+                            <option value="1st Year">1st Year</option>
+                            <option value="2nd Year">2nd Year</option>
+                            <option value="3rd Year">3rd Year</option>
+                        </select>
+                        <select id="admin-user-div-filter" class="form-control" style="width: 120px; padding: 4px 8px; font-size: 13px; height: 32px;">
+                            <option value="All">All Divisions</option>
+                            <option value="A">Division A</option>
+                            <option value="B">Division B</option>
+                            <option value="C">Division C</option>
+                            <option value="D">Division D</option>
+                            <option value="E">Division E</option>
+                            <option value="F">Division F</option>
+                            <option value="G">Division G</option>
+                        </select>
                         <button class="btn btn-secondary btn-sm" id="admin-user-export-btn" style="background: var(--success); border-color: var(--success); color: white;"><i class="fa-solid fa-file-excel mr-4"></i> Export Rosters</button>
                         <button class="btn btn-secondary btn-sm" id="admin-user-import-btn" style="background: var(--primary); border-color: var(--primary); color: white;"><i class="fa-solid fa-file-import mr-4"></i> Bulk Import CSV</button>
                         <button class="btn btn-primary btn-sm" onclick="openAddUserModal()"><i class="fa-solid fa-user-plus"></i> Add User</button>
@@ -2113,16 +2139,22 @@ window.renderAdminStudents = async function() {
 
         const rFilter = document.getElementById("admin-user-role-filter");
         const pFilter = document.getElementById("admin-user-program-filter");
+        const yFilter = document.getElementById("admin-user-year-filter");
+        const dFilter = document.getElementById("admin-user-div-filter");
         const tbody = document.getElementById("admin-user-tbody");
 
         const filterHandler = () => {
             const rVal = rFilter.value;
             const pVal = pFilter.value;
+            const yVal = yFilter.value;
+            const dVal = dFilter.value;
 
             const filtered = users.filter(u => {
                 const matchesR = (rVal === "All") || (u.role === rVal);
                 const matchesP = (pVal === "All") || (u.role !== "student") || (u.program === pVal);
-                return matchesR && matchesP;
+                const matchesY = (yVal === "All") || (u.role !== "student") || (u.year === yVal);
+                const matchesD = (dVal === "All") || (u.role !== "student") || (u.division === dVal);
+                return matchesR && matchesP && matchesY && matchesD;
             });
 
             tbody.innerHTML = renderRows(filtered);
@@ -2130,6 +2162,8 @@ window.renderAdminStudents = async function() {
 
         rFilter.addEventListener("change", filterHandler);
         pFilter.addEventListener("change", filterHandler);
+        yFilter.addEventListener("change", filterHandler);
+        dFilter.addEventListener("change", filterHandler);
 
         const exportBtn = document.getElementById("admin-user-export-btn");
         if (exportBtn) {
