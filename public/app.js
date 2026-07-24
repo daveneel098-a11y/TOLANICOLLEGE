@@ -225,7 +225,6 @@ const ROLE_NAV = {
         { id: "projector", label: "Classroom Projector", icon: "fa-display" },
         { id: "attendance_report", label: "Attendance Excel", icon: "fa-file-excel" },
         { id: "coursework_manager", label: "Coursework Suite", icon: "fa-folder-open" },
-        { id: "fees", label: "Fees Setup", icon: "fa-wallet" },
         { id: "database", label: "Postgres Console", icon: "fa-database" },
         { id: "profile", label: "Profile Settings", icon: "fa-user-gear" }
     ]
