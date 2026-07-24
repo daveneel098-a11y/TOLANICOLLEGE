@@ -2660,6 +2660,10 @@ window.openEditUserModal = function(user) {
         <form id="edit-user-form" style="display: flex; flex-direction: column; gap: 16px;">
             <div class="form-grid">
                 <div>
+                    <label>Username / Roll No</label>
+                    <input type="text" id="edit-user-username" class="form-control" value="${user.username}" required autocomplete="off">
+                </div>
+                <div>
                     <label>Full Name</label>
                     <input type="text" id="edit-user-name" class="form-control" value="${user.name}" required autocomplete="off">
                 </div>
@@ -2742,6 +2746,7 @@ window.openEditUserModal = function(user) {
     const editForm = document.getElementById("edit-user-form");
     editForm.addEventListener("submit", async (e) => {
         e.preventDefault();
+        const username = document.getElementById("edit-user-username").value.trim();
         const name = document.getElementById("edit-user-name").value.trim();
         const gender = document.getElementById("edit-user-gender").value;
         const email = document.getElementById("edit-user-email").value.trim();
@@ -2758,7 +2763,7 @@ window.openEditUserModal = function(user) {
             const res = await fetch('/api/users/edit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: user.id, name, email, phone, division, class_name, department, program, year, semester, gender, password })
+                body: JSON.stringify({ id: user.id, username, name, email, phone, division, class_name, department, program, year, semester, gender, password })
             });
             const data = await res.json();
             if (data.success) {

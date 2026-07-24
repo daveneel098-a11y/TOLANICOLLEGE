@@ -1094,33 +1094,46 @@ app.post('/api/users/add', (req, res) => {
 
 // 10. Edit User (Admin GUI)
 app.post('/api/users/edit', (req, res) => {
-    const { id, name, email, phone, division, class_name, department, program, year, semester, gender, password } = req.body;
+    const { id, username, name, email, phone, division, class_name, department, program, year, semester, gender, password } = req.body;
 
     if (!id) {
         return res.status(400).json({ error: 'User ID is required.' });
     }
 
     try {
-        // Fetch current user details to inspect role
-        const existing = db.prepare("SELECT role, program, semester, class FROM users WHERE id = ?").get(id);
-        const finalRole = existing ? existing.role : 'student';
+        // Fetch current user details to inspect role and current username
+        const existing = db.prepare("SELECT role, username, program, semester, class FROM users WHERE id = ?").get(id);
+        if (!existing) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
         
-        const finalProgram = program || (existing ? existing.program : 'B.Com (Regular)');
-        const finalSemester = semester || (existing ? existing.semester : 'Semester 1');
+        const finalRole = existing.role;
+        const finalProgram = program || existing.program || 'B.Com (Regular)';
+        const finalSemester = semester || existing.semester || 'Semester 1';
         
         let finalClass = class_name;
         if (finalRole === 'student') {
             finalClass = getStandardClass(finalProgram, finalSemester);
         } else {
-            finalClass = finalClass || (existing ? existing.class : 'B.Com. Sem-I');
+            finalClass = finalClass || existing.class || 'B.Com. Sem-I';
+        }
+
+        const finalUsername = username ? username.trim() : existing.username;
+
+        // Validate username uniqueness if changed
+        if (finalUsername !== existing.username) {
+            const dup = db.prepare("SELECT count(*) as count FROM users WHERE username = ?").get(finalUsername);
+            if (dup && dup.count > 0) {
+                return res.status(400).json({ error: 'Username already taken by another account.' });
+            }
         }
 
         let query = `
             UPDATE users 
-            SET name = ?, email = ?, phone = ?, division = ?, class = ?, department = ?, program = ?, year = ?, semester = ?, gender = ?
+            SET username = ?, name = ?, email = ?, phone = ?, division = ?, class = ?, department = ?, program = ?, year = ?, semester = ?, gender = ?
         `;
         const params = [
-            name, email || null, phone || null, division || 'A', finalClass, 
+            finalUsername, name, email || null, phone || null, division || 'A', finalClass, 
             department || 'B.Com (NEP)', finalProgram, year || '1st Year', finalSemester,
             gender || 'Male'
         ];
