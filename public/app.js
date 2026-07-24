@@ -471,11 +471,11 @@ window.renderStudentDashboard = async function() {
 
                 <div class="stat-card">
                     <div class="stat-header">
-                        <span class="stat-title">Pending Fees</span>
+                        <span class="stat-title">Fees Status</span>
                         <div class="stat-icon" style="background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i class="fa-solid fa-wallet"></i></div>
                     </div>
-                    <div class="stat-value">₹${currentUser.fee_due}</div>
-                    <div class="stat-desc">Total course tuition fee</div>
+                    <div class="stat-value" style="color: ${currentUser.fee_due > 0 ? 'var(--danger)' : 'var(--success)'}; font-size: 20px; font-weight: 700;">${currentUser.fee_due > 0 ? 'PENDING' : 'PAID'}</div>
+                    <div class="stat-desc">${currentUser.fee_due > 0 ? 'Semester Dues Unpaid' : 'All Fees Cleared'}</div>
                 </div>
             </div>
 
@@ -706,10 +706,6 @@ window.renderStudentFees = function() {
             </div>
             
             <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; max-width: 400px; margin: 0 auto 24px auto;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <span style="color: var(--text-muted); font-size: 13px;">Pending Fees:</span>
-                    <span style="font-size: 18px; font-weight: 700; color: ${isPaid ? 'var(--success)' : 'var(--danger)'};">₹${currentUser.fee_due}</span>
-                </div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span style="color: var(--text-muted); font-size: 13px;">Payment Status:</span>
                     <span class="attendance-status-pill" style="background: ${isPaid ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)'}; color: ${isPaid ? 'var(--success)' : 'var(--danger)'}; font-size: 11px; padding: 4px 8px; font-weight: 600; border-radius: 6px;">
