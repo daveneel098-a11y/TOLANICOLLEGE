@@ -602,13 +602,15 @@ app.post('/api/student/update-profile', (req, res) => {
             return res.status(400).json({ error: "Profile modification is locked because it was already updated once." });
         }
 
+        const rawRollNo = roll_no.replace(/^(I|II|III|IV|V|VI)/i, '').trim();
+
         let romanPrefix = 'I';
         if (user.semester) {
             const semNum = parseInt(user.semester.replace(/\D/g, ''));
             const romanMapping = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI' };
             romanPrefix = romanMapping[semNum] || 'I';
         }
-        const finalUsername = romanPrefix + roll_no;
+        const finalUsername = romanPrefix + rawRollNo;
 
         // Validate final username duplicate check (only if they are changing the username)
         if (finalUsername !== user.username) {
@@ -619,7 +621,7 @@ app.post('/api/student/update-profile', (req, res) => {
         }
 
         // Update student profile (username is prefixed, password is raw roll number)
-        db.prepare("UPDATE users SET username = ?, password = ?, gender = ?, profile_locked = 1 WHERE id = ?").run(finalUsername, roll_no, gender, student_id);
+        db.prepare("UPDATE users SET username = ?, password = ?, gender = ?, profile_locked = 1 WHERE id = ?").run(finalUsername, rawRollNo, gender, student_id);
         
         // Fetch updated user to send back
         const updatedUser = db.prepare("SELECT * FROM users WHERE id = ?").get(student_id);

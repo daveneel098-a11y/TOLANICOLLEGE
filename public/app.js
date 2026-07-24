@@ -757,7 +757,7 @@ window.renderStudentProfile = function() {
                 </div>
                 <div>
                     <label>Roll Number (Username)</label>
-                    <input type="text" id="profile-roll-no" class="form-control" value="${currentUser.username}" ${isLocked ? 'disabled' : ''}>
+                    <input type="text" id="profile-roll-no" class="form-control" value="${currentUser.username ? currentUser.username.replace(/^(I|II|III|IV|V|VI)/, '') : ''}" ${isLocked ? 'disabled' : ''}>
                 </div>
                 <div>
                     <label>Gender</label>
