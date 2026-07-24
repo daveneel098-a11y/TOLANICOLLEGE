@@ -695,22 +695,73 @@ async function submitCheckin(code, lat, lon, accuracy) {
 }
 
 window.renderStudentFees = function() {
+    const isPaid = currentUser.fee_due <= 0;
+    
     dynamicContentArea.innerHTML = `
         <div class="glass-card mb-24 text-center" style="padding: 40px 20px;">
             <div style="margin-bottom: 24px;">
-                <i class="fa-solid fa-credit-card" style="font-size: 48px; color: var(--primary); margin-bottom: 16px;"></i>
+                <i class="fa-solid fa-credit-card" style="font-size: 48px; color: ${isPaid ? 'var(--success)' : 'var(--warning)'}; margin-bottom: 16px;"></i>
                 <h3>Fee Payment Portal</h3>
                 <p style="color: var(--text-muted); font-size: 13px; margin-top: 8px;">Access the online fee payment gateway to clear your semester dues.</p>
             </div>
             
-            <div class="text-center">
-                <a href="https://share.google/x83WwiwJV409pKHzP" target="_blank" class="btn btn-primary" style="text-decoration: none; max-width: 320px; margin: 0 auto; display: inline-flex; align-items: center; justify-content: center; height: 44px; font-weight: 600;">
-                    <i class="fa-solid fa-wallet mr-8"></i>
-                    <span>Pay Now with eShiksa</span>
-                </a>
+            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; max-width: 400px; margin: 0 auto 24px auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <span style="color: var(--text-muted); font-size: 13px;">Pending Fees:</span>
+                    <span style="font-size: 18px; font-weight: 700; color: ${isPaid ? 'var(--success)' : 'var(--danger)'};">₹${currentUser.fee_due}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-muted); font-size: 13px;">Payment Status:</span>
+                    <span class="attendance-status-pill" style="background: ${isPaid ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)'}; color: ${isPaid ? 'var(--success)' : 'var(--danger)'}; font-size: 11px; padding: 4px 8px; font-weight: 600; border-radius: 6px;">
+                        ${isPaid ? 'PAID' : 'PENDING'}
+                    </span>
+                </div>
             </div>
+            
+            ${!isPaid ? `
+                <div class="text-center">
+                    <a href="https://share.google/x83WwiwJV409pKHzP" target="_blank" id="student-pay-now-btn" class="btn btn-primary" style="text-decoration: none; max-width: 320px; margin: 0 auto; display: inline-flex; align-items: center; justify-content: center; height: 44px; font-weight: 600;">
+                        <i class="fa-solid fa-wallet mr-8"></i>
+                        <span>Pay Now with eShiksa</span>
+                    </a>
+                </div>
+            ` : `
+                <div class="text-center" style="color: var(--success);">
+                    <i class="fa-solid fa-circle-check" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
+                    <span style="font-size: 14px; font-weight: 600;">All Fees Fully Cleared</span>
+                </div>
+            `}
         </div>
     `;
+
+    const payBtn = document.getElementById("student-pay-now-btn");
+    if (payBtn) {
+        payBtn.addEventListener("click", async () => {
+            // Auto update status in backend database
+            try {
+                await fetch('/api/sql', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: `UPDATE users SET fee_paid = fee_total, fee_due = 0 WHERE id = ${currentUser.id};`
+                    })
+                });
+            } catch (e) {
+                console.error("Error updating fees in database:", e);
+            }
+
+            // Auto update in current session local storage
+            currentUser.fee_paid = currentUser.fee_total;
+            currentUser.fee_due = 0;
+            localStorage.setItem("es_current_user", JSON.stringify(currentUser));
+            
+            // Re-render view after a brief timeout to allow new tab to launch
+            setTimeout(() => {
+                window.renderStudentFees();
+                alert("Payment detected! Your fee payment status has been auto-updated to PAID.");
+            }, 1000);
+        });
+    }
 };
 
 window.openPaymentModal = function(amount) {
