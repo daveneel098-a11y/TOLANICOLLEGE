@@ -149,10 +149,16 @@ try {
 } catch (e) {
     // Column already exists, ignore
 }
-
 // Try adding gender column to users in case of legacy schema
 try {
     db.exec("ALTER TABLE users ADD COLUMN gender TEXT DEFAULT 'Male'");
+} catch (e) {
+    // Column already exists, ignore
+}
+
+// Try adding profile_locked column to users in case of legacy schema
+try {
+    db.exec("ALTER TABLE users ADD COLUMN profile_locked INTEGER DEFAULT 0");
 } catch (e) {
     // Column already exists, ignore
 }
@@ -481,6 +487,52 @@ app.post('/api/attendance/create', (req, res) => {
         res.status(500).json({ error: 'Failed to generate attendance session.' });
     }
 });
+
+// 2.5 Student Profile Update (Gender and Roll Number - one-time)
+app.post('/api/student/update-profile', (req, res) => {
+    const { student_id, gender, roll_no } = req.body;
+    
+    if (!student_id || !gender || !roll_no) {
+        return res.status(400).json({ error: "Missing required fields." });
+    }
+
+    try {
+        // Fetch student details to check if already locked
+        const user = db.prepare("SELECT * FROM users WHERE id = ?").get(student_id);
+        if (!user) {
+            return res.status(404).json({ error: "Student not found." });
+        }
+        
+        if (user.role !== 'student') {
+            return res.status(403).json({ error: "Only students can update their profiles." });
+        }
+
+        if (user.profile_locked === 1) {
+            return res.status(400).json({ error: "Profile modification is locked because it was already updated once." });
+        }
+
+        // Validate username (roll_no) duplicate check (only if they are changing the roll number)
+        if (roll_no !== user.username) {
+            const dup = db.prepare("SELECT count(*) as count FROM users WHERE username = ?").get(roll_no);
+            if (dup && dup.count > 0) {
+                return res.status(400).json({ error: "Roll number already taken by another account." });
+            }
+        }
+
+        // Update student profile (also update password to match roll number as standard)
+        db.prepare("UPDATE users SET username = ?, password = ?, gender = ?, profile_locked = 1 WHERE id = ?").run(roll_no, roll_no, gender, student_id);
+        
+        // Fetch updated user to send back
+        const updatedUser = db.prepare("SELECT * FROM users WHERE id = ?").get(student_id);
+        
+        dbChanged = true; // Trigger Mongo sync
+        return res.json({ success: true, message: "Profile updated and locked successfully!", user: updatedUser });
+    } catch (err) {
+        console.error("Error updating student profile:", err);
+        return res.status(500).json({ error: "Internal server error." });
+    }
+});
+
 // 3. Student Check-in (with anti-proxy validations)
 app.post('/api/attendance/check-in', (req, res) => {
     const { code, student_id, device_id, student_lat, student_lon, student_accuracy } = req.body;

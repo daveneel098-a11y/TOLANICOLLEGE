@@ -765,6 +765,8 @@ if (feePayForm) {
 }
 
 window.renderStudentProfile = function() {
+    const isLocked = currentUser.profile_locked === 1 || currentUser.profile_locked === '1';
+    
     dynamicContentArea.innerHTML = `
         <div class="glass-card">
             <h3 class="card-title mb-16"><i class="fa-solid fa-shield-halved mr-8"></i> Security & Details</h3>
@@ -775,11 +777,18 @@ window.renderStudentProfile = function() {
                 </div>
                 <div>
                     <label>Roll Number (Username)</label>
-                    <input type="text" class="form-control" value="${currentUser.username}" disabled>
+                    <input type="text" id="profile-roll-no" class="form-control" value="${currentUser.username}" ${isLocked ? 'disabled' : ''}>
                 </div>
                 <div>
                     <label>Gender</label>
-                    <input type="text" class="form-control" value="${currentUser.gender || 'Male'}" disabled>
+                    ${isLocked ? `
+                        <input type="text" class="form-control" value="${currentUser.gender || 'Male'}" disabled>
+                    ` : `
+                        <select id="profile-gender" class="form-control">
+                            <option value="Male" ${currentUser.gender === 'Male' ? 'selected' : ''}>Male</option>
+                            <option value="Female" ${currentUser.gender === 'Female' ? 'selected' : ''}>Female</option>
+                        </select>
+                    `}
                 </div>
                 <div>
                     <label>Email ID</label>
@@ -790,11 +799,77 @@ window.renderStudentProfile = function() {
                     <input type="text" class="form-control" value="${currentUser.phone || 'N/A'}" disabled>
                 </div>
             </div>
-            <p style="font-size: 12px; color: var(--text-muted);">
-                <i class="fa-solid fa-circle-info"></i> Profile modification is locked. Please contact the college registrar office for major data changes.
-            </p>
+            
+            ${isLocked ? `
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 12px;">
+                    <i class="fa-solid fa-circle-info"></i> Profile modification is locked. Please contact the college registrar office for major data changes.
+                </p>
+            ` : `
+                <div style="margin-top: 24px;">
+                    <button class="btn btn-primary" id="save-student-profile-btn">
+                        <i class="fa-solid fa-lock mr-8"></i> Save & Lock Profile
+                    </button>
+                    <p style="font-size: 12px; color: var(--danger); margin-top: 12px;">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Warning: You can only set your Roll Number and Gender ONCE. After saving, these fields will be locked permanently.
+                    </p>
+                </div>
+            `}
         </div>
     `;
+
+    if (!isLocked) {
+        const saveBtn = document.getElementById("save-student-profile-btn");
+        saveBtn.addEventListener("click", async () => {
+            const rollInput = document.getElementById("profile-roll-no");
+            const genderInput = document.getElementById("profile-gender");
+            const rollVal = rollInput.value.trim();
+            const genderVal = genderInput.value;
+
+            if (!rollVal) {
+                alert("Roll Number cannot be empty.");
+                return;
+            }
+
+            const confirmSave = confirm("Are you sure? Once saved, you will NOT be able to change your roll number and gender again.");
+            if (!confirmSave) return;
+
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-8"></i> Saving...`;
+
+            try {
+                const response = await fetch('/api/student/update-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        student_id: currentUser.id,
+                        gender: genderVal,
+                        roll_no: rollVal
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    currentUser = data.user;
+                    localStorage.setItem("es_current_user", JSON.stringify(currentUser));
+                    
+                    // Update sidebar info dynamically
+                    sidebarUserName.textContent = currentUser.name;
+                    
+                    window.renderStudentProfile();
+                } else {
+                    alert(data.error || "Failed to update profile.");
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = `<i class="fa-solid fa-lock mr-8"></i> Save & Lock Profile`;
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Network error. Please try again.");
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = `<i class="fa-solid fa-lock mr-8"></i> Save & Lock Profile`;
+            }
+        });
+    }
 };
 
 
