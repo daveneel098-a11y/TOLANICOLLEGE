@@ -341,7 +341,7 @@ try {
                             const baselineFee = s.gender === 'Female' ? 5000 : 6000;
                             
                             insertUser.run(
-                                s.rollNo,
+                                'I' + s.rollNo,
                                 s.rollNo,
                                 'student',
                                 s.name,
@@ -375,6 +375,52 @@ try {
         }
     } catch (e) {
         console.error("Failed to auto-seed first-year students on boot:", e);
+    }
+
+    // Migration: Apply roman numeral semester prefix to all existing student usernames and set password to raw roll number
+    try {
+        let isMigrated = false;
+        try {
+            const row = db.prepare("SELECT value FROM settings WHERE key = 'student_usernames_roman_prefixed'").get();
+            if (row && row.value === 'true') {
+                isMigrated = true;
+            }
+        } catch (e) {}
+
+        if (!isMigrated) {
+            console.log("Migrating existing student usernames to semester-prefixed format...");
+            const students = db.prepare("SELECT id, username, semester FROM users WHERE role = 'student'").all();
+            
+            db.exec('BEGIN TRANSACTION;');
+            let count = 0;
+            
+            const updateStmt = db.prepare("UPDATE users SET username = ?, password = ? WHERE id = ?");
+            
+            for (const s of students) {
+                // Extract raw roll number by stripping any existing roman numeral prefix
+                const rollNo = s.username.replace(/^(I|II|III|IV|V|VI)/, '');
+                
+                let romanPrefix = 'I';
+                if (s.semester) {
+                    const semNum = parseInt(s.semester.replace(/\D/g, ''));
+                    const romanMapping = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI' };
+                    romanPrefix = romanMapping[semNum] || 'I';
+                }
+                
+                const newUsername = romanPrefix + rollNo;
+                const newPassword = rollNo; // password is raw roll number
+                
+                updateStmt.run(newUsername, newPassword, s.id);
+                count++;
+            }
+            
+            db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('student_usernames_roman_prefixed', 'true')").run();
+            db.exec('COMMIT;');
+            dbChanged = true;
+            console.log(`Successfully migrated ${count} student usernames and passwords!`);
+        }
+    } catch (e) {
+        console.error("Failed to migrate student usernames:", e);
     }
 }
 
@@ -511,16 +557,24 @@ app.post('/api/student/update-profile', (req, res) => {
             return res.status(400).json({ error: "Profile modification is locked because it was already updated once." });
         }
 
-        // Validate username (roll_no) duplicate check (only if they are changing the roll number)
-        if (roll_no !== user.username) {
-            const dup = db.prepare("SELECT count(*) as count FROM users WHERE username = ?").get(roll_no);
+        let romanPrefix = 'I';
+        if (user.semester) {
+            const semNum = parseInt(user.semester.replace(/\D/g, ''));
+            const romanMapping = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI' };
+            romanPrefix = romanMapping[semNum] || 'I';
+        }
+        const finalUsername = romanPrefix + roll_no;
+
+        // Validate final username duplicate check (only if they are changing the username)
+        if (finalUsername !== user.username) {
+            const dup = db.prepare("SELECT count(*) as count FROM users WHERE username = ?").get(finalUsername);
             if (dup && dup.count > 0) {
                 return res.status(400).json({ error: "Roll number already taken by another account." });
             }
         }
 
-        // Update student profile (also update password to match roll number as standard)
-        db.prepare("UPDATE users SET username = ?, password = ?, gender = ?, profile_locked = 1 WHERE id = ?").run(roll_no, roll_no, gender, student_id);
+        // Update student profile (username is prefixed, password is raw roll number)
+        db.prepare("UPDATE users SET username = ?, password = ?, gender = ?, profile_locked = 1 WHERE id = ?").run(finalUsername, roll_no, gender, student_id);
         
         // Fetch updated user to send back
         const updatedUser = db.prepare("SELECT * FROM users WHERE id = ?").get(student_id);
