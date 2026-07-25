@@ -1339,6 +1339,15 @@ window.renderTeacherSchedule = function() {
                     </select>
                 </div>
                 <div>
+                    <label for="att-lecture-slot">Lecture Slot</label>
+                    <select id="att-lecture-slot" class="form-control">
+                        <option value="Lecture 1">Lecture 1</option>
+                        <option value="Lecture 2">Lecture 2</option>
+                        <option value="Lecture 3">Lecture 3</option>
+                        <option value="Lecture 4">Lecture 4</option>
+                    </select>
+                </div>
+                <div>
                     <label for="att-duration">Expiration Time</label>
                     <select id="att-duration" class="form-control">
                         <option value="5">5 minutes</option>
@@ -1516,24 +1525,25 @@ window.renderTeacherSchedule = function() {
             const requireGps = document.getElementById("att-require-gps").checked;
             const isRolling = document.getElementById("att-is-rolling").checked;
             const geofenceRadius = document.getElementById("att-gps-radius").value;
+            const lectureSlot = document.getElementById("att-lecture-slot").value;
 
             if (requireGps) {
                 getGPSCoordinates(
                     async (position) => {
-                        await sendCreateSession(className, subject, division, program, duration, true, position.coords.latitude, position.coords.longitude, isRolling, geofenceRadius);
+                        await sendCreateSession(className, subject, division, program, duration, true, position.coords.latitude, position.coords.longitude, isRolling, geofenceRadius, lectureSlot);
                     },
                     async (err) => {
                         alert("Note: Location coordinates lookup failed or timed out. Creating geofenced session using fixed Tolani College Campus coordinates instead.");
-                        await sendCreateSession(className, subject, division, program, duration, true, null, null, isRolling, geofenceRadius);
+                        await sendCreateSession(className, subject, division, program, duration, true, null, null, isRolling, geofenceRadius, lectureSlot);
                     }
                 );
             } else {
-                await sendCreateSession(className, subject, division, program, duration, false, null, null, isRolling, 50);
+                await sendCreateSession(className, subject, division, program, duration, false, null, null, isRolling, 50, lectureSlot);
             }
         });
     }
 
-    async function sendCreateSession(class_name, subject, division, program, duration_minutes, require_gps, lat, lon, is_rolling, geofence_radius) {
+    async function sendCreateSession(class_name, subject, division, program, duration_minutes, require_gps, lat, lon, is_rolling, geofence_radius, lecture_slot) {
         try {
             const res = await fetch('/api/attendance/create', {
                 method: 'POST',
@@ -1549,7 +1559,8 @@ window.renderTeacherSchedule = function() {
                     creator_lat: lat,
                     creator_lon: lon,
                     is_rolling,
-                    geofence_radius: parseInt(geofence_radius)
+                    geofence_radius: parseInt(geofence_radius),
+                    lecture_slot
                 })
             });
             const data = await res.json();

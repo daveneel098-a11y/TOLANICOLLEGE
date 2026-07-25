@@ -163,6 +163,13 @@ try {
     // Column already exists, ignore
 }
 
+// Try adding lecture_slot column to attendance_sessions in case of legacy schema
+try {
+    db.exec("ALTER TABLE attendance_sessions ADD COLUMN lecture_slot TEXT DEFAULT 'Lecture 1'");
+} catch (e) {
+    // Column already exists, ignore
+}
+
     // Auto-seed Semester 3 and Semester 5 timetables for B.Com Regular if missing
     try {
         const check = db.prepare("SELECT count(*) as count FROM timetables WHERE program LIKE '%Semester 3%' OR program LIKE '%Semester 5%'").get();
@@ -537,7 +544,7 @@ app.post('/api/login', (req, res) => {
 
 // 2. Create Attendance Session (Teacher/Admin)
 app.post('/api/attendance/create', (req, res) => {
-    const { creator_id, class_name, subject, division, program, duration_minutes, require_gps, creator_lat, creator_lon, is_rolling, geofence_radius } = req.body;
+    const { creator_id, class_name, subject, division, program, duration_minutes, require_gps, creator_lat, creator_lon, is_rolling, geofence_radius, lecture_slot } = req.body;
 
     if (!creator_id || !class_name || !subject || !division || !program) {
         return res.status(400).json({ error: 'Missing required session parameters.' });
@@ -547,15 +554,16 @@ app.post('/api/attendance/create', (req, res) => {
     const code = generateAttendanceCode();
     const expiresAt = new Date(Date.now() + duration * 60000).toISOString();
     const radius = geofence_radius !== undefined ? parseInt(geofence_radius) : 50;
+    const finalSlot = lecture_slot || 'Lecture 1';
 
     try {
         const stmt = db.prepare(`
-            INSERT INTO attendance_sessions (code, creator_id, class_name, subject, division, program, expires_at, require_gps, creator_lat, creator_lon, is_rolling, geofence_radius)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO attendance_sessions (code, creator_id, class_name, subject, division, program, expires_at, require_gps, creator_lat, creator_lon, is_rolling, geofence_radius, lecture_slot)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
         const info = stmt.run(
             code, creator_id, class_name, subject, division, program, expiresAt,
-            require_gps ? 1 : 0, creator_lat !== undefined ? creator_lat : null, creator_lon !== undefined ? creator_lon : null, is_rolling ? 1 : 0, radius
+            require_gps ? 1 : 0, creator_lat !== undefined ? creator_lat : null, creator_lon !== undefined ? creator_lon : null, is_rolling ? 1 : 0, radius, finalSlot
         );
 
         res.json({
@@ -570,7 +578,8 @@ app.post('/api/attendance/create', (req, res) => {
                 expires_at: expiresAt,
                 require_gps: require_gps ? 1 : 0,
                 is_rolling: is_rolling ? 1 : 0,
-                geofence_radius: radius
+                geofence_radius: radius,
+                lecture_slot: finalSlot
             }
         });
     } catch (err) {
