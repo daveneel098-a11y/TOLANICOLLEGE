@@ -1413,6 +1413,7 @@ window.renderTeacherSchedule = function() {
                 <div style="display: flex; gap: 8px;">
                     <button class="btn btn-secondary btn-sm" id="launch-projector-btn" style="padding: 6px 12px; display: none;"><i class="fa-solid fa-expand"></i> Launch Projector View</button>
                     <button class="btn btn-secondary btn-sm" id="export-session-btn" style="padding: 6px 12px; background: var(--success); border-color: var(--success); color: white;"><i class="fa-solid fa-file-excel mr-4"></i> Export Session</button>
+                    <button class="btn btn-secondary btn-sm" id="btn-manual-attendance" style="padding: 6px 12px; background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.2); color: var(--primary);"><i class="fa-solid fa-user-check mr-4"></i> Manual Attendance</button>
                     <button class="btn btn-danger btn-sm" id="close-session-btn" style="padding: 6px 12px;"><i class="fa-solid fa-power-off"></i> Close Session Early</button>
                 </div>
             </div>
@@ -1643,6 +1644,112 @@ window.renderTeacherSchedule = function() {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        });
+    }
+
+    const manualBtn = document.getElementById("btn-manual-attendance");
+    if (manualBtn) {
+        manualBtn.addEventListener("click", async () => {
+            if (!currentSessionObj) {
+                alert("No active session found.");
+                return;
+            }
+            
+            generalModalTitle.textContent = "Manual Attendance Sheet";
+            generalModalBody.innerHTML = `<div class="text-center" style="padding: 24px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--primary);"></i> Loading student list...</div>`;
+            generalModal.classList.add("active");
+
+            try {
+                // Fetch all students in the class/division
+                const studentsRes = await fetch(`/api/students/list?class_name=${encodeURIComponent(currentSessionObj.class_name)}&division=${encodeURIComponent(currentSessionObj.division)}`);
+                const studentsData = await studentsRes.json();
+                const students = studentsData.students || [];
+
+                function renderList() {
+                    if (students.length === 0) {
+                        generalModalBody.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 16px;">No students enrolled in ${currentSessionObj.class_name} Div ${currentSessionObj.division}.</p>`;
+                        return;
+                    }
+
+                    const presentIds = new Set((window.currentActiveSessionRecords || []).map(r => r.student_id));
+
+                    generalModalBody.innerHTML = `
+                        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+                            Class: <strong>${currentSessionObj.class_name} - Division ${currentSessionObj.division}</strong> | Subject: <strong>${currentSessionObj.subject}</strong>
+                        </p>
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="custom-table text-center" style="font-size: 13px;">
+                                <thead>
+                                    <tr>
+                                        <th>Roll No.</th>
+                                        <th>Name</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${students.map(s => {
+                                        const isPresent = presentIds.has(s.id);
+                                        const statusLabel = isPresent 
+                                            ? `<span style="color: #10b981; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Present</span>`
+                                            : `<span style="color: #ef4444; font-weight: 600;"><i class="fa-solid fa-circle-xmark"></i> Absent</span>`;
+                                        const actionBtn = isPresent
+                                            ? `<button class="btn btn-danger btn-sm manual-toggle-btn" data-id="${s.id}" data-action="absent" style="padding: 4px 8px; font-size: 11px;">Mark Absent</button>`
+                                            : `<button class="btn btn-primary btn-sm manual-toggle-btn" data-id="${s.id}" data-action="present" style="padding: 4px 8px; font-size: 11px; background: #10b981; border-color: #10b981;">Mark Present</button>`;
+                                        
+                                        return `
+                                            <tr>
+                                                <td><strong>${s.roll_no}</strong></td>
+                                                <td style="text-align: left;">${s.name}</td>
+                                                <td>${statusLabel}</td>
+                                                <td>${actionBtn}</td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+
+                    generalModalBody.querySelectorAll(".manual-toggle-btn").forEach(btn => {
+                        btn.addEventListener("click", async () => {
+                            const studentId = parseInt(btn.dataset.id);
+                            const action = btn.dataset.action;
+                            btn.disabled = true;
+                            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+
+                            try {
+                                const markRes = await fetch('/api/attendance/mark-manual', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        session_id: currentSessionObj.id,
+                                        student_id: studentId,
+                                        status: action
+                                    })
+                                });
+                                const markData = await markRes.json();
+                                if (markData.success) {
+                                    await pollCheckedInStudents(activeSessionCode);
+                                    renderList();
+                                } else {
+                                    alert(markData.error || "Failed to update attendance.");
+                                    btn.disabled = false;
+                                }
+                            } catch (e) {
+                                alert("Connection error.");
+                                btn.disabled = false;
+                            }
+                        });
+                    });
+                }
+
+                renderList();
+
+            } catch (err) {
+                console.error(err);
+                generalModalBody.innerHTML = `<p style="text-align: center; color: var(--danger); padding: 16px;">Failed to load students list.</p>`;
+            }
         });
     }
 

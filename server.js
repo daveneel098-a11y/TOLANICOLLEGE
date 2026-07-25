@@ -837,6 +837,63 @@ app.get('/api/attendance/session/active', (req, res) => {
     }
 });
 
+// 4.5.1 Get all students in a class and division
+app.get('/api/students/list', (req, res) => {
+    const { class_name, division } = req.query;
+
+    if (!class_name || !division) {
+        return res.status(400).json({ error: 'Class Name and Division are required.' });
+    }
+
+    try {
+        const stmt = db.prepare(`
+            SELECT id, name, username, gender, division
+            FROM users
+            WHERE role = 'student' AND class = ? AND division = ?
+        `);
+        const students = stmt.all(class_name, division);
+
+        // Derive roll number and sort numerically
+        students.forEach(s => {
+            s.roll_no = s.username.replace(/^(VI|IV|III|II|I|V)/i, '').replace(/P$/i, '').trim();
+        });
+        students.sort((a, b) => parseInt(a.roll_no) - parseInt(b.roll_no));
+
+        res.json({ success: true, students });
+    } catch (err) {
+        console.error('Error fetching students list:', err);
+        res.status(500).json({ error: 'Failed to fetch students.' });
+    }
+});
+
+// 4.5.2 Manual attendance marking by professor
+app.post('/api/attendance/mark-manual', (req, res) => {
+    const { session_id, student_id, status } = req.body;
+
+    if (!session_id || !student_id || !status) {
+        return res.status(400).json({ error: 'Session ID, Student ID, and Status are required.' });
+    }
+
+    try {
+        if (status === 'present') {
+            const check = db.prepare("SELECT * FROM attendance_records WHERE session_id = ? AND student_id = ?").get(session_id, student_id);
+            if (!check) {
+                db.prepare(`
+                    INSERT INTO attendance_records (session_id, student_id, device_id, status)
+                    VALUES (?, ?, 'MANUAL', 'present')
+                `).run(session_id, student_id);
+            }
+        } else if (status === 'absent') {
+            db.prepare("DELETE FROM attendance_records WHERE session_id = ? AND student_id = ?").run(session_id, student_id);
+        }
+
+        res.json({ success: true, message: `Student attendance updated to ${status}.` });
+    } catch (err) {
+        console.error('Error updating manual attendance:', err);
+        res.status(500).json({ error: 'Failed to update attendance.' });
+    }
+});
+
 // 4.6. Retrieve all active attendance sessions for projector view
 app.get('/api/attendance/active-sessions', (req, res) => {
     try {
