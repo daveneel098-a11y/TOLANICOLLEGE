@@ -56,9 +56,15 @@ const storedUser = localStorage.getItem("es_current_user");
 if (storedUser) {
     try {
         currentUser = JSON.parse(storedUser);
-        initializeDashboard();
     } catch (e) {
         localStorage.removeItem("es_current_user");
+    }
+    if (currentUser) {
+        try {
+            initializeDashboard();
+        } catch (err) {
+            console.error("Error initializing dashboard on load:", err);
+        }
     }
 }
 
@@ -231,7 +237,12 @@ const ROLE_NAV = {
 };
 
 function buildSidebarMenu(role) {
-    const navItems = ROLE_NAV[role];
+    const cleanRole = (role || '').toLowerCase();
+    const navItems = ROLE_NAV[cleanRole];
+    if (!navItems) {
+        console.error("buildSidebarMenu: Invalid user role:", role);
+        return;
+    }
     sidebarMenuList.innerHTML = "";
     
     navItems.forEach(item => {
