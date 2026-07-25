@@ -211,7 +211,7 @@ const ROLE_NAV = {
         { id: "timetable", label: "Class Timetable", icon: "fa-calendar" },
         { id: "schedule", label: "Manage Attendance", icon: "fa-calendar-plus" },
         { id: "projector", label: "Classroom Projector", icon: "fa-display" },
-        { id: "attendance_report", label: "Attendance Excel", icon: "fa-file-excel" },
+        { id: "attendance_report", label: "Attendance Sheet", icon: "fa-table-list" },
         { id: "coursework_manager", label: "Coursework Suite", icon: "fa-folder-open" },
         { id: "profile", label: "Profile Settings", icon: "fa-user-gear" }
     ],
@@ -223,7 +223,7 @@ const ROLE_NAV = {
         { id: "students", label: "User Registry", icon: "fa-users" },
         { id: "schedule", label: "Manage Attendance", icon: "fa-calendar-plus" },
         { id: "projector", label: "Classroom Projector", icon: "fa-display" },
-        { id: "attendance_report", label: "Attendance Excel", icon: "fa-file-excel" },
+        { id: "attendance_report", label: "Attendance Sheet", icon: "fa-table-list" },
         { id: "coursework_manager", label: "Coursework Suite", icon: "fa-folder-open" },
         { id: "database", label: "Postgres Console", icon: "fa-database" },
         { id: "profile", label: "Profile Settings", icon: "fa-user-gear" }
@@ -3583,220 +3583,441 @@ window.renderUnifiedAttendanceReport = async function(isTeacherOnly) {
     dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
     
     try {
-        const url = isTeacherOnly ? `/api/attendance/history?creator_id=${currentUser.id}` : '/api/attendance/history';
-        const res = await fetch(url);
+        const res = await fetch('/api/attendance/analytics');
         const data = await res.json();
-        const records = data.records || [];
-
-        function renderRows(filtered) {
-            if (filtered.length === 0) {
-                return `<tr><td colspan="9" style="color: var(--text-muted); padding: 24px;">No matching attendance logs found.</td></tr>`;
-            }
-            return filtered.map(r => `
-                <tr>
-                    <td><strong>${r.roll_no}</strong></td>
-                    <td>${r.student_name}</td>
-                    <td>${r.gender}</td>
-                    <td>${r.program}</td>
-                    <td>${r.student_class}</td>
-                    <td>Division ${r.student_division}</td>
-                    <td><strong>${r.subject}</strong></td>
-                    <td>${new Date(r.marked_at).toLocaleString()}</td>
-                    <td>${r.teacher_name}</td>
-                </tr>
-            `).join("");
+        
+        if (!data.success) {
+            dynamicContentArea.innerHTML = `<div class="glass-card text-center"><p style="color: var(--danger);">Failed to load analytics: ${data.message || 'Unknown error'}</p></div>`;
+            return;
         }
 
         dynamicContentArea.innerHTML = `
-            <div class="glass-card mb-24">
-                <h3 class="card-title mb-16"><i class="fa-solid fa-filter mr-8"></i> Filter Attendance Records</h3>
-                <div class="form-grid">
+            <div class="card-header-flex mb-24">
+                <div>
+                    <h2 style="margin: 0; font-size: 24px; color: #ffffff;">Attendance Data Sheet</h2>
+                    <p style="color: var(--text-muted); font-size: 13px; margin: 4px 0 0 0;">Complete student attendance record and summary</p>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="glass-card mb-24" style="padding: 16px;">
+                <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) 120px 140px 100px; align-items: flex-end; gap: 12px;">
                     <div>
-                        <label>Academic Program</label>
-                        <select id="rep-program" class="form-control">
-                            <option value="All">All Programs</option>
-                            <option value="B.Com (Regular)">B.Com (Regular)</option>
-                            <option value="B.Com (Professional)">B.Com (Professional)</option>
-                            <option value="M.Com">M.Com</option>
+                        <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">Class</label>
+                        <select id="sheet-class" class="form-control"></select>
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">Division</label>
+                        <select id="sheet-division" class="form-control"></select>
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">Subject</label>
+                        <select id="sheet-subject" class="form-control"></select>
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">Month</label>
+                        <select id="sheet-month" class="form-control">
+                            <option value="All">All Months</option>
+                            <option value="January 2026">January 2026</option>
+                            <option value="February 2026">February 2026</option>
+                            <option value="March 2026">March 2026</option>
+                            <option value="April 2025">April 2025</option>
+                            <option value="May 2025">May 2025</option>
+                            <option value="June 2025">June 2025</option>
+                            <option value="July 2025">July 2025</option>
+                            <option value="August 2025">August 2025</option>
+                            <option value="September 2025">September 2025</option>
+                            <option value="October 2025">October 2025</option>
+                            <option value="November 2025">November 2025</option>
+                            <option value="December 2025">December 2025</option>
                         </select>
                     </div>
                     <div>
-                        <label>Class Semester</label>
-                        <select id="rep-class" class="form-control">
-                            <option value="All">All Semesters</option>
-                            <option value="B.Com. Sem-I">B.Com. Sem-I</option>
-                            <option value="B.Com. Sem-II">B.Com. Sem-II</option>
-                            <option value="B.Com. Sem-III">B.Com. Sem-III</option>
-                            <option value="B.Com. Sem-IV">B.Com. Sem-IV</option>
-                            <option value="B.Com. Sem-V">B.Com. Sem-V</option>
-                            <option value="B.Com. Sem-VI">B.Com. Sem-VI</option>
-                            <option value="B.Com. Prof. Sem-I">B.Com. Prof. Sem-I</option>
-                            <option value="B.Com. Prof. Sem-II">B.Com. Prof. Sem-II</option>
-                            <option value="B.Com. Prof. Sem-III">B.Com. Prof. Sem-III</option>
-                            <option value="B.Com. Prof. Sem-IV">B.Com. Prof. Sem-IV</option>
-                            <option value="B.Com. Prof. Sem-V">B.Com. Prof. Sem-V</option>
-                            <option value="B.Com. Prof. Sem-VI">B.Com. Prof. Sem-VI</option>
-                            <option value="M.Com. Sem-I">M.Com. Sem-I</option>
-                            <option value="M.Com. Sem-II">M.Com. Sem-II</option>
-                            <option value="M.Com. Sem-III">M.Com. Sem-III</option>
-                            <option value="M.Com. Sem-IV">M.Com. Sem-IV</option>
-                        </select>
+                        <button class="btn btn-primary" id="sheet-search-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <i class="fa-solid fa-magnifying-glass"></i> Search
+                        </button>
                     </div>
                     <div>
-                        <label>Division</label>
-                        <select id="rep-division" class="form-control">
-                            <option value="All">All Divisions</option>
-                            <option value="A">Division A</option>
-                            <option value="B">Division B</option>
-                            <option value="C">Division C</option>
-                            <option value="D">Division D</option>
-                            <option value="E">Division E</option>
-                            <option value="F">Division F</option>
-                            <option value="G">Division G</option>
-                        </select>
+                        <button class="btn btn-secondary" id="sheet-export-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.2); color: #10b981;">
+                            <i class="fa-solid fa-file-excel"></i> Export Excel
+                        </button>
                     </div>
                     <div>
-                        <label>Subject Search</label>
-                        <input type="text" id="rep-subject" class="form-control" placeholder="e.g. Statistics" autocomplete="off">
-                    </div>
-                    <div>
-                        <label>Filter Date</label>
-                        <input type="date" id="rep-date" class="form-control">
-                    </div>
-                    <div style="display: flex; align-items: flex-end;">
-                        <button class="btn btn-secondary" id="rep-reset" style="width: 100%;"><i class="fa-solid fa-rotate-left mr-4"></i> Reset Filters</button>
+                        <button class="btn btn-secondary" id="sheet-print-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <i class="fa-solid fa-print"></i> Print
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <div class="glass-card">
-                <div class="card-header-flex mb-16" style="flex-wrap: wrap; gap: 12px;">
-                    <h3 class="card-title"><i class="fa-solid fa-table-list mr-8"></i> Historical Records Monitor</h3>
-                    <button class="btn btn-primary" id="rep-export-btn" style="background: var(--success); border-color: var(--success); color: white;">
-                        <i class="fa-solid fa-file-excel mr-8"></i> Export to Excel (CSV)
-                    </button>
+            <!-- Stats Grid -->
+            <div class="stats-grid mb-24" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+                <div class="stat-card" style="padding: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="background: rgba(59,130,246,0.1); color: #3b82f6; width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <div>
+                            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block;">Total Students</span>
+                            <h3 id="stat-students" style="margin: 2px 0 0 0; font-size: 22px; color: #ffffff;">0</h3>
+                            <span style="font-size: 10px; color: var(--text-muted);">Active Students</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card" style="padding: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="background: rgba(16,185,129,0.1); color: #10b981; width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                            <i class="fa-solid fa-calendar-days"></i>
+                        </div>
+                        <div>
+                            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block;">Total Lectures</span>
+                            <h3 id="stat-lectures" style="margin: 2px 0 0 0; font-size: 22px; color: #ffffff;">0</h3>
+                            <span style="font-size: 10px; color: var(--text-muted);">This Year</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card" style="padding: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="background: rgba(245,158,11,0.1); color: #f59e0b; width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <div>
+                            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block;">Total Present</span>
+                            <h3 id="stat-present" style="margin: 2px 0 0 0; font-size: 22px; color: #ffffff;">0</h3>
+                            <span style="font-size: 10px; color: var(--text-muted);">This Year</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card" style="padding: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="background: rgba(239,68,68,0.1); color: #ef4444; width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                        </div>
+                        <div>
+                            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block;">Total Absent</span>
+                            <h3 id="stat-absent" style="margin: 2px 0 0 0; font-size: 22px; color: #ffffff;">0</h3>
+                            <span style="font-size: 10px; color: var(--text-muted);">This Year</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card" style="padding: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="background: rgba(139,92,246,0.1); color: #8b5cf6; width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </div>
+                        <div>
+                            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block;">Overall Attendance</span>
+                            <h3 id="stat-overall" style="margin: 2px 0 0 0; font-size: 22px; color: #ffffff;">0%</h3>
+                            <span style="font-size: 10px; color: var(--text-muted);">This Year</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Records Split Grid -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;" class="mb-24 content-split-section">
+                <!-- Record Table -->
+                <div class="glass-card" style="padding: 20px; display: flex; flex-direction: column;">
+                    <h3 class="card-title mb-16"><i class="fa-solid fa-table-list mr-8"></i> Student Attendance Record</h3>
+                    <div class="table-responsive" style="max-height: 440px; overflow-y: auto; flex-grow: 1;">
+                        <table class="custom-table text-center" style="font-size: 13px;">
+                            <thead>
+                                <tr>
+                                    <th>Roll No.</th>
+                                    <th>Student Name</th>
+                                    <th>Total Lectures</th>
+                                    <th>Present</th>
+                                    <th>Absent</th>
+                                    <th>Attendance %</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sheet-tbody"></tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
-                    <table class="custom-table text-center" style="font-size: 12px;">
-                        <thead>
-                            <tr>
-                                <th>Roll No</th>
-                                <th>Student Name</th>
-                                <th>Gender</th>
-                                <th>Program</th>
-                                <th>Class</th>
-                                <th>Division</th>
-                                <th>Subject</th>
-                                <th>Checked-in At</th>
-                                <th>Taken By</th>
-                            </tr>
-                        </thead>
-                        <tbody id="rep-tbody">
-                            ${renderRows(records)}
-                        </tbody>
-                    </table>
+                <!-- Annual Summary Card -->
+                <div class="glass-card" style="padding: 20px; display: flex; flex-direction: column;" id="sheet-summary-card">
+                    <h3 class="card-title mb-16"><i class="fa-solid fa-address-card mr-8"></i> Student Annual Summary</h3>
+                    <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between;" id="student-summary-content">
+                        <p style="color: var(--text-muted); text-align: center; margin-top: 50px;">Select a student from the record table to view their summary details.</p>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Bottom Charts -->
+            <div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 24px;" class="mb-24 charts-split-section">
+                <div class="glass-card" style="padding: 20px;">
+                    <h3 class="card-title mb-16"><i class="fa-solid fa-chart-column mr-8"></i> Monthly Attendance Overview (All Students)</h3>
+                    <div style="height: 220px; display: flex; align-items: flex-end; justify-content: space-between; padding: 10px 20px;" id="bar-chart-container"></div>
+                </div>
+                <div class="glass-card" style="padding: 20px;">
+                    <h3 class="card-title mb-16"><i class="fa-solid fa-chart-pie mr-8"></i> Attendance Distribution (This Year)</h3>
+                    <div style="display: flex; gap: 16px; align-items: center; height: 220px;" id="donut-chart-container"></div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); flex-wrap: wrap; gap: 8px;">
+                <span>Note: Attendance is calculated automatically. No manual calculation required.</span>
+                <span id="sheet-last-updated">Last Updated: ${new Date().toLocaleString()}</span>
             </div>
         `;
 
-        const progFil = document.getElementById("rep-program");
-        const classFil = document.getElementById("rep-class");
-        const divFil = document.getElementById("rep-division");
-        const subjFil = document.getElementById("rep-subject");
-        const dateFil = document.getElementById("rep-date");
-        const resetBtn = document.getElementById("rep-reset");
-        const exportBtn = document.getElementById("rep-export-btn");
-        const tbody = document.getElementById("rep-tbody");
+        // Populate dropdown options
+        const classSelect = document.getElementById("sheet-class");
+        const divSelect = document.getElementById("sheet-division");
+        const subjSelect = document.getElementById("sheet-subject");
 
-        // List of current active filtered records
-        let currentFilteredRecords = [...records];
+        classSelect.innerHTML = data.classes.map(c => `<option value="${c}">${c}</option>`).join('');
+        divSelect.innerHTML = data.divisions.map(d => `<option value="${d}">Division ${d}</option>`).join('');
+        subjSelect.innerHTML = data.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
 
-        const runFilter = () => {
-            const pVal = progFil.value;
-            const cVal = classFil.value;
-            const dVal = divFil.value;
-            const sVal = subjFil.value.trim().toLowerCase();
-            const dateVal = dateFil.value;
-
-            currentFilteredRecords = records.filter(r => {
-                const matchesP = (pVal === "All") || (r.program === pVal);
-                const matchesC = (cVal === "All") || (r.student_class || '').startsWith(cVal);
-                const matchesD = (dVal === "All") || (r.student_division === dVal);
-                const matchesS = (!sVal) || (r.subject || '').toLowerCase().includes(sVal);
-                
-                let matchesDate = true;
-                if (dateVal) {
-                    const rDate = new Date(r.marked_at).toISOString().split('T')[0];
-                    matchesDate = (rDate === dateVal);
+        // Apply style rules for active row highlighting
+        const style = document.createElement('style');
+        style.id = 'attendance-sheet-highlight-styles';
+        style.innerHTML = `
+            .active-row-highlight {
+                background: rgba(99, 102, 241, 0.15) !important;
+                border-left: 3px solid var(--primary) !important;
+            }
+            @media print {
+                aside, header, .sidebar-brand, #app-sidebar, .card-header-flex, .glass-card:has(#sheet-class), #sheet-print-btn, #sheet-export-btn, #sheet-search-btn {
+                    display: none !important;
                 }
+                body {
+                    background: white !important;
+                    color: black !important;
+                }
+                .glass-card {
+                    background: none !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                }
+            }
+        `;
+        // Clean existing styles if loaded before
+        const prevStyle = document.getElementById('attendance-sheet-highlight-styles');
+        if (prevStyle) prevStyle.remove();
+        document.head.appendChild(style);
 
-                return matchesP && matchesC && matchesD && matchesS && matchesDate;
-            });
+        // Core update rendering logic
+        let currentStudents = [];
+        
+        async function updateSheetData() {
+            const cls = classSelect.value;
+            const div = divSelect.value;
+            const sub = subjSelect.value;
+            const mth = document.getElementById("sheet-month").value;
 
-            tbody.innerHTML = renderRows(currentFilteredRecords);
-        };
+            // Show mini spinners on stat numbers
+            document.getElementById("stat-students").innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="font-size: 14px;"></i>`;
+            document.getElementById("stat-lectures").innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="font-size: 14px;"></i>`;
+            document.getElementById("stat-present").innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="font-size: 14px;"></i>`;
+            document.getElementById("stat-absent").innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="font-size: 14px;"></i>`;
+            document.getElementById("stat-overall").innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="font-size: 14px;"></i>`;
 
-        // Hook up handlers
-        progFil.addEventListener("change", runFilter);
-        classFil.addEventListener("change", runFilter);
-        divFil.addEventListener("change", runFilter);
-        subjFil.addEventListener("input", runFilter);
-        dateFil.addEventListener("change", runFilter);
+            const queryRes = await fetch(`/api/attendance/analytics?class_name=${encodeURIComponent(cls)}&division=${encodeURIComponent(div)}&subject=${encodeURIComponent(sub)}&month=${encodeURIComponent(mth)}`);
+            const resData = await queryRes.json();
 
-        resetBtn.addEventListener("click", () => {
-            progFil.value = "All";
-            classFil.value = "All";
-            divFil.value = "All";
-            subjFil.value = "";
-            dateFil.value = "";
-            runFilter();
+            if (!resData.success) {
+                alert("Failed to fetch analytical data.");
+                return;
+            }
+
+            currentStudents = resData.students || [];
+
+            // Populate Stats Cards
+            document.getElementById("stat-students").textContent = resData.metrics.totalStudents;
+            document.getElementById("stat-lectures").textContent = resData.metrics.totalLectures;
+            document.getElementById("stat-present").textContent = resData.metrics.totalPresent;
+            document.getElementById("stat-absent").textContent = resData.metrics.totalAbsent;
+            document.getElementById("stat-overall").textContent = resData.metrics.overallAttendance.toFixed(1) + '%';
+
+            // Populate Table
+            const tbody = document.getElementById("sheet-tbody");
+            if (currentStudents.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="color: var(--text-muted); padding: 24px;">No students found for class ${cls} Division ${div}.</td></tr>`;
+                document.getElementById("student-summary-content").innerHTML = `<p style="color: var(--text-muted); text-align: center; margin-top: 50px;">No student records found.</p>`;
+            } else {
+                tbody.innerHTML = currentStudents.map(s => {
+                    let pillColor = "rgba(239, 68, 68, 0.1)";
+                    let pillText = "red";
+                    let textColor = "#ef4444";
+                    if (s.status === 'Excellent') {
+                        pillColor = "rgba(16, 185, 129, 0.15)";
+                        textColor = "#10b981";
+                    } else if (s.status === 'Good') {
+                        pillColor = "rgba(59, 130, 246, 0.15)";
+                        textColor = "#3b82f6";
+                    } else if (s.status === 'Average') {
+                        pillColor = "rgba(245, 158, 11, 0.15)";
+                        textColor = "#f59e0b";
+                    }
+
+                    return `
+                        <tr data-roll="${s.rollNo}" style="cursor: pointer;">
+                            <td><strong>${s.rollNo}</strong></td>
+                            <td style="text-align: left;">${s.name}</td>
+                            <td>${s.totalLectures}</td>
+                            <td style="color: #10b981; font-weight: 600;">${s.present}</td>
+                            <td style="color: #ef4444; font-weight: 600;">${s.absent}</td>
+                            <td style="font-weight: 600;">${s.percentage.toFixed(1)}%</td>
+                            <td>
+                                <span style="background: ${pillColor}; color: ${textColor}; padding: 4px 8px; border-radius: 20px; font-size: 11px; font-weight: 600;">
+                                    ${s.status}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                // Click event hooks for rows
+                tbody.querySelectorAll('tr').forEach(tr => {
+                    tr.addEventListener('click', () => {
+                        tbody.querySelectorAll('tr').forEach(r => r.classList.remove('active-row-highlight'));
+                        tr.classList.add('active-row-highlight');
+                        const roll = tr.dataset.roll;
+                        const targetStudent = currentStudents.find(s => s.rollNo === roll);
+                        if (targetStudent) {
+                            renderStudentSummary(targetStudent, cls, div);
+                        }
+                    });
+                });
+
+                // Auto-select first student on loading
+                if (currentStudents.length > 0) {
+                    tbody.querySelector('tr').click();
+                }
+            }
+
+            // Render Bar Chart
+            renderMonthlyBarChart(resData.monthlyOverview);
+
+            // Render Donut Chart
+            renderDonutChart(resData.distribution, resData.metrics.totalStudents);
+        }
+
+        function renderStudentSummary(student, cls, div) {
+            const summaryDiv = document.getElementById("student-summary-content");
+            
+            let statusPillColor = "#ef4444";
+            if (student.status === 'Excellent') statusPillColor = "#10b981";
+            else if (student.status === 'Good') statusPillColor = "#3b82f6";
+            else if (student.status === 'Average') statusPillColor = "#f59e0b";
+
+            summaryDiv.innerHTML = `
+                <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+                    <div style="font-size: 12px; color: var(--accent); text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">Selected Student Profile</div>
+                    <h4 style="margin: 4px 0 0 0; font-size: 18px; color: #ffffff;">${student.name}</h4>
+                    <span style="font-size: 13px; color: var(--text-muted); display: block; margin-top: 4px;">Gender: ${student.gender}</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Roll No.:</span><strong>${student.rollNo}</strong></div>
+                    <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Class:</span><strong>${cls} - Division ${div}</strong></div>
+                    <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Total Lectures:</span><strong>${student.totalLectures}</strong></div>
+                    <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted); color: #10b981;">Total Present:</span><strong style="color: #10b981;">${student.present}</strong></div>
+                    <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted); color: #ef4444;">Total Absent:</span><strong style="color: #ef4444;">${student.absent}</strong></div>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; text-align: center;">
+                    <span style="font-size: 11px; color: var(--text-muted); display: block; text-transform: uppercase; font-weight: 600; margin-bottom: 6px;">Attendance Percentage</span>
+                    <h2 style="font-size: 32px; margin: 0; color: #ffffff;">${student.percentage.toFixed(1)}%</h2>
+                    <span style="background: ${statusPillColor}; color: white; display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-top: 8px;">
+                        ${student.status}
+                    </span>
+                </div>
+            `;
+        }
+
+        function renderMonthlyBarChart(monthlyOverview) {
+            const chartDiv = document.getElementById("bar-chart-container");
+            chartDiv.innerHTML = monthlyOverview.map(item => `
+                <div style="display: flex; flex-direction: column; align-items: center; flex-grow: 1; height: 100%;">
+                    <div style="flex-grow: 1; display: flex; align-items: flex-end; width: 20px; background: rgba(255,255,255,0.02); border-radius: 4px; overflow: hidden; position: relative;">
+                        <div style="height: ${item.percentage}%; width: 100%; background: linear-gradient(180deg, var(--primary) 0%, rgba(99,102,241,0.4) 100%); border-radius: 4px; transition: height 0.5s; cursor: pointer;" title="Average: ${item.percentage}%"></div>
+                    </div>
+                    <span style="font-size: 10px; margin-top: 8px; color: var(--text-muted);">${item.month}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderDonutChart(dist, total) {
+            const container = document.getElementById("donut-chart-container");
+            
+            const exc = total > 0 ? parseFloat(((dist.excellent / total) * 100).toFixed(0)) : 0;
+            const good = total > 0 ? parseFloat(((dist.good / total) * 100).toFixed(0)) : 0;
+            const avg = total > 0 ? parseFloat(((dist.average / total) * 100).toFixed(0)) : 0;
+            const needs = total > 0 ? parseFloat(((dist.needsImprove / total) * 100).toFixed(0)) : 0;
+
+            container.innerHTML = `
+                <div style="flex-shrink: 0; width: 120px; height: 120px; border-radius: 50%; background: conic-gradient(#10b981 0% ${exc}%, #3b82f6 ${exc}% ${exc+good}%, #f59e0b ${exc+good}% ${exc+good+avg}%, #ef4444 ${exc+good+avg}% 100%); display: flex; align-items: center; justify-content: center; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    <div style="width: 86px; height: 86px; border-radius: 50%; background: #0f172a; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <span style="font-size: 20px; font-weight: 700; color: #ffffff;">${total}</span>
+                        <span style="font-size: 10px; color: var(--text-muted);">Students</span>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px; flex-grow: 1; min-width: 140px;">
+                    <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span> Excellent (90%+): ${dist.excellent} (${exc}%)</div>
+                    <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #3b82f6; display: inline-block;"></span> Good (75-89%): ${dist.good} (${good}%)</div>
+                    <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span> Average (60-74%): ${dist.average} (${avg}%)</div>
+                    <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block;"></span> Needs Improve (<60%): ${dist.needsImprove} (${needs}%)</div>
+                </div>
+            `;
+        }
+
+        // Search Button Click handler
+        document.getElementById("sheet-search-btn").addEventListener("click", updateSheetData);
+
+        // Print Button handler
+        document.getElementById("sheet-print-btn").addEventListener("click", () => {
+            window.print();
         });
 
-        // Export Functionality
-        exportBtn.addEventListener("click", () => {
-            if (currentFilteredRecords.length === 0) {
+        // Export Button handler
+        document.getElementById("sheet-export-btn").addEventListener("click", () => {
+            if (currentStudents.length === 0) {
                 alert("No records to export.");
                 return;
             }
 
             const headers = [
-                "Roll Number", "Student Name", "Gender", "Program", 
-                "Class", "Division", "Subject", "Checked-in At", "Taken By Faculty"
+                "Roll Number", "Student Name", "Gender", "Total Lectures", "Present", "Absent", "Attendance %", "Status"
             ];
 
-            const rows = currentFilteredRecords.map(r => [
-                r.roll_no,
-                r.student_name,
-                r.gender,
-                r.program,
-                r.student_class,
-                r.student_division,
-                r.subject,
-                new Date(r.marked_at).toLocaleString(),
-                r.teacher_name
+            const csvRows = currentStudents.map(s => [
+                s.rollNo,
+                s.name,
+                s.gender,
+                s.totalLectures,
+                s.present,
+                s.absent,
+                s.percentage + '%',
+                s.status
             ]);
 
-            // Format to CSV with double quotes and escaping
             const csvContent = "\uFEFF" + [
                 headers.join(','),
-                ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+                ...csvRows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
             ].join('\n');
 
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
             link.setAttribute("href", url);
-            link.setAttribute("download", `Attendance_Export_${new Date().toISOString().split('T')[0]}.csv`);
+            link.setAttribute("download", `Attendance_Sheet_Export_${classSelect.value.replace(/\s+/g, '_')}_Div_${divSelect.value}.csv`);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         });
 
+        // Trigger first analytics load
+        await updateSheetData();
+
     } catch (err) {
         console.error(err);
-        dynamicContentArea.innerHTML = `<div class="glass-card text-center"><p style="color: var(--danger);">Failed to load attendance report.</p></div>`;
+        dynamicContentArea.innerHTML = `<div class="glass-card text-center"><p style="color: var(--danger);">Failed to load attendance sheet view.</p></div>`;
     }
 };
 
