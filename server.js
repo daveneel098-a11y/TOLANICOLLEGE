@@ -602,7 +602,7 @@ app.post('/api/student/update-profile', (req, res) => {
             return res.status(400).json({ error: "Profile modification is locked because it was already updated once." });
         }
 
-        const rawRollNo = roll_no.replace(/^(I|II|III|IV|V|VI)/i, '').trim();
+        const rawRollNo = roll_no.replace(/^(VI|IV|III|II|I|V)/i, '').replace(/P$/i, '').trim();
 
         let romanPrefix = 'I';
         if (user.semester) {
@@ -610,7 +610,10 @@ app.post('/api/student/update-profile', (req, res) => {
             const romanMapping = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI' };
             romanPrefix = romanMapping[semNum] || 'I';
         }
-        const finalUsername = romanPrefix + rawRollNo;
+        let finalUsername = romanPrefix + rawRollNo;
+        if (user.program === 'B.Com (Professional)') {
+            finalUsername += 'P';
+        }
 
         // Validate final username duplicate check (only if they are changing the username)
         if (finalUsername !== user.username) {

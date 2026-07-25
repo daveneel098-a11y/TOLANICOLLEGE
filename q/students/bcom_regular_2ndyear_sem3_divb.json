@@ -6,2005 +6,1095 @@
   "students": [
     {
       "rollNo": "191",
+      "enrollmentNo": "E25060007100063",
       "spdid": "2025008410",
-      "name": "NIKHIL SURESH BHADRA",
-      "gender": "SURESH",
-      "category": "BHADRA",
-      "email": "UG2500260891",
-      "phone": "23-08-2007",
-      "subject": "NIKHIL",
-      "class": "B.Com. Sem-III"
+      "name": "NIKHIL SURESH BHADRA"
     },
     {
       "rollNo": "192",
+      "enrollmentNo": "E25060007100296",
       "spdid": "2025008643",
-      "name": "NIKITA VIJAY JAISWAL",
-      "gender": "VIJAY",
-      "category": "JAISWAL",
-      "email": "UG2500257717",
-      "phone": "20-05-2007",
-      "subject": "NIKITA",
-      "class": "B.Com. Sem-III"
+      "name": "NIKITA VIJAY JAISWAL"
     },
     {
       "rollNo": "193",
+      "enrollmentNo": "E25060007100339",
       "spdid": "2025008686",
-      "name": "NIRAJ BHARATBHAI KANNAR",
-      "gender": "BHARATBHAI",
-      "category": "KANNAR",
-      "email": "UG2500202088",
-      "phone": "22-08-2007",
-      "subject": "NIRAJ",
-      "class": "B.Com. Sem-III"
+      "name": "NIRAJ BHARATBHAI KANNAR"
     },
     {
       "rollNo": "194",
+      "enrollmentNo": "E25060007100149",
       "spdid": "2025008496",
-      "name": "NIRAV NAVGHANBHAI DANGAR",
-      "gender": "NAVGHANBHAI",
-      "category": "DANGAR",
-      "email": "UG2500803131",
-      "phone": "25-10-2007",
-      "subject": "NIRAV",
-      "class": "B.Com. Sem-III"
+      "name": "NIRAV NAVGHANBHAI DANGAR"
     },
     {
       "rollNo": "195",
+      "enrollmentNo": "E25060007100002",
       "spdid": "2025008349",
-      "name": "NIRMALA BABULAL",
-      "gender": "BABULAL",
-      "category": "General",
-      "email": "UG2500286707",
-      "phone": "05-10-2007",
-      "subject": "NIRMALA",
-      "class": "B.Com. Sem-III"
+      "name": "NIRMALA BABULAL"
     },
     {
       "rollNo": "196",
+      "enrollmentNo": "E25060007100773",
       "spdid": "2025009120",
-      "name": "NISHA SURESH SHARMA",
-      "gender": "SURESH",
-      "category": "SHARMA",
-      "email": "UG2500180724",
-      "phone": "21-05-2007",
-      "subject": "NISHA",
-      "class": "B.Com. Sem-III"
+      "name": "NISHA SURESH SHARMA"
     },
     {
       "rollNo": "197",
+      "enrollmentNo": "E25060007100152",
       "spdid": "2025008499",
-      "name": "NISHITA VINODBHAI DANICHA",
-      "gender": "VINODBHAI",
-      "category": "DANICHA",
-      "email": "UG2500216201",
-      "phone": "15-10-2007",
-      "subject": "NISHITA",
-      "class": "B.Com. Sem-III"
+      "name": "NISHITA VINODBHAI DANICHA"
     },
     {
       "rollNo": "198",
+      "enrollmentNo": "E25060007100228",
       "spdid": "2025008575",
-      "name": "NISHTHA ISHWARBHAI GOHIL",
-      "gender": "ISHWARBHAI",
-      "category": "GOHIL",
-      "email": "UG2500179912",
-      "phone": "08-12-2007",
-      "subject": "NISHTHA",
-      "class": "B.Com. Sem-III"
+      "name": "NISHTHA ISHWARBHAI GOHIL"
     },
     {
       "rollNo": "199",
+      "enrollmentNo": "E25060007100070",
       "spdid": "2025008417",
-      "name": "NITYA SANJAY BHANUSHALI",
-      "gender": "SANJAY",
-      "category": "BHANUSHALI",
-      "email": "UG2500454414",
-      "phone": "10-03-2007",
-      "subject": "NITYA",
-      "class": "B.Com. Sem-III"
+      "name": "NITYA SANJAY BHANUSHALI"
     },
     {
       "rollNo": "200",
+      "enrollmentNo": "E25060007100545",
       "spdid": "2025008892",
-      "name": "NIYATI YAGNESH PANDE",
-      "gender": "YAGNESH",
-      "category": "PANDE",
-      "email": "UG2500059507",
-      "phone": "11-11-2007",
-      "subject": "NIYATI",
-      "class": "B.Com. Sem-III"
+      "name": "NIYATI YAGNESH PANDE"
     },
     {
       "rollNo": "201",
+      "enrollmentNo": "E25060007100194",
       "spdid": "2025008541",
-      "name": "OMKUMAR MAYURBHAI GADHAVI",
-      "gender": "Male",
-      "category": "GADHAVI",
-      "email": "UG2500135932",
-      "phone": "07-11-2007",
-      "subject": "OMKUMAR",
-      "class": "B.Com. Sem-III"
+      "name": "OMKUMAR MAYURBHAI GADHAVI"
     },
     {
       "rollNo": "202",
+      "enrollmentNo": "E25060007100543",
       "spdid": "2025008890",
-      "name": "PALAK CHINTANBHAI PALAN",
-      "gender": "CHINTANBHAI",
-      "category": "PALAN",
-      "email": "UG2500241713",
-      "phone": "27-01-2008",
-      "subject": "PALAK",
-      "class": "B.Com. Sem-III"
+      "name": "PALAK CHINTANBHAI PALAN"
     },
     {
       "rollNo": "203",
+      "enrollmentNo": "E25060007100508",
       "spdid": "2025008855",
-      "name": "PALAK DEEPAK MOTIYANI",
-      "gender": "DEEPAK",
-      "category": "MOTIYANI",
-      "email": "UG2500103426",
-      "phone": "27-05-2007",
-      "subject": "PALAK",
-      "class": "B.Com. Sem-III"
+      "name": "PALAK DEEPAK MOTIYANI"
     },
     {
       "rollNo": "204",
+      "enrollmentNo": "E25060007100309",
       "spdid": "2025008656",
-      "name": "PANKTI JAYESH JETHWA",
-      "gender": "JAYESH",
-      "category": "JETHWA",
-      "email": "UG2500264415",
-      "phone": "24-02-2008",
-      "subject": "PANKTI",
-      "class": "B.Com. Sem-III"
+      "name": "PANKTI JAYESH JETHWA"
     },
     {
       "rollNo": "205",
+      "enrollmentNo": "E25060007100634",
       "spdid": "2025008981",
-      "name": "PARAS KANJIBHAI PRAJAPATI",
-      "gender": "KANJIBHAI",
-      "category": "PRAJAPATI",
-      "email": "UG2500192907",
-      "phone": "17-06-2008",
-      "subject": "PARAS",
-      "class": "B.Com. Sem-III"
+      "name": "PARAS KANJIBHAI PRAJAPATI"
     },
     {
       "rollNo": "206",
+      "enrollmentNo": "E25060007100934",
       "spdid": "2025009281",
-      "name": "PARIDHI SUNDEEP VASWANI",
-      "gender": "SUNDEEP",
-      "category": "VASWANI",
-      "email": "UG2500307477",
-      "phone": "01-04-2007",
-      "subject": "PARIDHI",
-      "class": "B.Com. Sem-III"
+      "name": "PARIDHI SUNDEEP VASWANI"
     },
     {
       "rollNo": "207",
+      "enrollmentNo": "E25060007100752",
       "spdid": "2025009099",
-      "name": "PARITA MOHANBHAI SATHWARA",
-      "gender": "Male",
-      "category": "SATHWARA",
-      "email": "UG2500297182",
-      "phone": "09-07-2008",
-      "subject": "PARITA",
-      "class": "B.Com. Sem-III"
+      "name": "PARITA MOHANBHAI SATHWARA"
     },
     {
       "rollNo": "208",
+      "enrollmentNo": "E25060007100774",
       "spdid": "2025009121",
-      "name": "PARUL MAHESH SHARMA",
-      "gender": "Male",
-      "category": "SHARMA",
-      "email": "UG2500278455",
-      "phone": "17-04-2008",
-      "subject": "PARUL",
-      "class": "B.Com. Sem-III"
+      "name": "PARUL MAHESH SHARMA"
     },
     {
       "rollNo": "209",
+      "enrollmentNo": "E25060007100366",
       "spdid": "2025008713",
-      "name": "PASHVA JIGNESHBHAI KHANDOR",
-      "gender": "JIGNESHBHAI",
-      "category": "KHANDOR",
-      "email": "UG2500249459",
-      "phone": "10-10-2007",
-      "subject": "PASHVA",
-      "class": "B.Com. Sem-III"
+      "name": "PASHVA JIGNESHBHAI KHANDOR"
     },
     {
       "rollNo": "210",
+      "enrollmentNo": "E25060007100456",
       "spdid": "2025008803",
-      "name": "PAYALBEN KISHORBHAI MALI",
-      "gender": "KISHORBHAI",
-      "category": "MALI",
-      "email": "UG2500335041",
-      "phone": "29-01-2008",
-      "subject": "PAYALBEN",
-      "class": "B.Com. Sem-III"
+      "name": "PAYALBEN KISHORBHAI MALI"
     },
     {
       "rollNo": "211",
+      "enrollmentNo": "E25060007100871",
       "spdid": "2025009218",
-      "name": "PAYALBEN NARSHINHBHAI THAKKAR",
-      "gender": "NARSHINHBHAI",
-      "category": "THAKKAR",
-      "email": "UG2500122121",
-      "phone": "22-03-2006",
-      "subject": "PAYALBEN",
-      "class": "B.Com. Sem-III"
+      "name": "PAYALBEN NARSHINHBHAI THAKKAR"
     },
     {
       "rollNo": "212",
+      "enrollmentNo": "E25060007100522",
       "spdid": "2025008869",
-      "name": "PINTUBHAI AMBABHAI NAI",
-      "gender": "AMBABHAI",
-      "category": "NAI",
-      "email": "UG2500221907",
-      "phone": "08-05-2008",
-      "subject": "PINTUBHAI",
-      "class": "B.Com. Sem-III"
+      "name": "PINTUBHAI AMBABHAI NAI"
     },
     {
       "rollNo": "213",
+      "enrollmentNo": "E25060007100952",
       "spdid": "2025009299",
-      "name": "POOJA HARENDRA YADAV",
-      "gender": "HARENDRA",
-      "category": "YADAV",
-      "email": "UG2500212240",
-      "phone": "24-03-2007",
-      "subject": "POOJA",
-      "class": "B.Com. Sem-III"
+      "name": "POOJA HARENDRA YADAV"
     },
     {
       "rollNo": "214",
+      "enrollmentNo": "E25060007100450",
       "spdid": "2025008797",
-      "name": "POOJA SHAMJIBHAI MAKWANA",
-      "gender": "SHAMJIBHAI",
-      "category": "MAKWANA",
-      "email": "UG2500668712",
-      "phone": "31-05-2008",
-      "subject": "POOJA",
-      "class": "B.Com. Sem-III"
+      "name": "POOJA SHAMJIBHAI MAKWANA"
     },
     {
       "rollNo": "215",
+      "enrollmentNo": "E25060007100256",
       "spdid": "2025008603",
-      "name": "POONAMBEN DHANJIBHAI HADIYA",
-      "gender": "DHANJIBHAI",
-      "category": "HADIYA",
-      "email": "UG2500225284",
-      "phone": "28-06-2008",
-      "subject": "POONAMBEN",
-      "class": "B.Com. Sem-III"
+      "name": "POONAMBEN DHANJIBHAI HADIYA"
     },
     {
       "rollNo": "216",
+      "enrollmentNo": "E25060007100211",
       "spdid": "2025008558",
-      "name": "PRAGATI RAMESHBHAI GADHVI",
-      "gender": "RAMESHBHAI",
-      "category": "GADHVI",
-      "email": "UG2500235313",
-      "phone": "16-05-2008",
-      "subject": "PRAGATI",
-      "class": "B.Com. Sem-III"
+      "name": "PRAGATI RAMESHBHAI GADHVI"
     },
     {
       "rollNo": "217",
+      "enrollmentNo": "E25060007100856",
       "spdid": "2025009203",
-      "name": "PRAGATI VINODBHAI THACKER",
-      "gender": "VINODBHAI",
-      "category": "THACKER",
-      "email": "UG2500229897",
-      "phone": "27-01-2008",
-      "subject": "PRAGATI",
-      "class": "B.Com. Sem-III"
+      "name": "PRAGATI VINODBHAI THACKER"
     },
     {
       "rollNo": "218",
+      "enrollmentNo": "E25060007100280",
       "spdid": "2025008627",
-      "name": "PRAGATIBA KANAKSINH JADEJA",
-      "gender": "KANAKSINH",
-      "category": "JADEJA",
-      "email": "UG2500290016",
-      "phone": "12-09-2007",
-      "subject": "PRAGATIBA",
-      "class": "B.Com. Sem-III"
+      "name": "PRAGATIBA KANAKSINH JADEJA"
     },
     {
       "rollNo": "219",
+      "enrollmentNo": "E25060007100184",
       "spdid": "2025008531",
-      "name": "PRAGNA RAJESHBHAI DUNGRANI",
-      "gender": "RAJESHBHAI",
-      "category": "DUNGRANI",
-      "email": "UG2500205571",
-      "phone": "14-12-2006",
-      "subject": "PRAGNA",
-      "class": "B.Com. Sem-III"
+      "name": "PRAGNA RAJESHBHAI DUNGRANI"
     },
     {
       "rollNo": "220",
+      "enrollmentNo": "E25060007100636",
       "spdid": "2025008983",
-      "name": "PRASHANT UMESH PRAJAPATI",
-      "gender": "UMESH",
-      "category": "PRAJAPATI",
-      "email": "UG2500248146",
-      "phone": "22-06-2007",
-      "subject": "PRASHANT",
-      "class": "B.Com. Sem-III"
+      "name": "PRASHANT UMESH PRAJAPATI"
     },
     {
       "rollNo": "221",
+      "enrollmentNo": "E25060007100064",
       "spdid": "2025008411",
-      "name": "PRATHAM ANIL BHADRA",
-      "gender": "ANIL",
-      "category": "BHADRA",
-      "email": "UG2500242235",
-      "phone": "07-11-2007",
-      "subject": "PRATHAM",
-      "class": "B.Com. Sem-III"
+      "name": "PRATHAM ANIL BHADRA"
     },
     {
       "rollNo": "222",
+      "enrollmentNo": "E25060007100737",
       "spdid": "2025009084",
-      "name": "PRATHAM NISHITH SANGHAVI",
-      "gender": "NISHITH",
-      "category": "SANGHAVI",
-      "email": "UG2500228482",
-      "phone": "19-07-2007",
-      "subject": "PRATHAM",
-      "class": "B.Com. Sem-III"
+      "name": "PRATHAM NISHITH SANGHAVI"
     },
     {
       "rollNo": "223",
+      "enrollmentNo": "E25060007100918",
       "spdid": "2025009265",
-      "name": "PRATIPALSINH NARAPATSINH VAGHELA",
-      "gender": "NARAPATSINH",
-      "category": "VAGHELA",
-      "email": "UG2500155829",
-      "phone": "28-01-2008",
-      "subject": "PRATIPALSINH",
-      "class": "B.Com. Sem-III"
+      "name": "PRATIPALSINH NARAPATSINH VAGHELA"
     },
     {
       "rollNo": "224",
+      "enrollmentNo": "E25060007100511",
       "spdid": "2025008858",
-      "name": "PRAVEENKUMAR CHAMPLAL MUNDOTIYA",
-      "gender": "CHAMPLAL",
-      "category": "MUNDOTIYA",
-      "email": "UG2500289281",
-      "phone": "12-09-2007",
-      "subject": "PRAVEENKUMAR",
-      "class": "B.Com. Sem-III"
+      "name": "PRAVEENKUMAR CHAMPLAL MUNDOTIYA"
     },
     {
       "rollNo": "225",
+      "enrollmentNo": "E25060007100931",
       "spdid": "2025009278",
-      "name": "PREET JASHABHAI VARCHAND",
-      "gender": "JASHABHAI",
-      "category": "VARCHAND",
-      "email": "UG2500236022",
-      "phone": "17-05-2008",
-      "subject": "PREET",
-      "class": "B.Com. Sem-III"
+      "name": "PREET JASHABHAI VARCHAND"
     },
     {
       "rollNo": "226",
+      "enrollmentNo": "E25060007100831",
       "spdid": "2025009178",
-      "name": "PRINCE JITENDRABHAI SONI",
-      "gender": "JITENDRABHAI",
-      "category": "SONI",
-      "email": "UG2500142680",
-      "phone": "16-08-2007",
-      "subject": "PRINCE",
-      "class": "B.Com. Sem-III"
+      "name": "PRINCE JITENDRABHAI SONI"
     },
     {
       "rollNo": "227",
+      "enrollmentNo": "E25060007100919",
       "spdid": "2025009266",
-      "name": "PRINCE RAJESHBHAI VAGHELA",
-      "gender": "RAJESHBHAI",
-      "category": "VAGHELA",
-      "email": "UG2500308632",
-      "phone": "27-10-2007",
-      "subject": "PRINCE",
-      "class": "B.Com. Sem-III"
+      "name": "PRINCE RAJESHBHAI VAGHELA"
     },
     {
       "rollNo": "228",
+      "enrollmentNo": "E25060007100501",
       "spdid": "2025008848",
-      "name": "PRINCE RAMESH MOBARSA",
-      "gender": "RAMESH",
-      "category": "MOBARSA",
-      "email": "UG2500219948",
-      "phone": "21-09-2006",
-      "subject": "PRINCE",
-      "class": "B.Com. Sem-III"
+      "name": "PRINCE RAMESH MOBARSA"
     },
     {
       "rollNo": "229",
+      "enrollmentNo": "E25060007100229",
       "spdid": "2025008576",
-      "name": "PRINCEKUMAR PRAVINBHAI GOHIL",
-      "gender": "PRAVINBHAI",
-      "category": "GOHIL",
-      "email": "UG2500265860",
-      "phone": "08-11-2007",
-      "subject": "PRINCEKUMAR",
-      "class": "B.Com. Sem-III"
+      "name": "PRINCEKUMAR PRAVINBHAI GOHIL"
     },
     {
       "rollNo": "230",
+      "enrollmentNo": "E25060007100650",
       "spdid": "2025008997",
-      "name": "PRISHA VASANTKUMAR PATEL",
-      "gender": "VASANTKUMAR",
-      "category": "PATEL",
-      "email": "UG2500168696",
-      "phone": "23-02-2008",
-      "subject": "PRISHA",
-      "class": "B.Com. Sem-III"
+      "name": "PRISHA VASANTKUMAR PATEL"
     },
     {
       "rollNo": "231",
+      "enrollmentNo": "E25060007100637",
       "spdid": "2025008984",
-      "name": "PRIYABEN MAHESHKUMAR PRAJAPATI",
-      "gender": "Male",
-      "category": "PRAJAPATI",
-      "email": "UG2500217022",
-      "phone": "06-04-2008",
-      "subject": "PRIYABEN",
-      "class": "B.Com. Sem-III"
+      "name": "PRIYABEN MAHESHKUMAR PRAJAPATI"
     },
     {
       "rollNo": "232",
+      "enrollmentNo": "E25060007100431",
       "spdid": "2025008778",
-      "name": "PRIYANSHI JITENDRABHAI MAHESHWARI",
-      "gender": "JITENDRABHAI",
-      "category": "MAHESHWARI",
-      "email": "UG2500244163",
-      "phone": "17-05-2005",
-      "subject": "PRIYANSHI",
-      "class": "B.Com. Sem-III"
+      "name": "PRIYANSHI JITENDRABHAI MAHESHWARI"
     },
     {
       "rollNo": "233",
+      "enrollmentNo": "E25060007100963",
       "spdid": "2025009310",
-      "name": "PRIYANSHIBA BHUPENDRASINH ZALA",
-      "gender": "BHUPENDRASINH",
-      "category": "ZALA",
-      "email": "UG2500224327",
-      "phone": "10-10-2007",
-      "subject": "PRIYANSHIBA",
-      "class": "B.Com. Sem-III"
+      "name": "PRIYANSHIBA BHUPENDRASINH ZALA"
     },
     {
       "rollNo": "234",
+      "enrollmentNo": "E25060007100315",
       "spdid": "2025008662",
-      "name": "PURVA RAMESH JOGANI",
-      "gender": "RAMESH",
-      "category": "JOGANI",
-      "email": "UG2500201193",
-      "phone": "05-12-2007",
-      "subject": "PURVA",
-      "class": "B.Com. Sem-III"
+      "name": "PURVA RAMESH JOGANI"
     },
     {
       "rollNo": "235",
+      "enrollmentNo": "E25060007100600",
       "spdid": "2025008947",
-      "name": "PURVA TARUNKUMAR PATEL",
-      "gender": "TARUNKUMAR",
-      "category": "PATEL",
-      "email": "UG2500147576",
-      "phone": "07-03-2007",
-      "subject": "PURVA",
-      "class": "B.Com. Sem-III"
+      "name": "PURVA TARUNKUMAR PATEL"
     },
     {
       "rollNo": "236",
+      "enrollmentNo": "E25060007100161",
       "spdid": "2025008508",
-      "name": "PURVANSHU SANJAY DAVDA",
-      "gender": "SANJAY",
-      "category": "DAVDA",
-      "email": "UG2500307957",
-      "phone": "16-08-2007",
-      "subject": "PURVANSHU",
-      "class": "B.Com. Sem-III"
+      "name": "PURVANSHU SANJAY DAVDA"
     },
     {
       "rollNo": "237",
+      "enrollmentNo": "E25060007100857",
       "spdid": "2025009204",
-      "name": "PURVI HARGOVINDBHAI THACKER",
-      "gender": "HARGOVINDBHAI",
-      "category": "THACKER",
-      "email": "UG2500333847",
-      "phone": "12-09-2007",
-      "subject": "PURVI",
-      "class": "B.Com. Sem-III"
+      "name": "PURVI HARGOVINDBHAI THACKER"
     },
     {
       "rollNo": "238",
+      "enrollmentNo": "E25060007100969",
       "spdid": "2025009316",
-      "name": "RADHA RAMJIBHAI ZARU",
-      "gender": "RAMJIBHAI",
-      "category": "ZARU",
-      "email": "UG2500169203",
-      "phone": "28-07-2007",
-      "subject": "RADHA",
-      "class": "B.Com. Sem-III"
+      "name": "RADHA RAMJIBHAI ZARU"
     },
     {
       "rollNo": "239",
+      "enrollmentNo": "E25060007100815",
       "spdid": "2025009162",
-      "name": "RAHUL MANGILAL SOLANKI",
-      "gender": "Male",
-      "category": "SOLANKI",
-      "email": "UG2500276847",
-      "phone": "13-01-2007",
-      "subject": "RAHUL",
-      "class": "B.Com. Sem-III"
+      "name": "RAHUL MANGILAL SOLANKI"
     },
     {
       "rollNo": "240",
+      "enrollmentNo": "E25060007100876",
       "spdid": "2025009223",
-      "name": "RAJ NIHAR THAKKER",
-      "gender": "NIHAR",
-      "category": "THAKKER",
-      "email": "UG2500073534",
-      "phone": "07-12-2007",
-      "subject": "RAJ",
-      "class": "B.Com. Sem-III"
+      "name": "RAJ NIHAR THAKKER"
     },
     {
       "rollNo": "241",
+      "enrollmentNo": "E25060007100954",
       "spdid": "2025009301",
-      "name": "RAJ RAHUL YADAV",
-      "gender": "RAHUL",
-      "category": "YADAV",
-      "email": "UG2500295014",
-      "phone": "21-07-2007",
-      "subject": "RAJ",
-      "class": "B.Com. Sem-III"
+      "name": "RAJ RAHUL YADAV"
     },
     {
       "rollNo": "242",
+      "enrollmentNo": "E25060007100789",
       "spdid": "2025009136",
-      "name": "RAJ VINODKUMAR SINGH",
-      "gender": "VINODKUMAR",
-      "category": "SINGH",
-      "email": "UG2500247985",
-      "phone": "11-06-2000",
-      "subject": "RAJ",
-      "class": "B.Com. Sem-III"
+      "name": "RAJ VINODKUMAR SINGH"
     },
     {
       "rollNo": "243",
+      "enrollmentNo": "E25060007100668",
       "spdid": "2025009015",
-      "name": "RAMESHBHAI VIBHABHAI RABARI",
-      "gender": "VIBHABHAI",
-      "category": "RABARI",
-      "email": "UG2500337267",
-      "phone": "01-06-2008",
-      "subject": "RAMESHBHAI",
-      "class": "B.Com. Sem-III"
+      "name": "RAMESHBHAI VIBHABHAI RABARI"
     },
     {
       "rollNo": "244",
+      "enrollmentNo": "E25060007100764",
       "spdid": "2025009111",
-      "name": "RASHI VISHALBHAI SHAH",
-      "gender": "VISHALBHAI",
-      "category": "SHAH",
-      "email": "UG2500144607",
-      "phone": "19-08-2007",
-      "subject": "RASHI",
-      "class": "B.Com. Sem-III"
+      "name": "RASHI VISHALBHAI SHAH"
     },
     {
       "rollNo": "245",
+      "enrollmentNo": "E25060007100754",
       "spdid": "2025009101",
-      "name": "RIDDHI SURESHBHAI SATHWARA",
-      "gender": "SURESHBHAI",
-      "category": "SATHWARA",
-      "email": "UG2500204928",
-      "phone": "26-03-2008",
-      "subject": "RIDDHI",
-      "class": "B.Com. Sem-III"
+      "name": "RIDDHI SURESHBHAI SATHWARA"
     },
     {
       "rollNo": "246",
+      "enrollmentNo": "E25060007100701",
       "spdid": "2025009048",
-      "name": "RIDDHIBEN KIRTIKUMAR RATHOD",
-      "gender": "KIRTIKUMAR",
-      "category": "RATHOD",
-      "email": "UG2500304114",
-      "phone": "12-10-2007",
-      "subject": "RIDDHIBEN",
-      "class": "B.Com. Sem-III"
+      "name": "RIDDHIBEN KIRTIKUMAR RATHOD"
     },
     {
       "rollNo": "247",
+      "enrollmentNo": "E25060007100042",
       "spdid": "2025008389",
-      "name": "RINKALBEN BABUBHAI BARARIYA",
-      "gender": "BABUBHAI",
-      "category": "BARARIYA",
-      "email": "UG2500251248",
-      "phone": "25-05-2008",
-      "subject": "RINKALBEN",
-      "class": "B.Com. Sem-III"
+      "name": "RINKALBEN BABUBHAI BARARIYA"
     },
     {
       "rollNo": "248",
+      "enrollmentNo": "E25060007100371",
       "spdid": "2025008718",
-      "name": "RISHI KRISHANGOPAL KHILNANI",
-      "gender": "KRISHANGOPAL",
-      "category": "KHILNANI",
-      "email": "UG2500259101",
-      "phone": "18-08-2007",
-      "subject": "RISHI",
-      "class": "B.Com. Sem-III"
+      "name": "RISHI KRISHANGOPAL KHILNANI"
     },
     {
       "rollNo": "249",
+      "enrollmentNo": "E25060007100458",
       "spdid": "2025008805",
-      "name": "RITA HITESHBHAI MALI",
-      "gender": "HITESHBHAI",
-      "category": "MALI",
-      "email": "UG2500185491",
-      "phone": "30-07-2007",
-      "subject": "RITA",
-      "class": "B.Com. Sem-III"
+      "name": "RITA HITESHBHAI MALI"
     },
     {
       "rollNo": "250",
+      "enrollmentNo": "E25060007100817",
       "spdid": "2025009164",
-      "name": "RIYA JAGDISHBHAI SOLANKI",
-      "gender": "JAGDISHBHAI",
-      "category": "SOLANKI",
-      "email": "UG2500199623",
-      "phone": "10-11-2007",
-      "subject": "RIYA",
-      "class": "B.Com. Sem-III"
+      "name": "RIYA JAGDISHBHAI SOLANKI"
     },
     {
       "rollNo": "251",
+      "enrollmentNo": "E25060007100692",
       "spdid": "2025009039",
-      "name": "RIYA JIGAR RASTE",
-      "gender": "JIGAR",
-      "category": "RASTE",
-      "email": "UG2500258738",
-      "phone": "23-07-2007",
-      "subject": "RIYA",
-      "class": "B.Com. Sem-III"
+      "name": "RIYA JIGAR RASTE"
     },
     {
       "rollNo": "252",
+      "enrollmentNo": "E25060007100050",
       "spdid": "2025008397",
-      "name": "RIYA NITIN BAROT",
-      "gender": "NITIN",
-      "category": "BAROT",
-      "email": "UG2500241345",
-      "phone": "18-11-2006",
-      "subject": "RIYA",
-      "class": "B.Com. Sem-III"
+      "name": "RIYA NITIN BAROT"
     },
     {
       "rollNo": "253",
+      "enrollmentNo": "E25060007100357",
       "spdid": "2025008704",
-      "name": "RIYA SUNILBHAI KATARIYA",
-      "gender": "SUNILBHAI",
-      "category": "KATARIYA",
-      "email": "UG2500118094",
-      "phone": "14-10-2007",
-      "subject": "RIYA",
-      "class": "B.Com. Sem-III"
+      "name": "RIYA SUNILBHAI KATARIYA"
     },
     {
       "rollNo": "254",
+      "enrollmentNo": "E25060007100682",
       "spdid": "2025009029",
-      "name": "RIYABA VISHALSINH RAJPUT",
-      "gender": "VISHALSINH",
-      "category": "RAJPUT",
-      "email": "UG2500389793",
-      "phone": "26-06-2007",
-      "subject": "RIYABA",
-      "class": "B.Com. Sem-III"
+      "name": "RIYABA VISHALSINH RAJPUT"
     },
     {
       "rollNo": "255",
+      "enrollmentNo": "E25060007100575",
       "spdid": "2025008922",
-      "name": "RONAK DILIPBHAI PARMAR",
-      "gender": "DILIPBHAI",
-      "category": "PARMAR",
-      "email": "UG2500152214",
-      "phone": "20-04-2008",
-      "subject": "RONAK",
-      "class": "B.Com. Sem-III"
+      "name": "RONAK DILIPBHAI PARMAR"
     },
     {
       "rollNo": "256",
+      "enrollmentNo": "E25060007100006",
       "spdid": "2025008353",
-      "name": "ROSHANI SHAMJIBHAI AGARIYA",
-      "gender": "SHAMJIBHAI",
-      "category": "AGARIYA",
-      "email": "UG2500222713",
-      "phone": "26-11-2007",
-      "subject": "ROSHANI",
-      "class": "B.Com. Sem-III"
+      "name": "ROSHANI SHAMJIBHAI AGARIYA"
     },
     {
       "rollNo": "257",
+      "enrollmentNo": "E25060007100641",
       "spdid": "2025008988",
-      "name": "RUDRAKSH DHANJI PRAJAPATI",
-      "gender": "DHANJI",
-      "category": "PRAJAPATI",
-      "email": "UG2500168776",
-      "phone": "30-01-2008",
-      "subject": "RUDRAKSH",
-      "class": "B.Com. Sem-III"
+      "name": "RUDRAKSH DHANJI PRAJAPATI"
     },
     {
       "rollNo": "258",
+      "enrollmentNo": "E25060007100705",
       "spdid": "2025009052",
-      "name": "RUDRAKSHI KASHMIRSINGH RATHORE",
-      "gender": "KASHMIRSINGH",
-      "category": "RATHORE",
-      "email": "UG2500159868",
-      "phone": "01-05-2007",
-      "subject": "RUDRAKSHI",
-      "class": "B.Com. Sem-III"
+      "name": "RUDRAKSHI KASHMIRSINGH RATHORE"
     },
     {
       "rollNo": "259",
+      "enrollmentNo": "E25060007100283",
       "spdid": "2025008630",
-      "name": "RUTURAJSINH BHUPATSINH JADEJA",
-      "gender": "BHUPATSINH",
-      "category": "JADEJA",
-      "email": "UG2500431376",
-      "phone": "03-01-2008",
-      "subject": "RUTURAJSINH",
-      "class": "B.Com. Sem-III"
+      "name": "RUTURAJSINH BHUPATSINH JADEJA"
     },
     {
       "rollNo": "260",
+      "enrollmentNo": "E25060007100715",
       "spdid": "2025009062",
-      "name": "SAHIL LOKNATH REDDY",
-      "gender": "LOKNATH",
-      "category": "REDDY",
-      "email": "UG2500238531",
-      "phone": "12-06-2008",
-      "subject": "SAHIL",
-      "class": "B.Com. Sem-III"
+      "name": "SAIL LOKNATH REDDY"
     },
     {
       "rollNo": "261",
+      "enrollmentNo": "E25060007100171",
       "spdid": "2025008518",
-      "name": "SAHIL RAJUBHAI DEVIPUJAK",
-      "gender": "RAJUBHAI",
-      "category": "DEVIPUJAK",
-      "email": "UG2500242160",
-      "phone": "02-04-2006",
-      "subject": "SAHIL",
-      "class": "B.Com. Sem-III"
+      "name": "SAHIL RAJUBHAI DEVIPUJAK"
     },
     {
       "rollNo": "262",
+      "enrollmentNo": "E25060007100434",
       "spdid": "2025008781",
-      "name": "SAKSHI GOVINDBHAI MAHESHWARI",
-      "gender": "GOVINDBHAI",
-      "category": "MAHESHWARI",
-      "email": "UG2500001076",
-      "phone": "21-07-2008",
-      "subject": "SAKSHI",
-      "class": "B.Com. Sem-III"
+      "name": "SAKSHI GOVINDBHAI MAHESHWARI"
     },
     {
       "rollNo": "263",
+      "enrollmentNo": "E25060007100230",
       "spdid": "2025008577",
-      "name": "SAKSHIBA KIRTISINH GOHIL",
-      "gender": "KIRTISINH",
-      "category": "GOHIL",
-      "email": "UG2500141869",
-      "phone": "29-05-2008",
-      "subject": "SAKSHIBA",
-      "class": "B.Com. Sem-III"
+      "name": "SAKSHIBA KIRTISINH GOHIL"
     },
     {
       "rollNo": "264",
+      "enrollmentNo": "E25060007100220",
       "spdid": "2025008567",
-      "name": "SANJANA ASHOKBHAI GARODA",
-      "gender": "ASHOKBHAI",
-      "category": "GARODA",
-      "email": "UG2500203080",
-      "phone": "06-03-2008",
-      "subject": "SANJANA",
-      "class": "B.Com. Sem-III"
+      "name": "SANJANA ASHOKBHAI GARODA"
     },
     {
       "rollNo": "265",
+      "enrollmentNo": "E25060007100674",
       "spdid": "2025009021",
-      "name": "SHAWALI MADHUBAN RAI",
-      "gender": "Male",
-      "category": "RAI",
-      "email": "UG2500217247",
-      "phone": "27-10-2007",
-      "subject": "SHAWALI",
-      "class": "B.Com. Sem-III"
+      "name": "SHAWALI MADHUBAN RAI"
     },
     {
       "rollNo": "266",
+      "enrollmentNo": "E25060007100858",
       "spdid": "2025009205",
-      "name": "SHIVAM AMIT THACKER",
-      "gender": "AMIT",
-      "category": "THACKER",
-      "email": "UG2500274708",
-      "phone": "13-01-2008",
-      "subject": "SHIVAM",
-      "class": "B.Com. Sem-III"
+      "name": "SHIVAM AMIT THACKER"
     },
     {
       "rollNo": "267",
+      "enrollmentNo": "E25060007100601",
       "spdid": "2025008948",
-      "name": "SHIVAM ANIL PATEL",
-      "gender": "ANIL",
-      "category": "PATEL",
-      "email": "UG2500226964",
-      "phone": "24-11-2006",
-      "subject": "SHIVAM",
-      "class": "B.Com. Sem-III"
+      "name": "SHIVAM ANIL PATEL"
     },
     {
       "rollNo": "268",
+      "enrollmentNo": "E25060007100796",
       "spdid": "2025009143",
-      "name": "SHIVAM LALJIBHAI SODHATAR",
-      "gender": "LALJIBHAI",
-      "category": "SODHATAR",
-      "email": "UG2500227886",
-      "phone": "12-01-2008",
-      "subject": "SHIVAM",
-      "class": "B.Com. Sem-III"
+      "name": "SHIVAM LALJIBHAI SODHATAR"
     },
     {
       "rollNo": "269",
+      "enrollmentNo": "E25060007100328",
       "spdid": "2025008675",
-      "name": "SHIVANI AMIT JOSHI",
-      "gender": "AMIT",
-      "category": "JOSHI",
-      "email": "UG2500176868",
-      "phone": "01-08-2007",
-      "subject": "SHIVANI",
-      "class": "B.Com. Sem-III"
+      "name": "SHIVANI AMIT JOSHI"
     },
     {
       "rollNo": "270",
+      "enrollmentNo": "E25060007100894",
       "spdid": "2025009241",
-      "name": "SHIVANI HITESH TRIVEDI",
-      "gender": "HITESH",
-      "category": "TRIVEDI",
-      "email": "UG2500140701",
-      "phone": "22-10-2007",
-      "subject": "SHIVANI",
-      "class": "B.Com. Sem-III"
+      "name": "SHIVANI HITESH TRIVEDI"
     },
     {
       "rollNo": "271",
+      "enrollmentNo": "E25060007100965",
       "spdid": "2025009312",
-      "name": "SHIVBHADRSINH DIGVIJAYSINH ZALA",
-      "gender": "DIGVIJAYSINH",
-      "category": "ZALA",
-      "email": "UG2500306354",
-      "phone": "12-01-2008",
-      "subject": "SHIVBHADRSINH",
-      "class": "B.Com. Sem-III"
+      "name": "SHIVBHADRSINH DIGVIJAYSINH ZALA"
     },
     {
       "rollNo": "272",
+      "enrollmentNo": "E25060007100027",
       "spdid": "2025008374",
-      "name": "SHIVEN VINOD ASWANI",
-      "gender": "VINOD",
-      "category": "ASWANI",
-      "email": "UG2500154058",
-      "phone": "12-01-2008",
-      "subject": "SHIVEN",
-      "class": "B.Com. Sem-III"
+      "name": "SHIVEN VINOD ASWANI"
     },
     {
       "rollNo": "273",
+      "enrollmentNo": "E25060007100329",
       "spdid": "2025008676",
-      "name": "SHUBHAM CHETAN JOSHI",
-      "gender": "CHETAN",
-      "category": "JOSHI",
-      "email": "UG2500226019",
-      "phone": "12-05-2007",
-      "subject": "SHUBHAM",
-      "class": "B.Com. Sem-III"
+      "name": "SHUBHAM CHETAN JOSHI"
     },
     {
       "rollNo": "274",
+      "enrollmentNo": "E25060007100313",
       "spdid": "2025008660",
-      "name": "SHWETA MAHESH JHA",
-      "gender": "Male",
-      "category": "JHA",
-      "email": "UG2500358827",
-      "phone": "03-02-2006",
-      "subject": "SHWETA",
-      "class": "B.Com. Sem-III"
+      "name": "SHWETA MAHESH JHA"
     },
     {
       "rollNo": "275",
+      "enrollmentNo": "E25060007100676",
       "spdid": "2025009023",
-      "name": "SIMRAN SUNIL RAJBHAR",
-      "gender": "SUNIL",
-      "category": "RAJBHAR",
-      "email": "UG2500114602",
-      "phone": "13-11-2006",
-      "subject": "SIMRAN",
-      "class": "B.Com. Sem-III"
+      "name": "SIMRAN SUNIL RAJBHAR"
     },
     {
       "rollNo": "276",
+      "enrollmentNo": "E25060007100790",
       "spdid": "2025009137",
-      "name": "SNEHA BIPINBHAI SINGH",
-      "gender": "BIPINBHAI",
-      "category": "SINGH",
-      "email": "UG2500138645",
-      "phone": "09-08-2006",
-      "subject": "SNEHA",
-      "class": "B.Com. Sem-III"
+      "name": "SNEHA BIPINBHAI SINGH"
     },
     {
       "rollNo": "277",
+      "enrollmentNo": "E25060007100180",
       "spdid": "2025008527",
-      "name": "SNEHA SATISHBABU DOHARE",
-      "gender": "SATISHBABU",
-      "category": "DOHARE",
-      "email": "UG2500309783",
-      "phone": "01-05-2007",
-      "subject": "SNEHA",
-      "class": "B.Com. Sem-III"
+      "name": "SNEHA SATISHBABU DOHARE"
     },
     {
       "rollNo": "278",
+      "enrollmentNo": "E25060007100103",
       "spdid": "2025008450",
-      "name": "SNEHABEN RAJESHBHAI CHAUDHARY",
-      "gender": "RAJESHBHAI",
-      "category": "CHAUDHARY",
-      "email": "UG2500181210",
-      "phone": "19-11-2007",
-      "subject": "SNEHABEN",
-      "class": "B.Com. Sem-III"
+      "name": "SNEHABEN RAJESHBHAI CHAUDHARY"
     },
     {
       "rollNo": "279",
+      "enrollmentNo": "E25060007100333",
       "spdid": "2025008680",
-      "name": "SONABEN VASANTKUMAR KAKAD",
-      "gender": "VASANTKUMAR",
-      "category": "KAKAD",
-      "email": "UG2500139876",
-      "phone": "05-05-2008",
-      "subject": "SONABEN",
-      "class": "B.Com. Sem-III"
+      "name": "SONABEN VASANTKUMAR KAKAD"
     },
     {
       "rollNo": "280",
+      "enrollmentNo": "E25060007100577",
       "spdid": "2025008924",
-      "name": "SONALI BALVANTBHAI PARMAR",
-      "gender": "BALVANTBHAI",
-      "category": "PARMAR",
-      "email": "UG2500084602",
-      "phone": "19-08-2008",
-      "subject": "SONALI",
-      "class": "B.Com. Sem-III"
+      "name": "SONALI BALVANTBHAI PARMAR"
     },
     {
       "rollNo": "281",
+      "enrollmentNo": "E25060007100836",
       "spdid": "2025009183",
-      "name": "SONALI SANATAN SUNDARAY",
-      "gender": "SANATAN",
-      "category": "SUNDARAY",
-      "email": "UG2500234102",
-      "phone": "03-12-2007",
-      "subject": "SONALI",
-      "class": "B.Com. Sem-III"
+      "name": "SONALI SANATAN SUNDARAY"
     },
     {
       "rollNo": "282",
+      "enrollmentNo": "E25060007100684",
       "spdid": "2025009031",
-      "name": "SUHANIBEN NAGJIBHAI RAJPUT",
-      "gender": "NAGJIBHAI",
-      "category": "RAJPUT",
-      "email": "UG2500264600",
-      "phone": "01-05-2008",
-      "subject": "SUHANIBEN",
-      "class": "B.Com. Sem-III"
+      "name": "SUHANIBEN NAGJIBHAI RAJPUT"
     },
     {
       "rollNo": "283",
+      "enrollmentNo": "E25060007100459",
       "spdid": "2025008806",
-      "name": "SUKRUTI BHARATBHAI MALI",
-      "gender": "BHARATBHAI",
-      "category": "MALI",
-      "email": "UG2500264463",
-      "phone": "02-04-2007",
-      "subject": "SUKRUTI",
-      "class": "B.Com. Sem-III"
+      "name": "SUKRUTI BHARATBHAI MALI"
     },
     {
       "rollNo": "284",
+      "enrollmentNo": "E25060007100744",
       "spdid": "2025009091",
-      "name": "SUKSHIT GOPAL SAPALYA",
-      "gender": "GOPAL",
-      "category": "SAPALYA",
-      "email": "UG2500251716",
-      "phone": "23-10-2007",
-      "subject": "SUKSHIT",
-      "class": "B.Com. Sem-III"
+      "name": "SUKSHIT GOPAL SAPALYA"
     },
     {
       "rollNo": "285",
+      "enrollmentNo": "E25060007100314",
       "spdid": "2025008661",
-      "name": "SURENA GANPAT JINGAR",
-      "gender": "GANPAT",
-      "category": "JINGAR",
-      "email": "UG2500211745",
-      "phone": "28-05-2008",
-      "subject": "SURENA",
-      "class": "B.Com. Sem-III"
+      "name": "SURENA GANPAT JINGAR"
     },
     {
       "rollNo": "286",
+      "enrollmentNo": "E25060007100889",
       "spdid": "2025009236",
-      "name": "SWATI RAVINDRA TIWARI",
-      "gender": "RAVINDRA",
-      "category": "TIWARI",
-      "email": "UG2500324205",
-      "phone": "21-04-2008",
-      "subject": "SWATI",
-      "class": "B.Com. Sem-III"
+      "name": "SWATI RAVINDRA TIWARI"
     },
     {
       "rollNo": "287",
+      "enrollmentNo": "E25060007100859",
       "spdid": "2025009206",
-      "name": "SWAYAM HARESH THACKER",
-      "gender": "HARESH",
-      "category": "THACKER",
-      "email": "UG2500113684",
-      "phone": "05-07-2007",
-      "subject": "SWAYAM",
-      "class": "B.Com. Sem-III"
+      "name": "SWAYAM HARESH THACKER"
     },
     {
       "rollNo": "288",
+      "enrollmentNo": "E25060007100712",
       "spdid": "2025009059",
-      "name": "TARUN SHAILENDRA RAWAT",
-      "gender": "SHAILENDRA",
-      "category": "RAWAT",
-      "email": "UG2500227120",
-      "phone": "12-05-2006",
-      "subject": "TARUN",
-      "class": "B.Com. Sem-III"
+      "name": "TARUN SHAILENDRA RAWAT"
     },
     {
       "rollNo": "289",
+      "enrollmentNo": "E25060007100510",
       "spdid": "2025008857",
-      "name": "TEENA RAJESH MOTWANI",
-      "gender": "RAJESH",
-      "category": "MOTWANI",
-      "email": "UG2500277836",
-      "phone": "03-12-2007",
-      "subject": "TEENA",
-      "class": "B.Com. Sem-III"
+      "name": "TEENA RAJESH MOTWANI"
     },
     {
       "rollNo": "290",
+      "enrollmentNo": "E25060007100966",
       "spdid": "2025009313",
-      "name": "TIRTHRAJSINH RANVIRSINH ZALA",
-      "gender": "RANVIRSINH",
-      "category": "ZALA",
-      "email": "UG2500116368",
-      "phone": "29-01-2008",
-      "subject": "TIRTHRAJSINH",
-      "class": "B.Com. Sem-III"
+      "name": "TIRTHRAJSINH RANVIRSINH ZALA"
     },
     {
       "rollNo": "291",
+      "enrollmentNo": "E25060007100936",
       "spdid": "2025009283",
-      "name": "TISHA MUKESH VERMA",
-      "gender": "Male",
-      "category": "VERMA",
-      "email": "UG2500141066",
-      "phone": "18-07-2007",
-      "subject": "TISHA",
-      "class": "B.Com. Sem-III"
+      "name": "TISHA MUKESH VERMA"
     },
     {
       "rollNo": "292",
+      "enrollmentNo": "E25060007100238",
       "spdid": "2025008585",
-      "name": "TORAL KAUSHIKGAR GOSWAMI",
-      "gender": "KAUSHIKGAR",
-      "category": "GOSWAMI",
-      "email": "UG2500298217",
-      "phone": "21-04-2008",
-      "subject": "TORAL",
-      "class": "B.Com. Sem-III"
+      "name": "TORAL KAUSHIKGAR GOSWAMI"
     },
     {
       "rollNo": "293",
+      "enrollmentNo": "E25060007100118",
       "spdid": "2025008465",
-      "name": "TULSI BHAGWANSINGH CHAUHAN",
-      "gender": "BHAGWANSINGH",
-      "category": "CHAUHAN",
-      "email": "UG2500184797",
-      "phone": "16-09-2007",
-      "subject": "TULSI",
-      "class": "B.Com. Sem-III"
+      "name": "TULSI BHAGWANSINGH CHAUHAN"
     },
     {
       "rollNo": "294",
+      "enrollmentNo": "E25060007100487",
       "spdid": "2025008834",
-      "name": "UDAY HARESH MATANG",
-      "gender": "HARESH",
-      "category": "MATANG",
-      "email": "UG2500314955",
-      "phone": "29-10-2007",
-      "subject": "UDAY",
-      "class": "B.Com. Sem-III"
+      "name": "UDAY HARESH MATANG"
     },
     {
       "rollNo": "295",
+      "enrollmentNo": "E25060007100890",
       "spdid": "2025009237",
-      "name": "UNNATI HARESH TIWARI",
-      "gender": "HARESH",
-      "category": "TIWARI",
-      "email": "UG2500231694",
-      "phone": "23-12-2007",
-      "subject": "UNNATI",
-      "class": "B.Com. Sem-III"
+      "name": "UNNATI HARESH TIWARI"
     },
     {
       "rollNo": "296",
+      "enrollmentNo": "E25060007100644",
       "spdid": "2025008991",
-      "name": "URVI PRABHUBHAI PRAJAPATI",
-      "gender": "PRABHUBHAI",
-      "category": "PRAJAPATI",
-      "email": "UG2500237423",
-      "phone": "10-04-2008",
-      "subject": "URVI",
-      "class": "B.Com. Sem-III"
+      "name": "URVI PRABHUBHAI PRAJAPATI"
     },
     {
       "rollNo": "297",
+      "enrollmentNo": "E25060007100100",
       "spdid": "2025008447",
-      "name": "USHIKA GOVIND CHANDNANI",
-      "gender": "GOVIND",
-      "category": "CHANDNANI",
-      "email": "UG2500179895",
-      "phone": "18-01-2008",
-      "subject": "USHIKA",
-      "class": "B.Com. Sem-III"
+      "name": "USHIKA GOVIND CHANDNANI"
     },
     {
       "rollNo": "298",
+      "enrollmentNo": "E25060007100437",
       "spdid": "2025008784",
-      "name": "VAISHALI BHANJI MAHESHWARI",
-      "gender": "BHANJI",
-      "category": "MAHESHWARI",
-      "email": "UG2500117147",
-      "phone": "11-07-2007",
-      "subject": "VAISHALI",
-      "class": "B.Com. Sem-III"
+      "name": "VAISHALI BHANJI MAHESHWARI"
     },
     {
       "rollNo": "299",
+      "enrollmentNo": "E25060007100166",
       "spdid": "2025008513",
-      "name": "VAISHALI INDRAKUMAR DAVE",
-      "gender": "INDRAKUMAR",
-      "category": "DAVE",
-      "email": "UG2500271507",
-      "phone": "29-10-2007",
-      "subject": "VAISHALI",
-      "class": "B.Com. Sem-III"
+      "name": "VAISHALI INDRAKUMAR DAVE"
     },
     {
       "rollNo": "300",
+      "enrollmentNo": "E25060007100584",
       "spdid": "2025008931",
-      "name": "VANSHIKA HARISH PARWANI",
-      "gender": "HARISH",
-      "category": "PARWANI",
-      "email": "UG2500306565",
-      "phone": "28-10-2007",
-      "subject": "VANSHIKA",
-      "class": "B.Com. Sem-III"
+      "name": "VANSHIKA HARISH PARWANI"
     },
     {
       "rollNo": "301",
+      "enrollmentNo": "E25060007100019",
       "spdid": "2025008366",
-      "name": "VANSHIKA NARENDRABHAI AHIR",
-      "gender": "NARENDRABHAI",
-      "category": "AHIR",
-      "email": "UG2500338631",
-      "phone": "29-10-2007",
-      "subject": "VANSHIKA",
-      "class": "B.Com. Sem-III"
+      "name": "VANSHIKA NARENDRABHAI AHIR"
     },
     {
       "rollNo": "302",
+      "enrollmentNo": "E25060007100791",
       "spdid": "2025009138",
-      "name": "VARSHA VINOD SINGHADIYA",
-      "gender": "VINOD",
-      "category": "SINGHADIYA",
-      "email": "UG2500130934",
-      "phone": "14-07-2007",
-      "subject": "VARSHA",
-      "class": "B.Com. Sem-III"
+      "name": "VARSHA VINOD SINGHADIYA"
     },
     {
       "rollNo": "303",
+      "enrollmentNo": "E25060007100832",
       "spdid": "2025009179",
-      "name": "VARUN DEVENDRABHAI SONI",
-      "gender": "DEVENDRABHAI",
-      "category": "SONI",
-      "email": "UG2500175821",
-      "phone": "07-05-2008",
-      "subject": "VARUN",
-      "class": "B.Com. Sem-III"
+      "name": "VARUN DEVENDRABHAI SONI"
     },
     {
       "rollNo": "304",
+      "enrollmentNo": "E25060007100438",
       "spdid": "2025008785",
-      "name": "VATSAL BABULAL MAHESHWARI",
-      "gender": "BABULAL",
-      "category": "MAHESHWARI",
-      "email": "UG2500474289",
-      "phone": "23-03-2007",
-      "subject": "VATSAL",
-      "class": "B.Com. Sem-III"
+      "name": "VATSAL BABULAL MAHESHWARI"
     },
     {
       "rollNo": "305",
+      "enrollmentNo": "E25060007100381",
       "spdid": "2025008728",
-      "name": "VIJAY KAMAL KRIPLANI",
-      "gender": "KAMAL",
-      "category": "KRIPLANI",
-      "email": "UG2500354879",
-      "phone": "19-06-2008",
-      "subject": "VIJAY",
-      "class": "B.Com. Sem-III"
-    },
-    {
-      "rollNo": "306",
-      "spdid": "2025008808",
-      "name": "VIKAS PRAVIN MALI",
-      "gender": "PRAVIN",
-      "category": "MALI",
-      "email": "UG2500127087",
-      "phone": "28-01-2007",
-      "subject": "VIKAS",
-      "class": "B.Com. Sem-III"
+      "name": "VIJAY KAMAL KRIPLANI"
     },
     {
       "rollNo": "307",
+      "enrollmentNo": "E25060007100537",
       "spdid": "2025008884",
-      "name": "VIPAL VORANI NYASA",
-      "gender": "VORANI",
-      "category": "NYASA",
-      "email": "UG2500000156",
-      "phone": "05-05-2007",
-      "subject": "VIPAL",
-      "class": "B.Com. Sem-III"
+      "name": "VIPAL VORANI NYASA"
     },
     {
       "rollNo": "308",
+      "enrollmentNo": "E25060007100756",
       "spdid": "2025009103",
-      "name": "VISHA BHARATBHAI SATHWARA",
-      "gender": "BHARATBHAI",
-      "category": "SATHWARA",
-      "email": "UG2500267413",
-      "phone": "28-07-2008",
-      "subject": "VISHA",
-      "class": "B.Com. Sem-III"
+      "name": "VISHA BHARATBHAI SATHWARA"
     },
     {
       "rollNo": "309",
+      "enrollmentNo": "E25060007100736",
       "spdid": "2025009083",
-      "name": "VISHAL MADANLAL SAMOTA",
-      "gender": "Male",
-      "category": "SAMOTA",
-      "email": "UG2500177447",
-      "phone": "28-01-2007",
-      "subject": "VISHAL",
-      "class": "B.Com. Sem-III"
+      "name": "VISHAL MADANLAL SAMOTA"
     },
     {
       "rollNo": "310",
+      "enrollmentNo": "E25060007100401",
       "spdid": "2025008748",
-      "name": "VISHAL RAJESH MADNANI",
-      "gender": "RAJESH",
-      "category": "MADNANI",
-      "email": "UG2500295320",
-      "phone": "25-11-2007",
-      "subject": "VISHAL",
-      "class": "B.Com. Sem-III"
+      "name": "VISHAL RAJESH MADNANI"
     },
     {
       "rollNo": "311",
+      "enrollmentNo": "E25060007100290",
       "spdid": "2025008637",
-      "name": "VISHWARAJSINH RAJENDRASINH JADEJA",
-      "gender": "RAJENDRASINH",
-      "category": "JADEJA",
-      "email": "UG2500190189",
-      "phone": "18-01-2008",
-      "subject": "VISHWARAJSINH",
-      "class": "B.Com. Sem-III"
+      "name": "VISHWARAJSINH RAJENDRASINH JADEJA"
     },
     {
       "rollNo": "312",
+      "enrollmentNo": "E25060007100967",
       "spdid": "2025009314",
-      "name": "VRUSHIKABA ARVINDSINH ZALA",
-      "gender": "ARVINDSINH",
-      "category": "ZALA",
-      "email": "UG2500324145",
-      "phone": "16-02-2008",
-      "subject": "VRUSHIKABA",
-      "class": "B.Com. Sem-III"
+      "name": "VRUSHIKABA ARVINDSINH ZALA"
     },
     {
       "rollNo": "313",
+      "enrollmentNo": "E25060007100377",
       "spdid": "2025008724",
-      "name": "VRUSHTI VARDHILAL KOTHARI",
-      "gender": "VARDHILAL",
-      "category": "KOTHARI",
-      "email": "UG2500339638",
-      "phone": "29-10-2007",
-      "subject": "VRUSHTI",
-      "class": "B.Com. Sem-III"
+      "name": "VRUSHTI VARDHILAL KOTHARI"
     },
     {
       "rollNo": "314",
+      "enrollmentNo": "E25060007100119",
       "spdid": "2025008466",
-      "name": "YASH DINESHBHAI CHAUHAN",
-      "gender": "DINESHBHAI",
-      "category": "CHAUHAN",
-      "email": "UG2500149294",
-      "phone": "19-09-2007",
-      "subject": "YASH",
-      "class": "B.Com. Sem-III"
+      "name": "YASH DINESHBHAI CHAUHAN"
     },
     {
       "rollNo": "315",
+      "enrollmentNo": "E25060007100467",
       "spdid": "2025008814",
-      "name": "YASH SURESH MANE",
-      "gender": "SURESH",
-      "category": "MANE",
-      "email": "UG2500228968",
-      "phone": "04-09-2006",
-      "subject": "YASH",
-      "class": "B.Com. Sem-III"
+      "name": "YASH SURESH MANE"
     },
     {
       "rollNo": "316",
+      "enrollmentNo": "E25060007100239",
       "spdid": "2025008586",
-      "name": "YASHVI MEHUL GOSWAMI",
-      "gender": "Male",
-      "category": "GOSWAMI",
-      "email": "UG2500187157",
-      "phone": "18-09-2007",
-      "subject": "YASHVI",
-      "class": "B.Com. Sem-III"
+      "name": "YASHVI MEHUL GOSWAMI"
     },
     {
       "rollNo": "317",
+      "enrollmentNo": "E25060007100478",
       "spdid": "2025008825",
-      "name": "YASHVI RAMESHBHAI MARAND",
-      "gender": "RAMESHBHAI",
-      "category": "MARAND",
-      "email": "UG2500240380",
-      "phone": "11-11-2007",
-      "subject": "YASHVI",
-      "class": "B.Com. Sem-III"
+      "name": "YASHVI RAMESHBHAI MARAND"
     },
     {
       "rollNo": "318",
+      "enrollmentNo": "E25060007100351",
       "spdid": "2025008698",
-      "name": "YOGITA KAMLESHKUMAR KASOTIYA",
-      "gender": "KAMLESHKUMAR",
-      "category": "KASOTIYA",
-      "email": "UG2500140390",
-      "phone": "27-07-2007",
-      "subject": "YOGITA",
-      "class": "B.Com. Sem-III"
+      "name": "YOGITA KAMLESHKUMAR KASOTIYA"
     },
     {
       "rollNo": "319",
+      "enrollmentNo": "E25060007100587",
       "spdid": "2025008934",
-      "name": "YUG BHAVESH PATADIYA",
-      "gender": "BHAVESH",
-      "category": "PATADIYA",
-      "email": "UG2500187518",
-      "phone": "10-12-2007",
-      "subject": "YUG",
-      "class": "B.Com. Sem-III"
+      "name": "YUG BHAVESH PATADIYA"
     },
     {
       "rollNo": "320",
+      "enrollmentNo": "E25060007100738",
       "spdid": "2025009085",
-      "name": "YUGANSHI VIMAL SANGHVI",
-      "gender": "VIMAL",
-      "category": "SANGHVI",
-      "email": "UG2500283285",
-      "phone": "17-09-2007",
-      "subject": "YUGANSHI",
-      "class": "B.Com. Sem-III"
+      "name": "YUGANSHI VIMAL SANGHVI"
     },
     {
       "rollNo": "321",
-      "spdid": "2025009169",
-      "name": "ZALAK HARISHBHAI SOLANKI",
-      "gender": "HARISHBHAI",
-      "category": "SOLANKI",
-      "email": "UG2500175444",
-      "phone": "21-08-2008",
-      "subject": "ZALAK",
-      "class": "B.Com. Sem-III"
+      "enrollmentNo": "E25060007100822",
+      "spdid": "2025010295",
+      "name": "AAISHRI GHARWAL"
     },
     {
       "rollNo": "322",
+      "enrollmentNo": "E24060007100567",
       "spdid": "2024003256",
-      "name": "SHILPA HARINDRAPRASAD KUSHWAHA",
-      "gender": "HARINDRAPRASAD",
-      "category": "KUSHWAHA�",
-      "email": "1 YEAR GAP",
-      "phone": "11/8/2006",
-      "subject": "SHILPA�",
-      "class": "B.Com. Sem-III"
+      "name": "SHILPA HARINDRAPRASAD KUSHWAHA"
     },
     {
       "rollNo": "401",
+      "enrollmentNo": "E25060007100973",
       "spdid": "2025010295",
-      "name": "AAISHRI  GHARWAL",
-      "gender": "GHARWAL",
-      "category": "AAISHRI  GHARWAL",
-      "email": "UG2500284519",
-      "phone": "04-05-2007",
-      "subject": "Commerce",
-      "class": "B.Com. Sem-III"
+      "name": "AAISHRI GHARWAL"
     },
     {
       "rollNo": "402",
+      "enrollmentNo": "E25060007100405",
       "spdid": "2025008752",
-      "name": "AARTI VELJI MAHESHWARI",
-      "gender": "VELJI",
-      "category": "MAHESHWARI",
-      "email": "UG2500176224",
-      "phone": "12-03-2008",
-      "subject": "AARTI",
-      "class": "B.Com. Sem-III"
+      "name": "AARTI VELJI MAHESHWARI"
     },
     {
       "rollNo": "403",
+      "enrollmentNo": "E25060007100178",
       "spdid": "2025008525",
-      "name": "ABHIJIT NILESHKUMAR DODIYA",
-      "gender": "NILESHKUMAR",
-      "category": "DODIYA",
-      "email": "UG2500367401",
-      "phone": "26-10-2007",
-      "subject": "ABHIJIT",
-      "class": "B.Com. Sem-III"
+      "name": "ABHIJIT NILESHKUMAR DODIYA"
     },
     {
       "rollNo": "404",
+      "enrollmentNo": "E25060007100003",
       "spdid": "2025008350",
-      "name": "ABHINYA  MAJMUNDAR",
-      "gender": "Male",
-      "category": "MAJMUNDAR",
-      "email": "UG2500239532",
-      "phone": "20-05-2007",
-      "subject": "ABHINYA",
-      "class": "B.Com. Sem-III"
+      "name": "ABHINYA MAJMUNDAR"
     },
     {
       "rollNo": "405",
+      "enrollmentNo": "E25060007100974",
       "spdid": "2025010296",
-      "name": "ABHISHEK UNGESH MISHRA",
-      "gender": "UNGESH",
-      "category": "MISHRA",
-      "email": "UG2500014550",
-      "phone": "02-11-2006",
-      "subject": "ABHISHEK",
-      "class": "B.Com. Sem-III"
+      "name": "ABHISHEK UNGESH MISHRA"
     },
     {
       "rollNo": "406",
+      "enrollmentNo": "E25060007100104",
       "spdid": "2025008451",
-      "name": "ADITI VINOD CHAUHAN",
-      "gender": "VINOD",
-      "category": "CHAUHAN",
-      "email": "UG2500264814",
-      "phone": "11-03-2008",
-      "subject": "ADITI",
-      "class": "B.Com. Sem-III"
+      "name": "ADITI VINOD CHAUHAN"
     },
     {
       "rollNo": "407",
+      "enrollmentNo": "E25060007100189",
       "spdid": "2025008536",
-      "name": "ADITIBEN PRAVINDAN GADHAVI",
-      "gender": "GADHAVI",
-      "category": "ADITIBEN PRAVINDAN GADHAVI",
-      "email": "UG2500107899",
-      "phone": "26-07-2008",
-      "subject": "PRAVINDAN",
-      "class": "B.Com. Sem-III"
+      "name": "ADITIBEN PRAVINDAN GADHAVI"
     },
     {
       "rollNo": "408",
+      "enrollmentNo": "E25060007100975",
       "spdid": "2025010297",
-      "name": "ADITYA ASHISH SHETH",
-      "gender": "ASHISH",
-      "category": "SHETH",
-      "email": "UG2500238699",
-      "phone": "23-12-2007",
-      "subject": "ADITYA",
-      "class": "B.Com. Sem-III"
+      "name": "ADITYA ASHISH SHETH"
     },
     {
       "rollNo": "409",
+      "enrollmentNo": "E25060007100797",
       "spdid": "2025009144",
-      "name": "ADITYA RAJESHBHAI SOLANKI",
-      "gender": "RAJESHBHAI",
-      "category": "SOLANKI",
-      "email": "UG2500109266",
-      "phone": "28-07-2005",
-      "subject": "ADITYA",
-      "class": "B.Com. Sem-III"
+      "name": "ADITYA RAJESHBHAI SOLANKI"
     },
     {
       "rollNo": "410",
+      "enrollmentNo": "E25060007100369",
       "spdid": "2025008716",
-      "name": "AFNAN NIZAMUDDIN KHATRI",
-      "gender": "NIZAMUDDIN",
-      "category": "KHATRI",
-      "email": "UG2500089272",
-      "phone": "01-01-2008",
-      "subject": "AFNAN",
-      "class": "B.Com. Sem-III"
+      "name": "AFNAN NIZAMUDDIN KHATRI"
     },
     {
       "rollNo": "411",
+      "enrollmentNo": "E25060007100023",
       "spdid": "2025008370",
-      "name": "AFSAKHATUN MUHMADALI ANSARI",
-      "gender": "Male",
-      "category": "ANSARI",
-      "email": "UG2500317879",
-      "phone": "07-10-2005",
-      "subject": "AFSAKHATUN",
-      "class": "B.Com. Sem-III"
+      "name": "AFSAKHATUN MUHMADALI ANSARI"
     },
     {
       "rollNo": "412",
+      "enrollmentNo": "E25060007100005",
       "spdid": "2025008352",
-      "name": "AHEMADRAZA IBRAHIM AGARIYA",
-      "gender": "AGARIYA",
-      "category": "AHEMADRAZA IBRAHIM AGARIYA",
-      "email": "UG2500556308",
-      "phone": "27-11-2007",
-      "subject": "IBRAHIM",
-      "class": "B.Com. Sem-III"
+      "name": "AHEMADRAZA IBRAHIM AGARIYA"
     },
     {
       "rollNo": "413",
+      "enrollmentNo": "E25060007100406",
       "spdid": "2025008753",
-      "name": "AJAYBHAI NARANBHAI MAHESHWARI",
-      "gender": "NARANBHAI",
-      "category": "MAHESHWARI",
-      "email": "UG2500341812",
-      "phone": "13-02-2008",
-      "subject": "AJAYBHAI",
-      "class": "B.Com. Sem-III"
+      "name": "AJAYBHAI NARANBHAI MAHESHWARI"
     },
     {
       "rollNo": "414",
+      "enrollmentNo": "E25060007100181",
       "spdid": "2025008528",
-      "name": "AKANSHAH DHIRAJ DUBEY",
-      "gender": "DHIRAJ",
-      "category": "DUBEY",
-      "email": "UG2500337240",
-      "phone": "27-08-2008",
-      "subject": "AKANSHAH",
-      "class": "B.Com. Sem-III"
+      "name": "AKANSHAH DHIRAJ DUBEY"
     },
     {
       "rollNo": "415",
+      "enrollmentNo": "E25060007100899",
       "spdid": "2025009246",
-      "name": "ALAYA JANGYA USMAN",
-      "gender": "JANGYA",
-      "category": "USMAN",
-      "email": "UG2500275641",
-      "phone": "10-01-2007",
-      "subject": "ALAYA",
-      "class": "B.Com. Sem-III"
+      "name": "ALAYA JANGYA USMAN"
     },
     {
       "rollNo": "416",
+      "enrollmentNo": "E25060007100020",
       "spdid": "2025008367",
-      "name": "AMAN  YADAV",
-      "gender": "YADAV",
-      "category": "AMAN  YADAV",
-      "email": "UG2500204128",
-      "phone": "27-09-2007",
-      "subject": "Commerce",
-      "class": "B.Com. Sem-III"
+      "name": "AMAN YADAV"
     },
     {
       "rollNo": "417",
+      "enrollmentNo": "E25060007100611",
       "spdid": "2025008958",
-      "name": "AMIT MOHANBHAI PRAJAPATI",
-      "gender": "Male",
-      "category": "PRAJAPATI",
-      "email": "UG2500330023",
-      "phone": "22-11-2006",
-      "subject": "AMIT",
-      "class": "B.Com. Sem-III"
+      "name": "AMIT MOHANBHAI PRAJAPATI"
     },
     {
       "rollNo": "418",
+      "enrollmentNo": "E25060007100896",
       "spdid": "2025009243",
-      "name": "ANANDKUMAR PRAVINBHAI TURI",
-      "gender": "TURI",
-      "category": "ANANDKUMAR PRAVINBHAI TURI",
-      "email": "UG2500503200",
-      "phone": "16-05-2007",
-      "subject": "PRAVINBHAI",
-      "class": "B.Com. Sem-III"
+      "name": "ANANDKUMAR PRAVINBHAI TURI"
     },
     {
       "rollNo": "419",
+      "enrollmentNo": "E25060007100260",
       "spdid": "2025008607",
-      "name": "ANIL KARSAN HIRANI",
-      "gender": "KARSAN",
-      "category": "HIRANI",
-      "email": "UG2500390064",
-      "phone": "22-02-2007",
-      "subject": "ANIL",
-      "class": "B.Com. Sem-III"
+      "name": "ANIL KARSAN HIRANI"
     },
     {
       "rollNo": "420",
+      "enrollmentNo": "E25060007100407",
       "spdid": "2025008754",
-      "name": "ANITA KARSANBHAI MAHESHWARI",
-      "gender": "KARSANBHAI",
-      "category": "MAHESHWARI",
-      "email": "UG2500264668",
-      "phone": "18-07-2006",
-      "subject": "ANITA",
-      "class": "B.Com. Sem-III"
+      "name": "ANITA KARSANBHAI MAHESHWARI"
     },
     {
       "rollNo": "421",
+      "enrollmentNo": "E25060007100408",
       "spdid": "2025008755",
-      "name": "ANITA LALJIBHAI MAHESHWARI",
-      "gender": "Male",
-      "category": "ANITA LALJIBHAI MAHESHWARI",
-      "email": "UG2500284939",
-      "phone": "23-08-2008",
-      "subject": "LALJIBHAI",
-      "class": "B.Com. Sem-III"
+      "name": "ANITA LALJIBHAI MAHESHWARI"
     },
     {
       "rollNo": "422",
+      "enrollmentNo": "E25060007100190",
       "spdid": "2025008537",
-      "name": "ANJALIBAHEN RAMBHAI GADHAVI",
-      "gender": "RAMBHAI",
-      "category": "GADHAVI",
-      "email": "UG2500313915",
-      "phone": "21-12-2007",
-      "subject": "ANJALIBAHEN",
-      "class": "B.Com. Sem-III"
+      "name": "ANJALIBAHEN RAMBHAI GADHAVI"
     },
     {
       "rollNo": "423",
+      "enrollmentNo": "E25060007100046",
       "spdid": "2025008393",
-      "name": "ANJANIBEN GIRISHBHAI BAROT",
-      "gender": "BAROT",
-      "category": "ANJANIBEN GIRISHBHAI BAROT",
-      "email": "UG2500232221",
-      "phone": "11-03-2008",
-      "subject": "GIRISHBHAI",
-      "class": "B.Com. Sem-III"
+      "name": "ANJANIBEN GIRISHBHAI BAROT"
     },
     {
       "rollNo": "424",
+      "enrollmentNo": "E25060007100550",
       "spdid": "2025008897",
-      "name": "ANUJ RAMESH PARASIYA",
-      "gender": "PARASIYA",
-      "category": "ANUJ RAMESH PARASIYA",
-      "email": "UG2500184291",
-      "phone": "11-06-2007",
-      "subject": "RAMESH",
-      "class": "B.Com. Sem-III"
+      "name": "ANUJ RAMESH PARASIYA"
     },
     {
       "rollNo": "425",
+      "enrollmentNo": "E25060007100885",
       "spdid": "2025009232",
-      "name": "ANUJA ANILPRAKASH TIGGA",
-      "gender": "ANILPRAKASH",
-      "category": "TIGGA",
-      "email": "UG2500140949",
-      "phone": "15-07-2007",
-      "subject": "ANUJA",
-      "class": "B.Com. Sem-III"
+      "name": "ANUJA ANILPRAKASH TIGGA"
     },
     {
       "rollNo": "426",
+      "enrollmentNo": "E25060007100612",
       "spdid": "2025008959",
-      "name": "ANUSHKA GOPAL PRAJAPATI",
-      "gender": "GOPAL",
-      "category": "PRAJAPATI",
-      "email": "UG2500316264",
-      "phone": "16-09-2006",
-      "subject": "ANUSHKA",
-      "class": "B.Com. Sem-III"
+      "name": "ANUSHKA GOPAL PRAJAPATI"
     },
     {
       "rollNo": "427",
+      "enrollmentNo": "E25060007100032",
       "spdid": "2025008379",
-      "name": "ARATIBEN SURESHBHAI BALDANIYA",
-      "gender": "BALDANIYA",
-      "category": "ARATIBEN SURESHBHAI BALDANIYA",
-      "email": "UG2500451393",
-      "phone": "23-08-2008",
-      "subject": "SURESHBHAI",
-      "class": "B.Com. Sem-III"
+      "name": "ARATIBEN SURESHBHAI BALDANIYA"
     },
     {
       "rollNo": "428",
+      "enrollmentNo": "E25060007100198",
       "spdid": "2025008545",
-      "name": "ARJUN RAM GADHVI",
-      "gender": "RAM",
-      "category": "GADHVI",
-      "email": "UG2500174216",
-      "phone": "26-05-2006",
-      "subject": "ARJUN",
-      "class": "B.Com. Sem-III"
+      "name": "ARJUN RAM GADHVI"
     },
     {
       "rollNo": "429",
+      "enrollmentNo": "E25060007100445",
       "spdid": "2025008792",
-      "name": "ARPIT RAMESHBHAI MAKAWANA",
-      "gender": "RAMESHBHAI",
-      "category": "MAKAWANA",
-      "email": "UG2500391099",
-      "phone": "16-01-2008",
-      "subject": "ARPIT",
-      "class": "B.Com. Sem-III"
+      "name": "ARPIT RAMESHBHAI MAKAWANA"
     },
     {
       "rollNo": "430",
+      "enrollmentNo": "E25060007100258",
       "spdid": "2025008605",
-      "name": "ARPITA HITESH HARSH",
-      "gender": "HITESH",
-      "category": "HARSH",
-      "email": "UG2500037728",
-      "phone": "20-12-2007",
-      "subject": "ARPITA",
-      "class": "B.Com. Sem-III"
+      "name": "ARPITA HITESH HARSH"
     },
     {
       "rollNo": "431",
+      "enrollmentNo": "E25060007100096",
       "spdid": "2025008443",
-      "name": "ARPITA RAJESHBHAI CHANDANI",
-      "gender": "CHANDANI",
-      "category": "ARPITA RAJESHBHAI CHANDANI",
-      "email": "UG2500500782",
-      "phone": "20-12-2007",
-      "subject": "RAJESHBHAI",
-      "class": "B.Com. Sem-III"
+      "name": "ARPITA RAJESHBHAI CHANDANI"
     },
     {
       "rollNo": "432",
+      "enrollmentNo": "E25060007100792",
       "spdid": "2025009139",
-      "name": "ARYAN AMRUTHBHAI SIRESIYA",
-      "gender": "SIRESIYA",
-      "category": "ARYAN AMRUTHBHAI SIRESIYA",
-      "email": "UG2500296366",
-      "phone": "27-10-2007",
-      "subject": "AMRUTHBHAI",
-      "class": "B.Com. Sem-III"
+      "name": "ARYAN AMRUTHBHAI SIRESIYA"
     },
     {
       "rollNo": "433",
+      "enrollmentNo": "E25060007100707",
       "spdid": "2025009054",
-      "name": "ARYAN HARESHKUMAR RAVAL",
-      "gender": "HARESHKUMAR",
-      "category": "RAVAL",
-      "email": "UG2500370142",
-      "phone": "26-11-2007",
-      "subject": "ARYAN",
-      "class": "B.Com. Sem-III"
+      "name": "ARYAN HARESHKUMAR RAVAL"
     },
     {
       "rollNo": "434",
+      "enrollmentNo": "E25060007100410",
       "spdid": "2025008757",
-      "name": "ARYAN KANJIBHAI MAHESHWARI",
-      "gender": "KANJIBHAI",
-      "category": "MAHESHWARI",
-      "email": "UG2500236538",
-      "phone": "29-06-2008",
-      "subject": "ARYAN",
-      "class": "B.Com. Sem-III"
+      "name": "ARYAN KANJIBHAI MAHESHWARI"
     },
     {
       "rollNo": "435",
+      "enrollmentNo": "E25060007100188",
       "spdid": "2025008535",
-      "name": "ASHMABAI AYUB GADH",
-      "gender": "AYUB",
-      "category": "GADH",
-      "email": "UG2500162225",
-      "phone": "18-09-2007",
-      "subject": "ASHMABAI",
-      "class": "B.Com. Sem-III"
+      "name": "ASHMABAI AYUB GADH"
     },
     {
       "rollNo": "436",
+      "enrollmentNo": "E25060007100411",
       "spdid": "2025008758",
-      "name": "ASHVIN RAVJIBHAI MAHESHWARI",
-      "gender": "Male",
-      "category": "ASHVIN RAVJIBHAI MAHESHWARI",
-      "email": "UG2500275975",
-      "phone": "01-09-2007",
-      "subject": "RAVJIBHAI",
-      "class": "B.Com. Sem-III"
+      "name": "ASHVIN RAVJIBHAI MAHESHWARI"
     },
     {
       "rollNo": "437",
+      "enrollmentNo": "E25060007100036",
       "spdid": "2025008383",
-      "name": "ASHWIN KANJIBHAI BALIYA",
-      "gender": "KANJIBHAI",
-      "category": "BALIYA",
-      "email": "UG2500314205",
-      "phone": "10-09-2006",
-      "subject": "ASHWIN",
-      "class": "B.Com. Sem-III"
+      "name": "ASHWIN KANJIBHAI BALIYA"
     },
     {
       "rollNo": "438",
+      "enrollmentNo": "E25060007100794",
       "spdid": "2025009141",
-      "name": "ASLAM HANIFBHAI SODHA",
-      "gender": "HANIFBHAI",
-      "category": "SODHA",
-      "email": "UG2500117986",
-      "phone": "10-08-2006",
-      "subject": "ASLAM",
-      "class": "B.Com. Sem-III"
+      "name": "ASLAM HANIFBHAI SODHA"
     },
     {
       "rollNo": "439",
+      "enrollmentNo": "E25060007100318",
       "spdid": "2025008665",
-      "name": "AVANI JIVRAMBHAI JOSHI",
-      "gender": "JIVRAMBHAI",
-      "category": "JOSHI",
-      "email": "UG2500275009",
-      "phone": "16-01-2008",
-      "subject": "AVANI",
-      "class": "B.Com. Sem-III"
+      "name": "AVANI JIVRAMBHAI JOSHI"
     },
     {
       "rollNo": "440",
+      "enrollmentNo": "E25060007100512",
       "spdid": "2025008859",
-      "name": "AYAN AKBAR MUNSHI",
-      "gender": "AKBAR",
-      "category": "MUNSHI",
-      "email": "UG2500165485",
-      "phone": "22-12-2007",
-      "subject": "AYAN",
-      "class": "B.Com. Sem-III"
+      "name": "AYAN AKBAR MUNSHI"
     },
     {
       "rollNo": "441",
+      "enrollmentNo": "E25060007100898",
       "spdid": "2025009245",
-      "name": "AYAN KASAM UNAD",
-      "gender": "KASAM",
-      "category": "UNAD",
-      "email": "UG2500290237",
-      "phone": "09-01-2008",
-      "subject": "AYAN",
-      "class": "B.Com. Sem-III"
+      "name": "AYAN KASAM UNAD"
     },
     {
       "rollNo": "442",
+      "enrollmentNo": "E25060007100029",
       "spdid": "2025008376",
-      "name": "AYUSH  PANWAR",
-      "gender": "Male",
-      "category": "PANWAR",
-      "email": "UG2500254566",
-      "phone": "11-05-2007",
-      "subject": "AYUSH",
-      "class": "B.Com. Sem-III"
+      "name": "AYUSH PANWAR"
     },
     {
       "rollNo": "443",
+      "enrollmentNo": "E25060007100440",
       "spdid": "2025008787",
-      "name": "AYUSH BHAGVAN MAHTO",
-      "gender": "Male",
-      "category": "AYUSH BHAGVAN MAHTO",
-      "email": "UG2500178690",
-      "phone": "10-06-2008",
-      "subject": "BHAGVAN",
-      "class": "B.Com. Sem-III"
+      "name": "AYUSH BHAGVAN MAHTO"
     },
     {
       "rollNo": "444",
+      "enrollmentNo": "E25060007100987",
       "spdid": "2025010309",
-      "name": "B JOHN JOHNSON",
-      "gender": "JOHNSON",
-      "category": "B JOHN JOHNSON",
-      "email": "UG2500258323",
-      "phone": "07-07-2007",
-      "subject": "JOHN",
-      "class": "B.Com. Sem-III"
+      "name": "B JOHN JOHNSON"
     },
     {
       "rollNo": "445",
+      "enrollmentNo": "E25060007100800",
       "spdid": "2025009147",
-      "name": "BADAL KISHANBHAI SOLANKI",
-      "gender": "SOLANKI",
-      "category": "BADAL KISHANBHAI SOLANKI",
-      "email": "UG2500192257",
-      "phone": "22-11-2006",
-      "subject": "KISHANBHAI",
-      "class": "B.Com. Sem-III"
+      "name": "BADAL KISHANBHAI SOLANKI"
     },
     {
       "rollNo": "446",
+      "enrollmentNo": "E25060007100216",
       "spdid": "2025008563",
-      "name": "BANSI BHARATBHAI GAJJAR",
-      "gender": "BHARATBHAI",
-      "category": "GAJJAR",
-      "email": "UG2500224569",
-      "phone": "03-09-2007",
-      "subject": "BANSI",
-      "class": "B.Com. Sem-III"
+      "name": "BANSI BHARATBHAI GAJJAR"
     },
     {
       "rollNo": "447",
+      "enrollmentNo": "E25060007100613",
       "spdid": "2025008960",
-      "name": "BHAGEERATH JAGDISHBHAI PRAJAPATI",
-      "gender": "JAGDISHBHAI",
-      "category": "PRAJAPATI",
-      "email": "UG2500286430",
-      "phone": "15-11-2007",
-      "subject": "BHAGEERATH",
-      "class": "B.Com. Sem-III"
+      "name": "BHAGEERATH JAGDISHBHAI PRAJAPATI"
     },
     {
       "rollNo": "448",
+      "enrollmentNo": "E25060007100033",
       "spdid": "2025008380",
-      "name": "BHAKTI PRADIPKUMAR BALDANIYA",
-      "gender": "PRADIPKUMAR",
-      "category": "BALDANIYA",
-      "email": "UG2500170265",
-      "phone": "10-04-2007",
-      "subject": "BHAKTI",
-      "class": "B.Com. Sem-III"
+      "name": "BHAKTI PRADIPKUMAR BALDANIYA"
     },
     {
       "rollNo": "449",
+      "enrollmentNo": "E25060007100785",
       "spdid": "2025009132",
-      "name": "BHAVESH KISHORBHAI SHUKALA",
-      "gender": "SHUKALA",
-      "category": "BHAVESH KISHORBHAI SHUKALA",
-      "email": "UG2500326821",
-      "phone": "09-10-2005",
-      "subject": "KISHORBHAI",
-      "class": "B.Com. Sem-III"
+      "name": "BHAVESH KISHORBHAI SHUKALA"
     },
     {
       "rollNo": "450",
+      "enrollmentNo": "E25060007100105",
       "spdid": "2025008452",
-      "name": "BHAVESHBHAI BHANABHAI CHAUHAN",
-      "gender": "BHANABHAI",
-      "category": "CHAUHAN",
-      "email": "UG2500264583",
-      "phone": "03-03-2008",
-      "subject": "BHAVESHBHAI",
-      "class": "B.Com. Sem-III"
+      "name": "BHAVESHBHAI BHANABHAI CHAUHAN"
+    },
+    {
+      "rollNo": "1015",
+      "enrollmentNo": "E24060007100567",
+      "spdid": "2024003256",
+      "name": "SHILPA HARINDRAPRASAD KUSHWAHA"
     }
   ]
 }
