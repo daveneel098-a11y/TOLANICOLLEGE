@@ -384,6 +384,97 @@ try {
         console.error("Failed to auto-seed first-year students on boot:", e);
     }
 
+    // Auto-seed Semester 5 students from q/students directory if not present
+    try {
+        let isSem5SeededSetting = false;
+        try {
+            const row = db.prepare("SELECT value FROM settings WHERE key = 'sem5_2026_seeded'").get();
+            if (row && row.value === 'true') {
+                isSem5SeededSetting = true;
+            }
+        } catch (e) {}
+
+        if (!isSem5SeededSetting) {
+            console.log("Forcing Semester 5 student data cleanup and re-seeding...");
+            
+            // Cleanup existing Semester 5 Regular students (child tables first to satisfy foreign key constraints)
+            db.prepare(`
+                DELETE FROM attendance_records 
+                WHERE student_id IN (SELECT id FROM users WHERE role = 'student' AND class = 'B.Com. Sem-V' AND program = 'B.Com (Regular)')
+            `).run();
+            db.prepare(`
+                DELETE FROM marks_registry 
+                WHERE student_id IN (SELECT id FROM users WHERE role = 'student' AND class = 'B.Com. Sem-V' AND program = 'B.Com (Regular)')
+            `).run();
+            db.prepare(`
+                DELETE FROM users 
+                WHERE role = 'student' AND class = 'B.Com. Sem-V' AND program = 'B.Com (Regular)'
+            `).run();
+
+            if (fs.existsSync(studentsDirectory)) {
+                const files = fs.readdirSync(studentsDirectory);
+                let count = 0;
+                
+                const insertUser = db.prepare(`
+                    INSERT INTO users (
+                        username, password, role, name, email, phone, gender, category, 
+                        subject, class, department, division, program, year, semester, 
+                        fee_due, fee_paid, fee_total
+                    ) VALUES (
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                    )
+                `);
+                
+                db.exec('BEGIN TRANSACTION;');
+                
+                for (const file of files) {
+                    if (file.endsWith('.json') && file.includes('sem5') && file.includes('regular')) {
+                        const filePath = path.join(studentsDirectory, file);
+                        const fileData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+                        const fileStudents = fileData.students || [];
+                        const program = fileData.program;
+                        const year = fileData.year;
+                        const semester = fileData.semester;
+                        const division = fileData.division;
+                        
+                        for (const s of fileStudents) {
+                            insertUser.run(
+                                'V' + s.rollNo,
+                                s.rollNo,
+                                'student',
+                                s.name,
+                                s.email,
+                                s.phone,
+                                s.gender,
+                                'General',
+                                'Commerce',
+                                'B.Com. Sem-V',
+                                division,
+                                program,
+                                year,
+                                semester,
+                                0,
+                                0,
+                                0
+                            );
+                            count++;
+                        }
+                    }
+                }
+                
+                // Record that we seeded it successfully
+                db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('sem5_2026_seeded', 'true')").run();
+                
+                db.exec('COMMIT;');
+                dbChanged = true; // Mark as changed to upload to MongoDB Atlas
+                console.log(`Successfully auto-seeded ${count} Semester 5 students on startup!`);
+            }
+        }
+    } catch (e) {
+        console.error("Failed to auto-seed Semester 5 students on boot:", e);
+    }
+
+
     // Migration: Apply roman numeral semester prefix to all existing student usernames and set password to raw roll number
     try {
         let isMigrated = false;
