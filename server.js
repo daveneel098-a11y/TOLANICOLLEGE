@@ -1450,7 +1450,7 @@ function getStandardClass(program, semester) {
 
 // 9. Add User (Admin GUI)
 app.post('/api/users/add', (req, res) => {
-    const { username, password, role, name, email, phone, division, class_name, department, program, year, semester, gender } = req.body;
+    const { username, password, role, name, email, phone, division, class_name, department, program, year, semester, gender, subject } = req.body;
 
     if (!username || !password || !role || !name) {
         return res.status(400).json({ error: 'Missing required user parameters.' });
@@ -1477,13 +1477,13 @@ app.post('/api/users/add', (req, res) => {
 
     try {
         const stmt = db.prepare(`
-            INSERT INTO users (username, password, role, name, email, phone, division, class, department, program, year, semester, gender, fee_due, fee_paid, fee_total)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+            INSERT INTO users (username, password, role, name, email, phone, division, class, department, program, year, semester, gender, fee_due, fee_paid, fee_total, subject)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
         `);
         stmt.run(
             username, password, role, name, email || null, phone || null, 
             division || 'A', finalClass, department || 'B.Com (NEP)',
-            finalProgram, year || '1st Year', finalSemester, finalGender, feeDue, feeTotal
+            finalProgram, year || '1st Year', finalSemester, finalGender, feeDue, feeTotal, subject || null
         );
         res.json({ success: true, message: 'User added successfully.' });
     } catch (err) {
@@ -1494,7 +1494,7 @@ app.post('/api/users/add', (req, res) => {
 
 // 10. Edit User (Admin GUI)
 app.post('/api/users/edit', (req, res) => {
-    const { id, username, name, email, phone, division, class_name, department, program, year, semester, gender, password } = req.body;
+    const { id, username, name, email, phone, division, class_name, department, program, year, semester, gender, password, subject } = req.body;
 
     if (!id) {
         return res.status(400).json({ error: 'User ID is required.' });
@@ -1530,12 +1530,12 @@ app.post('/api/users/edit', (req, res) => {
 
         let query = `
             UPDATE users 
-            SET username = ?, name = ?, email = ?, phone = ?, division = ?, class = ?, department = ?, program = ?, year = ?, semester = ?, gender = ?
+            SET username = ?, name = ?, email = ?, phone = ?, division = ?, class = ?, department = ?, program = ?, year = ?, semester = ?, gender = ?, subject = ?
         `;
         const params = [
             finalUsername, name, email || null, phone || null, division || 'A', finalClass, 
             department || 'B.Com (NEP)', finalProgram, year || '1st Year', finalSemester,
-            gender || 'Male'
+            gender || 'Male', subject || null
         ];
 
         if (password && password.trim() !== '') {

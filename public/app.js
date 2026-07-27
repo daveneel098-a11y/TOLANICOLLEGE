@@ -1460,6 +1460,14 @@ window.renderTeacherSchedule = function() {
             } else {
                 subSel.innerHTML = subjects.map(s => `<option value="${s.name}">${s.name} (${s.code})</option>`).join("");
             }
+
+            // Auto-select the teacher's subject if defined
+            if (currentUser.role === 'teacher' && currentUser.subject) {
+                const exists = Array.from(subSel.options).some(opt => opt.value === currentUser.subject);
+                if (exists) {
+                    subSel.value = currentUser.subject;
+                }
+            }
         } catch (e) {
             subSel.innerHTML = `<option value="Statistics">Statistics (Fallback)</option>`;
         }
@@ -2778,8 +2786,30 @@ window.openAddUserModal = function() {
     });
 };
 
-window.openEditUserModal = function(user) {
+window.openEditUserModal = async function(user) {
     generalModalTitle.textContent = `Edit User Details (UID: ${user.id})`;
+
+    let subjectBlock = '';
+    if (user.role === 'teacher') {
+        let subjectOptions = '<option value="">Select Subject</option>';
+        try {
+            const subRes = await fetch(`/api/subjects?program=${encodeURIComponent(user.program || 'B.Com (Regular)')}`);
+            const subData = await subRes.json();
+            const subjects = subData.subjects || [];
+            subjectOptions += subjects.map(s => `<option value="${s.name}" ${user.subject === s.name ? 'selected' : ''}>${s.name} (${s.code})</option>`).join('');
+        } catch (e) {
+            console.error("Failed to load subjects for edit:", e);
+        }
+        subjectBlock = `
+            <div>
+                <label>Assigned Subject</label>
+                <select id="edit-user-subject" class="form-control" required>
+                    ${subjectOptions}
+                </select>
+            </div>
+        `;
+    }
+
     generalModalBody.innerHTML = `
         <form id="edit-user-form" style="display: flex; flex-direction: column; gap: 16px;">
             <div class="form-grid">
@@ -2857,6 +2887,7 @@ window.openEditUserModal = function(user) {
                     <label>Change Password (leave blank to keep current)</label>
                     <input type="password" id="edit-user-password" class="form-control" placeholder="Enter new password" autocomplete="new-password">
                 </div>
+                ${subjectBlock}
             </div>
             <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
                 <i class="fa-solid fa-save mr-8"></i>
@@ -2882,18 +2913,23 @@ window.openEditUserModal = function(user) {
         const year = document.getElementById("edit-user-year").value;
         const semester = document.getElementById("edit-user-semester").value;
         const password = document.getElementById("edit-user-password").value;
+        const subject = user.role === 'teacher' ? document.getElementById("edit-user-subject").value : null;
 
         try {
             const res = await fetch('/api/users/edit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: user.id, username, name, email, phone, division, class_name, department, program, year, semester, gender, password })
+                body: JSON.stringify({ id: user.id, username, name, email, phone, division, class_name, department, program, year, semester, gender, password, subject })
             });
             const data = await res.json();
             if (data.success) {
                 alert(data.message);
                 generalModal.classList.remove("active");
-                window.renderAdminStudents();
+                if (window.renderAdminStudents && typeof window.renderAdminStudents === 'function') {
+                    window.renderAdminStudents();
+                } else {
+                    window.renderProgramManagement(user.program);
+                }
             } else {
                 alert(data.error);
             }
@@ -3117,6 +3153,7 @@ window.renderProgramManagement = async function(programName) {
                     <td>${t.name}</td>
                     <td>${t.email || 'N/A'}</td>
                     <td>${t.phone || 'N/A'}</td>
+                    <td><span class="attendance-status-pill status-active" style="font-size: 11px;">${t.subject || 'Not Assigned'}</span></td>
                     <td>
                         <button class="btn btn-danger btn-sm" onclick="deleteUser(${t.id})" style="padding: 4px 8px; font-size: 11px;">Remove</button>
                     </td>
@@ -3137,6 +3174,7 @@ window.renderProgramManagement = async function(programName) {
                                 <th>Full Name</th>
                                 <th>Email</th>
                                 <th>Phone</th>
+                                <th>Subject</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -3147,8 +3185,20 @@ window.renderProgramManagement = async function(programName) {
                 </div>
             `;
 
-            document.getElementById("add-program-teacher-btn").addEventListener("click", () => {
+            document.getElementById("add-program-teacher-btn").addEventListener("click", async () => {
                 generalModalTitle.textContent = `Register Professor for ${programName}`;
+                
+                // Fetch subjects list for the program first
+                let subjectOptions = '<option value="">Select Subject</option>';
+                try {
+                    const subRes = await fetch(`/api/subjects?program=${encodeURIComponent(programName)}`);
+                    const subData = await subRes.json();
+                    const subjects = subData.subjects || [];
+                    subjectOptions += subjects.map(s => `<option value="${s.name}">${s.name} (${s.code})</option>`).join('');
+                } catch (e) {
+                    console.error("Failed to load subjects for teacher registration:", e);
+                }
+
                 generalModalBody.innerHTML = `
                     <form id="add-prog-teacher-form" style="display: flex; flex-direction: column; gap: 16px;">
                         <div class="form-grid">
@@ -3179,6 +3229,12 @@ window.renderProgramManagement = async function(programName) {
                                 <label>Contact Phone</label>
                                 <input type="text" id="apt-phone" class="form-control" placeholder="+91 99988 88877" autocomplete="off">
                             </div>
+                            <div>
+                                <label>Assigned Subject</label>
+                                <select id="apt-subject" class="form-control" required>
+                                    ${subjectOptions}
+                                </select>
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
                             <i class="fa-solid fa-save mr-8"></i> Save Professor Record
@@ -3195,13 +3251,14 @@ window.renderProgramManagement = async function(programName) {
                     const gender = document.getElementById("apt-gender").value;
                     const email = document.getElementById("apt-email").value.trim();
                     const phone = document.getElementById("apt-phone").value.trim();
+                    const subject = document.getElementById("apt-subject").value;
 
                     try {
                         const registerRes = await fetch('/api/users/add', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                username, password, name, email, phone, gender,
+                                username, password, name, email, phone, gender, subject,
                                 role: 'teacher',
                                 program: programName,
                                 division: 'All',
