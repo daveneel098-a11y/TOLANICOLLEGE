@@ -211,6 +211,7 @@ const ROLE_NAV = {
         { id: "schedule", label: "Manage Attendance", icon: "fa-calendar-plus" },
         { id: "projector", label: "Classroom Projector", icon: "fa-display" },
         { id: "attendance_report", label: "Attendance Sheet", icon: "fa-table-list" },
+        { id: "lecture_attendance", label: "Lecture Wise Sheet", icon: "fa-list-check" },
         { id: "coursework_manager", label: "Coursework Suite", icon: "fa-folder-open" },
         { id: "profile", label: "Profile Settings", icon: "fa-user-gear" }
     ],
@@ -223,6 +224,7 @@ const ROLE_NAV = {
         { id: "schedule", label: "Manage Attendance", icon: "fa-calendar-plus" },
         { id: "projector", label: "Classroom Projector", icon: "fa-display" },
         { id: "attendance_report", label: "Attendance Sheet", icon: "fa-table-list" },
+        { id: "lecture_attendance", label: "Lecture Wise Sheet", icon: "fa-list-check" },
         { id: "coursework_manager", label: "Coursework Suite", icon: "fa-folder-open" },
         { id: "database", label: "Postgres Console", icon: "fa-database" },
         { id: "profile", label: "Profile Settings", icon: "fa-user-gear" }
@@ -4149,6 +4151,323 @@ window.renderTeacherAttendance_report = function() {
 
 window.renderAdminAttendance_report = function() {
     window.renderUnifiedAttendanceReport(false);
+};
+
+window.renderTeacherLecture_attendance = function() {
+    window.renderLectureWiseAttendanceReport(true);
+};
+
+window.renderAdminLecture_attendance = function() {
+    window.renderLectureWiseAttendanceReport(false);
+};
+
+window.renderLectureWiseAttendanceReport = async function(isTeacherOnly) {
+    dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
+
+    try {
+        const filterRes = await fetch('/api/attendance/analytics');
+        const filterData = await filterRes.json();
+        
+        if (!filterData.success) {
+            dynamicContentArea.innerHTML = `<div class="glass-card text-center"><p style="color: var(--danger);">Failed to load filters.</p></div>`;
+            return;
+        }
+
+        // Print styles injection
+        const style = document.createElement('style');
+        style.id = 'lecture-sheet-print-styles';
+        style.innerHTML = `
+            @media print {
+                aside, header, .sidebar-brand, #app-sidebar, .card-header-flex, .glass-card:has(#lecture-sheet-class), #lecture-sheet-print-btn, #lecture-sheet-export-btn, #lecture-sheet-search-btn {
+                    display: none !important;
+                }
+                body {
+                    background: white !important;
+                    color: black !important;
+                }
+                .glass-card {
+                    background: none !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                    padding: 0 !important;
+                }
+            }
+        `;
+        const prevStyle = document.getElementById('lecture-sheet-print-styles');
+        if (prevStyle) prevStyle.remove();
+        document.head.appendChild(style);
+
+        dynamicContentArea.innerHTML = `
+            <div class="card-header-flex mb-24">
+                <div>
+                    <h2 style="margin: 0; font-size: 24px; color: #ffffff;">Lecture-wise Attendance Sheet</h2>
+                    <p style="color: var(--text-muted); font-size: 13px; margin: 4px 0 0 0;">View or export attendance list for a specific lecture slot</p>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="glass-card mb-24" style="padding: 16px;">
+                <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) 200px 100px 100px; align-items: flex-end; gap: 12px;">
+                    <div>
+                        <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">Class / Semester</label>
+                        <select id="lecture-sheet-class" class="form-control"></select>
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">Division</label>
+                        <select id="lecture-sheet-division" class="form-control"></select>
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">Select Lecture</label>
+                        <select id="lecture-sheet-session" class="form-control"></select>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" id="lecture-sheet-search-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; height: 38px;">
+                            <i class="fa-solid fa-magnifying-glass"></i> Search
+                        </button>
+                    </div>
+                    <div>
+                        <button class="btn btn-secondary" id="lecture-sheet-export-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.2); color: #10b981; height: 38px;">
+                            <i class="fa-solid fa-file-csv"></i> Export CSV
+                        </button>
+                    </div>
+                    <div>
+                        <button class="btn btn-secondary" id="lecture-sheet-print-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; height: 38px;">
+                            <i class="fa-solid fa-print"></i> Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Record Table Card -->
+            <div class="glass-card" style="padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+                    <h3 class="card-title" style="margin: 0;"><i class="fa-solid fa-table-list mr-8"></i> Student Attendance Registry</h3>
+                    <div style="display: flex; gap: 16px; font-size: 13px; color: var(--text-muted);">
+                        <span>Total: <strong id="lecture-total-count" style="color: #ffffff;">0</strong></span>
+                        <span>Present: <strong id="lecture-present-count" style="color: var(--success);">0</strong></span>
+                        <span>Absent: <strong id="lecture-absent-count" style="color: var(--danger);">0</strong></span>
+                    </div>
+                </div>
+                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                    <table class="custom-table text-center" style="font-size: 13px;">
+                        <thead>
+                            <tr>
+                                <th>Roll No.</th>
+                                <th>Semester</th>
+                                <th>Division</th>
+                                <th>Lecture</th>
+                                <th>Student Name</th>
+                                <th>Attendance Status</th>
+                                <th>Time Marked</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lecture-sheet-tbody">
+                            <tr>
+                                <td colspan="7" style="color: var(--text-muted); padding: 24px;">Please select class, division, and a lecture to load the attendance list.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        const classSelect = document.getElementById("lecture-sheet-class");
+        const divSelect = document.getElementById("lecture-sheet-division");
+        const sessionSelect = document.getElementById("lecture-sheet-session");
+        const searchBtn = document.getElementById("lecture-sheet-search-btn");
+        const exportBtn = document.getElementById("lecture-sheet-export-btn");
+        const printBtn = document.getElementById("lecture-sheet-print-btn");
+        const tbody = document.getElementById("lecture-sheet-tbody");
+
+        // Populate baseline dropdowns
+        classSelect.innerHTML = filterData.classes.map(c => `<option value="${c}">${c}</option>`).join('');
+        divSelect.innerHTML = filterData.divisions.map(d => `<option value="${d}">Division ${d}</option>`).join('');
+
+        // Function to fetch lectures for the selected class/division
+        async function loadLectures() {
+            sessionSelect.innerHTML = `<option value="">Loading lectures...</option>`;
+            sessionSelect.disabled = true;
+
+            const cls = classSelect.value;
+            const div = divSelect.value;
+            let url = `/api/attendance/sessions?class_name=${encodeURIComponent(cls)}&division=${encodeURIComponent(div)}`;
+            if (isTeacherOnly) {
+                url += `&creator_id=${currentUser.id}`;
+            }
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                const sessions = data.sessions || [];
+
+                if (sessions.length === 0) {
+                    sessionSelect.innerHTML = `<option value="">No lectures found</option>`;
+                    sessionSelect.disabled = true;
+                } else {
+                    sessionSelect.innerHTML = sessions.map(s => {
+                        const dateStr = new Date(s.created_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        return `<option value="${s.code}" data-slot="${s.lecture_slot}" data-subject="${s.subject}" data-date="${dateStr}">${dateStr} - ${s.lecture_slot} (${s.subject})</option>`;
+                    }).join('');
+                    sessionSelect.disabled = false;
+                }
+            } catch (e) {
+                sessionSelect.innerHTML = `<option value="">Error loading lectures</option>`;
+                sessionSelect.disabled = true;
+            }
+        }
+
+        // Trigger dynamic lecture reloading when filters change
+        classSelect.addEventListener("change", loadLectures);
+        divSelect.addEventListener("change", loadLectures);
+
+        // Load initially
+        await loadLectures();
+
+        let lastSearchResults = [];
+
+        // Search trigger
+        searchBtn.addEventListener("click", async () => {
+            const code = sessionSelect.value;
+            if (!code) {
+                alert("Please select a lecture to search.");
+                return;
+            }
+
+            tbody.innerHTML = `<tr><td colspan="7" style="padding: 24px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 20px; color: var(--primary);"></i> Loading student roster...</td></tr>`;
+
+            const cls = classSelect.value;
+            const div = divSelect.value;
+
+            const selectedOption = sessionSelect.options[sessionSelect.selectedIndex];
+            const slot = selectedOption.getAttribute('data-slot');
+            const subject = selectedOption.getAttribute('data-subject');
+            const lectureLabel = `${slot} (${subject})`;
+
+            try {
+                // 1. Fetch enrolled students
+                const studentsRes = await fetch(`/api/students/list?class_name=${encodeURIComponent(cls)}&division=${encodeURIComponent(div)}`);
+                const studentsData = await studentsRes.json();
+                const studentsList = studentsData.students || [];
+
+                // 2. Fetch session attendance records
+                const recordsRes = await fetch(`/api/attendance/session/${code}/records`);
+                const recordsData = await recordsRes.json();
+                const markedRecords = recordsData.records || [];
+
+                // Build mapping by student ID / Roll number
+                const markedMap = {};
+                markedRecords.forEach(r => {
+                    markedMap[r.roll_no] = r;
+                });
+
+                let presentCount = 0;
+                let absentCount = 0;
+                const rowsData = [];
+
+                studentsList.forEach(s => {
+                    const record = markedMap[s.username];
+                    const isPresent = !!record && record.status === 'present';
+                    if (isPresent) presentCount++;
+                    else absentCount++;
+
+                    rowsData.push({
+                        roll_no: s.roll_no,
+                        semester: cls,
+                        division: div,
+                        lecture: lectureLabel,
+                        name: s.name,
+                        status: isPresent ? 'Present' : 'Absent',
+                        time: isPresent ? new Date(record.marked_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '-'
+                    });
+                });
+
+                lastSearchResults = rowsData;
+
+                document.getElementById("lecture-total-count").textContent = studentsList.length;
+                document.getElementById("lecture-present-count").textContent = presentCount;
+                document.getElementById("lecture-absent-count").textContent = absentCount;
+
+                if (rowsData.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="color: var(--text-muted); padding: 24px;">No students registered for this class.</td></tr>`;
+                } else {
+                    tbody.innerHTML = rowsData.map(r => `
+                        <tr>
+                            <td><strong>${r.roll_no}</strong></td>
+                            <td>${r.semester}</td>
+                            <td>Division ${r.division}</td>
+                            <td>${r.lecture}</td>
+                            <td class="text-left">${r.name}</td>
+                            <td>
+                                <span class="attendance-status-pill" style="
+                                    background: ${r.status === 'Present' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)'};
+                                    color: ${r.status === 'Present' ? 'var(--success)' : 'var(--danger)'};
+                                    border: 1px solid ${r.status === 'Present' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'};
+                                ">
+                                    ${r.status}
+                                </span>
+                            </td>
+                            <td>${r.time}</td>
+                        </tr>
+                    `).join('');
+                }
+
+            } catch (err) {
+                console.error("Error generating lecture report:", err);
+                tbody.innerHTML = `<tr><td colspan="7" style="color: var(--danger); padding: 24px;">Error loading attendance sheet data.</td></tr>`;
+            }
+        });
+
+        // Export CSV trigger
+        exportBtn.addEventListener("click", () => {
+            if (lastSearchResults.length === 0) {
+                alert("Please run a search first to export data.");
+                return;
+            }
+
+            const headers = ['Roll No', 'Semester', 'Division', 'Lecture', 'Student Name', 'Attendance Status', 'Time Marked'];
+            const csvRows = [headers.join(',')];
+
+            lastSearchResults.forEach(r => {
+                const values = [
+                    r.roll_no,
+                    `"${r.semester}"`,
+                    `"Division ${r.division}"`,
+                    `"${r.lecture.replace(/"/g, '""')}"`,
+                    `"${r.name.replace(/"/g, '""')}"`,
+                    r.status,
+                    r.time
+                ];
+                csvRows.push(values.join(','));
+            });
+
+            const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            
+            const cls = classSelect.value.replace(/\s+/g, '_');
+            const div = divSelect.value;
+            const code = sessionSelect.value;
+            link.setAttribute("download", `lecture_attendance_${cls}_Div_${div}_${code}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        // Print trigger
+        printBtn.addEventListener("click", () => {
+            window.print();
+        });
+
+    } catch (e) {
+        console.error(e);
+        dynamicContentArea.innerHTML = `<div class="glass-card text-center"><p style="color: var(--danger);">Failed to load lecture-wise sheet.</p></div>`;
+    }
 };
 
 

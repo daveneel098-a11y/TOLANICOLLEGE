@@ -1004,6 +1004,43 @@ app.get('/api/attendance/active-sessions', (req, res) => {
     }
 });
 
+// Retrieve list of attendance sessions (lectures) with filters
+app.get('/api/attendance/sessions', (req, res) => {
+    const { creator_id, class_name, division } = req.query;
+    try {
+        let sql = `
+            SELECT s.id, s.code, s.class_name, s.subject, s.division, s.program, s.created_at, s.is_active, s.lecture_slot, u.name as creator_name
+            FROM attendance_sessions s
+            JOIN users u ON s.creator_id = u.id
+        `;
+        let params = [];
+        let conditions = [];
+        if (creator_id) {
+            conditions.push(` s.creator_id = ? `);
+            params.push(parseInt(creator_id));
+        }
+        if (class_name) {
+            conditions.push(` s.class_name = ? `);
+            params.push(class_name);
+        }
+        if (division) {
+            conditions.push(` s.division = ? `);
+            params.push(division);
+        }
+        if (conditions.length > 0) {
+            sql += ' WHERE ' + conditions.join(' AND ');
+        }
+        sql += ' ORDER BY s.created_at DESC ';
+
+        const stmt = db.prepare(sql);
+        const sessions = stmt.all(...params);
+        res.json({ success: true, sessions });
+    } catch (err) {
+        console.error('Error fetching attendance sessions:', err);
+        res.status(500).json({ error: 'Failed to fetch sessions.' });
+    }
+});
+
 app.get('/api/attendance/analytics', (req, res) => {
     let { class_name, division, subject, month } = req.query;
 
