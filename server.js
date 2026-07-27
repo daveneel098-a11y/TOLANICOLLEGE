@@ -388,7 +388,7 @@ try {
     try {
         let isSem5SeededSetting = false;
         try {
-            const row = db.prepare("SELECT value FROM settings WHERE key = 'sem5_2026_seeded'").get();
+            const row = db.prepare("SELECT value FROM settings WHERE key = 'sem5_2026_seeded_v2'").get();
             if (row && row.value === 'true') {
                 isSem5SeededSetting = true;
             }
@@ -463,7 +463,7 @@ try {
                 }
                 
                 // Record that we seeded it successfully
-                db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('sem5_2026_seeded', 'true')").run();
+                db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('sem5_2026_seeded_v2', 'true')").run();
                 
                 db.exec('COMMIT;');
                 dbChanged = true; // Mark as changed to upload to MongoDB Atlas
