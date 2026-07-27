@@ -51,27 +51,20 @@ if (currentDateDisplay) {
     currentDateDisplay.textContent = new Date().toLocaleDateString('en-US', options);
 }
 
-// Check session in LocalStorage on startup
-const storedUser = localStorage.getItem("es_current_user");
-if (storedUser) {
-    try {
-        currentUser = JSON.parse(storedUser);
-    } catch (e) {
-        localStorage.removeItem("es_current_user");
-    }
-    if (currentUser) {
-        try {
-            initializeDashboard();
-        } catch (err) {
-            console.error("Error initializing dashboard on load:", err);
-        }
-    }
-}
 
 // --- Sidebar Toggle ---
 if (sidebarToggle && appSidebar) {
-    sidebarToggle.addEventListener("click", () => {
+    sidebarToggle.addEventListener("click", (e) => {
+        e.stopPropagation();
         appSidebar.classList.toggle("active");
+    });
+    
+    document.addEventListener("click", (e) => {
+        if (window.innerWidth <= 992 && appSidebar.classList.contains("active")) {
+            if (!appSidebar.contains(e.target) && e.target !== sidebarToggle && !sidebarToggle.contains(e.target)) {
+                appSidebar.classList.remove("active");
+            }
+        }
     });
 }
 
@@ -5134,3 +5127,21 @@ window.renderUnifiedCourseworkManager = async function() {
         dynamicContentArea.innerHTML = `<div class="glass-card text-center"><p style="color: var(--danger);">Failed to load coursework manager console.</p></div>`;
     }
 };
+
+// Check session in LocalStorage on startup after all functions and views are declared
+const storedUser = localStorage.getItem("es_current_user");
+if (storedUser) {
+    try {
+        currentUser = JSON.parse(storedUser);
+    } catch (e) {
+        localStorage.removeItem("es_current_user");
+    }
+    if (currentUser) {
+        try {
+            initializeDashboard();
+        } catch (err) {
+            console.error("Error initializing dashboard on load:", err);
+        }
+    }
+}
+

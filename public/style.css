@@ -1269,3 +1269,39 @@ body {
     margin: 0 auto;
 }
 
+/* Stats Grid & Mobile Responsiveness Utilities */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: 16px 12px;
+    }
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    .top-navbar {
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .nav-right {
+        align-self: flex-end;
+    }
+    .glass-card {
+        padding: 16px;
+        border-radius: 12px;
+    }
+    .auth-card {
+        padding: 24px 16px;
+    }
+}
+
+
