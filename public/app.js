@@ -1458,18 +1458,41 @@ window.renderTeacherSchedule = function() {
             if (subjects.length === 0) {
                 subSel.innerHTML = `<option value="Statistics">Statistics (Fallback)</option><option value="Accountancy">Accountancy (Fallback)</option>`;
             } else {
-                subSel.innerHTML = subjects.map(s => `<option value="${s.name}">${s.name} (${s.code})</option>`).join("");
+                subSel.innerHTML = subjects.map(s => `<option value="${s.name}" data-semester="${s.semester}">${s.name} (${s.code})</option>`).join("");
             }
 
-            // Auto-select the teacher's subject if defined
-            if (currentUser.role === 'teacher' && currentUser.subject) {
-                const exists = Array.from(subSel.options).some(opt => opt.value === currentUser.subject);
-                if (exists) {
-                    subSel.value = currentUser.subject;
-                }
-            }
+            autoSelectSubject();
         } catch (e) {
             subSel.innerHTML = `<option value="Statistics">Statistics (Fallback)</option>`;
+        }
+    }
+
+    function autoSelectSubject() {
+        if (currentUser.role === 'teacher' && currentUser.subject) {
+            const teacherSubjects = currentUser.subject.split(',').map(s => s.trim());
+            const selectedClass = classSel.value;
+            
+            let targetSem = "";
+            if (selectedClass.includes("Sem-I")) targetSem = "Semester 1";
+            else if (selectedClass.includes("Sem-II")) targetSem = "Semester 2";
+            else if (selectedClass.includes("Sem-III")) targetSem = "Semester 3";
+            else if (selectedClass.includes("Sem-IV")) targetSem = "Semester 4";
+            else if (selectedClass.includes("Sem-V")) targetSem = "Semester 5";
+            else if (selectedClass.includes("Sem-VI")) targetSem = "Semester 6";
+
+            const options = Array.from(subSel.options);
+            let match = options.find(opt => {
+                const optSem = opt.getAttribute("data-semester") || "";
+                return optSem === targetSem && teacherSubjects.includes(opt.value);
+            });
+
+            if (!match) {
+                match = options.find(opt => teacherSubjects.includes(opt.value));
+            }
+
+            if (match) {
+                subSel.value = match.value;
+            }
         }
     }
 
@@ -1513,6 +1536,8 @@ window.renderTeacherSchedule = function() {
         loadSubjects(e.target.value);
         loadClasses(e.target.value);
     });
+
+    classSel.addEventListener("change", autoSelectSubject);
 
     const reqGpsCheck = document.getElementById("att-require-gps");
     const gpsRadCont = document.getElementById("gps-radius-container");
@@ -2791,21 +2816,30 @@ window.openEditUserModal = async function(user) {
 
     let subjectBlock = '';
     if (user.role === 'teacher') {
-        let subjectOptions = '<option value="">Select Subject</option>';
+        let checkboxesHTML = '';
         try {
             const subRes = await fetch(`/api/subjects?program=${encodeURIComponent(user.program || 'B.Com (Regular)')}`);
             const subData = await subRes.json();
             const subjects = subData.subjects || [];
-            subjectOptions += subjects.map(s => `<option value="${s.name}" ${user.subject === s.name ? 'selected' : ''}>${s.name} (${s.code})</option>`).join('');
+            const userSubjects = user.subject ? user.subject.split(',').map(s => s.trim()) : [];
+            checkboxesHTML = subjects.map(s => {
+                const isChecked = userSubjects.includes(s.name) ? 'checked' : '';
+                return `
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; margin: 4px 0; cursor: pointer; color: var(--text-main);">
+                        <input type="checkbox" class="edit-user-subject-checkbox" value="${s.name}" ${isChecked} style="width: 16px; height: 16px; cursor: pointer;">
+                        <span>${s.name} (${s.code}) - Sem ${s.semester.replace('Semester ', '')}</span>
+                    </label>
+                `;
+            }).join('');
         } catch (e) {
             console.error("Failed to load subjects for edit:", e);
         }
         subjectBlock = `
-            <div>
-                <label>Assigned Subject</label>
-                <select id="edit-user-subject" class="form-control" required>
-                    ${subjectOptions}
-                </select>
+            <div style="grid-column: span 2;">
+                <label style="display: block; margin-bottom: 8px;">Assigned Subject(s)</label>
+                <div style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(0,0,0,0.2);">
+                    ${checkboxesHTML || '<span style="color: var(--text-muted); font-size: 12px;">No subjects found for this program.</span>'}
+                </div>
             </div>
         `;
     }
@@ -2913,7 +2947,7 @@ window.openEditUserModal = async function(user) {
         const year = document.getElementById("edit-user-year").value;
         const semester = document.getElementById("edit-user-semester").value;
         const password = document.getElementById("edit-user-password").value;
-        const subject = user.role === 'teacher' ? document.getElementById("edit-user-subject").value : null;
+        const subject = user.role === 'teacher' ? Array.from(document.querySelectorAll('.edit-user-subject-checkbox:checked')).map(cb => cb.value).join(', ') : null;
 
         try {
             const res = await fetch('/api/users/edit', {
@@ -3189,12 +3223,17 @@ window.renderProgramManagement = async function(programName) {
                 generalModalTitle.textContent = `Register Professor for ${programName}`;
                 
                 // Fetch subjects list for the program first
-                let subjectOptions = '<option value="">Select Subject</option>';
+                let checkboxesHTML = '';
                 try {
                     const subRes = await fetch(`/api/subjects?program=${encodeURIComponent(programName)}`);
                     const subData = await subRes.json();
                     const subjects = subData.subjects || [];
-                    subjectOptions += subjects.map(s => `<option value="${s.name}">${s.name} (${s.code})</option>`).join('');
+                    checkboxesHTML = subjects.map(s => `
+                        <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; margin: 4px 0; cursor: pointer; color: var(--text-main);">
+                            <input type="checkbox" class="apt-subject-checkbox" value="${s.name}" style="width: 16px; height: 16px; cursor: pointer;">
+                            <span>${s.name} (${s.code}) - Sem ${s.semester.replace('Semester ', '')}</span>
+                        </label>
+                    `).join('');
                 } catch (e) {
                     console.error("Failed to load subjects for teacher registration:", e);
                 }
@@ -3229,11 +3268,11 @@ window.renderProgramManagement = async function(programName) {
                                 <label>Contact Phone</label>
                                 <input type="text" id="apt-phone" class="form-control" placeholder="+91 99988 88877" autocomplete="off">
                             </div>
-                            <div>
-                                <label>Assigned Subject</label>
-                                <select id="apt-subject" class="form-control" required>
-                                    ${subjectOptions}
-                                </select>
+                            <div style="grid-column: span 2;">
+                                <label style="display: block; margin-bottom: 8px;">Assigned Subject(s)</label>
+                                <div style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(0,0,0,0.2);">
+                                    ${checkboxesHTML || '<span style="color: var(--text-muted); font-size: 12px;">No subjects found for this program.</span>'}
+                                </div>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
@@ -3251,7 +3290,7 @@ window.renderProgramManagement = async function(programName) {
                     const gender = document.getElementById("apt-gender").value;
                     const email = document.getElementById("apt-email").value.trim();
                     const phone = document.getElementById("apt-phone").value.trim();
-                    const subject = document.getElementById("apt-subject").value;
+                    const subject = Array.from(document.querySelectorAll('.apt-subject-checkbox:checked')).map(cb => cb.value).join(', ');
 
                     try {
                         const registerRes = await fetch('/api/users/add', {
