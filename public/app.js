@@ -4258,7 +4258,7 @@ window.renderLectureWiseAttendanceReport = async function(isTeacherOnly) {
                                 <th>Lecture</th>
                                 <th>Student Name</th>
                                 <th>Attendance Status</th>
-                                <th>Time Marked</th>
+                                <th>Date Marked</th>
                             </tr>
                         </thead>
                         <tbody id="lecture-sheet-tbody">
@@ -4382,7 +4382,7 @@ window.renderLectureWiseAttendanceReport = async function(isTeacherOnly) {
                         lecture: lectureLabel,
                         name: s.name,
                         status: isPresent ? 'Present' : 'Absent',
-                        time: isPresent ? new Date(record.marked_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '-'
+                        date: isPresent ? new Date(record.marked_at).toLocaleDateString('en-GB') : '-'
                     });
                 });
 
@@ -4411,7 +4411,7 @@ window.renderLectureWiseAttendanceReport = async function(isTeacherOnly) {
                                     ${r.status}
                                 </span>
                             </td>
-                            <td>${r.time}</td>
+                            <td>${r.date}</td>
                         </tr>
                     `).join('');
                 }
@@ -4429,7 +4429,7 @@ window.renderLectureWiseAttendanceReport = async function(isTeacherOnly) {
                 return;
             }
 
-            const headers = ['Roll No', 'Semester', 'Division', 'Lecture', 'Student Name', 'Attendance Status', 'Time Marked'];
+            const headers = ['Roll No', 'Semester', 'Division', 'Lecture', 'Student Name', 'Attendance Status', 'Date Marked'];
             const csvRows = [headers.join(',')];
 
             lastSearchResults.forEach(r => {
@@ -4440,7 +4440,7 @@ window.renderLectureWiseAttendanceReport = async function(isTeacherOnly) {
                     `"${r.lecture.replace(/"/g, '""')}"`,
                     `"${r.name.replace(/"/g, '""')}"`,
                     r.status,
-                    r.time
+                    r.date
                 ];
                 csvRows.push(values.join(','));
             });
