@@ -1513,6 +1513,9 @@ app.post('/api/attendance/session/close', (req, res) => {
 
         db.prepare("UPDATE attendance_sessions SET is_active = 0, status = 'CLOSED' WHERE id = ?").run(session.id);
 
+        // Mark any remaining PENDING student check-ins as ABSENT
+        db.prepare("UPDATE attendance_records SET status = 'ABSENT' WHERE session_id = ? AND status = 'PENDING'").run(session.id);
+
         // Broadcast to all connected students
         broadcastStudentSse(session.id, 'SESSION_CLOSED', { message: 'Attendance session completed.' });
 

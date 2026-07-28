@@ -393,11 +393,17 @@
                 <h1 class="subject-title" id="disp-subject">Statistics</h1>
             </div>
 
-            <div class="code-container">
-                <div class="code-label">Active Classroom Check-In Code</div>
-                <div class="code-display" id="disp-code">------</div>
+            <div class="code-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 40px 20px;">
+                <div class="code-label" id="disp-code-label">Active Classroom Check-In Code 1</div>
+                <div id="disp-code" style="font-size: 110px; font-weight: 900; letter-spacing: 8px; color: #ffffff; line-height: 1;">------</div>
+                <div style="margin: 10px auto; text-align: center;">
+                    <img id="projector-qrcode" style="width: 220px; height: 220px; border: 4px solid white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" src="" alt="Dynamic QR Code">
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 10px; font-weight: 500;">
+                        <i class="fa-solid fa-arrows-rotate fa-spin mr-4"></i> QR Code rotates every 15 seconds
+                    </p>
+                </div>
                 <div class="timer-label" id="disp-timer-label">
-                    <i class="fa-solid fa-circle-dot fa-fade"></i> Broadcast Active
+                    <i class="fa-solid fa-circle-dot fa-fade" style="color: var(--accent);"></i> Broadcast Active
                 </div>
                 <div class="timer-progress" id="disp-progress-bar"></div>
             </div>
@@ -504,6 +510,63 @@
             }
         }
 
+        function get15SecondHash(secretKey, timeWindow) {
+            const input = secretKey + "_" + timeWindow;
+            let hash = 5381;
+            for (let i = 0; i < input.length; i++) {
+                hash = ((hash << 5) + hash) + input.charCodeAt(i);
+            }
+            return (hash >>> 0).toString(16);
+        }
+
+        let qrRotationInterval = null;
+
+        function startProjectorQrAndCodeRotation() {
+            if (qrRotationInterval) clearInterval(qrRotationInterval);
+
+            const img = document.getElementById("projector-qrcode");
+            const codeDisplay = document.getElementById("disp-code");
+            const labelDisplay = document.getElementById("disp-code-label");
+            if (!img) return;
+
+            let lastWindow = -1;
+
+            function update() {
+                if (!activeSessionObj) return;
+
+                const timeWindow = Math.floor(Date.now() / 15000);
+                const isVerification = activeSessionObj.verification_started === 1;
+                const secretKey = isVerification ? activeSessionObj.secret_key2 : activeSessionObj.secret_key;
+                
+                if (labelDisplay) {
+                    labelDisplay.textContent = isVerification ? "Active Verification Code 2" : "Active Classroom Check-In Code 1";
+                    labelDisplay.style.color = isVerification ? "var(--warning)" : "var(--text-muted)";
+                }
+
+                if (timeWindow !== lastWindow) {
+                    lastWindow = timeWindow;
+                    const hash = get15SecondHash(secretKey, timeWindow);
+                    const qrData = activeSessionObj.id + ":" + hash;
+                    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`;
+                    
+                    if (codeDisplay) {
+                        codeDisplay.textContent = hash.toUpperCase();
+                        codeDisplay.style.color = isVerification ? "var(--warning)" : "#ffffff";
+                    }
+                }
+            }
+
+            update();
+            qrRotationInterval = setInterval(update, 1000);
+        }
+
+        function stopProjectorQrAndCodeRotation() {
+            if (qrRotationInterval) {
+                clearInterval(qrRotationInterval);
+                qrRotationInterval = null;
+            }
+        }
+
         function launchSession(session) {
             activeSessionCode = session.code;
             activeSessionObj = session;
@@ -511,7 +574,6 @@
             // Setup view details
             document.getElementById("disp-program").textContent = `${session.program} — ${session.division !== 'All' ? 'Div ' + session.division : 'All Divisions'}`;
             document.getElementById("disp-subject").textContent = session.subject;
-            document.getElementById("disp-code").textContent = session.code;
             
             document.getElementById("disp-gps-label").innerHTML = session.require_gps 
                 ? `<i class="fa-solid fa-location-crosshairs" style="color: var(--accent);"></i> ACTIVE (${session.geofence_radius || 50}m)` 
@@ -525,22 +587,20 @@
             document.getElementById("disp-present-count").textContent = "0";
             document.getElementById("disp-joined-list").innerHTML = '<div style="color: var(--text-muted); font-size: 13px; width: 100%; text-align: center;">Waiting for check-ins...</div>';
 
+            // Start dynamic QR and Numeric Code rotation
+            startProjectorQrAndCodeRotation();
+
             // Start Polling records
             pollCheckedInRecords();
             pollingInterval = setInterval(pollCheckedInRecords, 3000);
 
-            // Handle OTP rotation timer if rolling code
-            if (session.is_rolling) {
-                startRotationTimer();
-            } else {
-                document.getElementById("disp-timer-label").innerHTML = `<i class="fa-solid fa-circle-dot fa-fade" style="color: var(--accent);"></i> Broadcast Active`;
-                document.getElementById("disp-progress-bar").style.width = "0%";
-            }
+            document.getElementById("disp-timer-label").innerHTML = `<i class="fa-solid fa-circle-dot fa-fade" style="color: var(--accent);"></i> Broadcast Active`;
+            document.getElementById("disp-progress-bar").style.width = "0%";
         }
 
         function exitActiveSession() {
             if (pollingInterval) clearInterval(pollingInterval);
-            if (rotationTimerInterval) clearInterval(rotationTimerInterval);
+            stopProjectorQrAndCodeRotation();
             
             activeSessionCode = null;
             activeSessionObj = null;
@@ -565,6 +625,10 @@
                     const records = data.records || [];
                     document.getElementById("disp-present-count").textContent = records.length;
 
+                    if (data.session) {
+                        activeSessionObj = data.session;
+                    }
+
                     const joinedBox = document.getElementById("disp-joined-list");
                     if (records.length === 0) {
                         joinedBox.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; width: 100%; text-align: center;">Waiting for check-ins...</div>';
@@ -582,45 +646,6 @@
             } catch (err) {
                 console.error("Polling error:", err);
             }
-        }
-
-        function startRotationTimer() {
-            rotationSecondsLeft = 20;
-            if (rotationTimerInterval) clearInterval(rotationTimerInterval);
-
-            rotationTimerInterval = setInterval(async () => {
-                rotationSecondsLeft--;
-                const timerTxt = document.getElementById("disp-timer-label");
-                const progressBar = document.getElementById("disp-progress-bar");
-                
-                if (timerTxt) {
-                    timerTxt.innerHTML = `<i class="fa-solid fa-arrows-spin fa-spin" style="color: var(--accent);"></i> Code rotates in ${rotationSecondsLeft} seconds`;
-                }
-
-                if (progressBar) {
-                    progressBar.style.width = `${(rotationSecondsLeft / 20) * 100}%`;
-                }
-
-                if (rotationSecondsLeft <= 0) {
-                    clearInterval(rotationTimerInterval);
-                    // Rotate OTP code on server
-                    try {
-                        const res = await fetch("/api/attendance/session/rotate", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ code: activeSessionCode })
-                        });
-                        const data = await res.json();
-                        if (data.success) {
-                            activeSessionCode = data.new_code;
-                            document.getElementById("disp-code").textContent = activeSessionCode;
-                        }
-                    } catch (e) {
-                        console.error("Rotation error:", e);
-                    }
-                    startRotationTimer();
-                }
-            }, 1000);
         }
     </script>
 </body>
