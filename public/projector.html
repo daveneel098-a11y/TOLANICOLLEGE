@@ -396,7 +396,7 @@
             <div class="code-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 40px 20px;">
                 <div class="code-label" id="disp-code-label">Active Classroom Check-In Code 1</div>
                 <div id="disp-code" style="font-size: 110px; font-weight: 900; letter-spacing: 8px; color: #ffffff; line-height: 1;">------</div>
-                <div style="margin: 10px auto; text-align: center;">
+                <div style="display: none; margin: 10px auto; text-align: center;">
                     <img id="projector-qrcode" style="width: 220px; height: 220px; border: 4px solid white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" src="" alt="Dynamic QR Code">
                     <p style="font-size: 12px; color: var(--text-muted); margin-top: 10px; font-weight: 500;">
                         <i class="fa-solid fa-arrows-rotate fa-spin mr-4"></i> QR Code rotates every 15 seconds
@@ -523,71 +523,35 @@
         let qrRotationInterval = null;
 
         function startProjectorQrAndCodeRotation() {
-            if (qrRotationInterval) clearInterval(qrRotationInterval);
-
-            const img = document.getElementById("projector-qrcode");
             const codeDisplay = document.getElementById("disp-code");
             const labelDisplay = document.getElementById("disp-code-label");
-            if (!img) return;
+            if (!activeSessionObj) return;
 
-            let lastWindow = -1;
-
-            function update() {
-                if (!activeSessionObj) return;
-
-                const isVerification = activeSessionObj.verification_started === 1;
-                
-                if (isVerification) {
-                    if (labelDisplay) {
-                        labelDisplay.textContent = "Active Verification Code 2";
-                        labelDisplay.style.color = "var(--warning)";
-                    }
-                    if (codeDisplay) {
-                        codeDisplay.textContent = activeSessionObj.code2.toUpperCase();
-                        codeDisplay.style.color = "var(--warning)";
-                    }
-                    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(activeSessionObj.id + ":" + activeSessionObj.code2)}`;
-                    
-                    // Stop interval since Code 2 is static
-                    if (qrRotationInterval) {
-                        clearInterval(qrRotationInterval);
-                        qrRotationInterval = null;
-                    }
-                    return;
+            const isVerification = activeSessionObj.verification_started === 1;
+            
+            if (isVerification) {
+                if (labelDisplay) {
+                    labelDisplay.textContent = "Active Verification Code 2";
+                    labelDisplay.style.color = "var(--warning)";
                 }
-
-                const timeWindow = Math.floor(Date.now() / 15000);
-                const secretKey = activeSessionObj.secret_key;
-                
+                if (codeDisplay) {
+                    codeDisplay.textContent = activeSessionObj.code2.toUpperCase();
+                    codeDisplay.style.color = "var(--warning)";
+                }
+            } else {
                 if (labelDisplay) {
                     labelDisplay.textContent = "Active Classroom Check-In Code 1";
                     labelDisplay.style.color = "var(--text-muted)";
                 }
-
-                if (timeWindow !== lastWindow) {
-                    lastWindow = timeWindow;
-                    const hash = get15SecondHash(secretKey, timeWindow);
-                    const qrData = activeSessionObj.id + ":" + hash;
-                    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`;
-                    
-                    if (codeDisplay) {
-                        codeDisplay.textContent = hash.toUpperCase();
-                        codeDisplay.style.color = "#ffffff";
-                    }
+                if (codeDisplay) {
+                    codeDisplay.textContent = activeSessionObj.code.toUpperCase();
+                    codeDisplay.style.color = "#ffffff";
                 }
-            }
-
-            update();
-            if (activeSessionObj && activeSessionObj.verification_started !== 1) {
-                qrRotationInterval = setInterval(update, 1000);
             }
         }
 
         function stopProjectorQrAndCodeRotation() {
-            if (qrRotationInterval) {
-                clearInterval(qrRotationInterval);
-                qrRotationInterval = null;
-            }
+            // No-op (static view)
         }
 
         function launchSession(session) {
@@ -650,6 +614,7 @@
 
                     if (data.session) {
                         activeSessionObj = data.session;
+                        startProjectorQrAndCodeRotation();
                     }
 
                     const joinedBox = document.getElementById("disp-joined-list");

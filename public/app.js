@@ -1601,7 +1601,7 @@ window.renderTeacherSchedule = function() {
                             <input type="checkbox" id="att-require-gps" style="width: 18px; height: 18px; cursor: pointer;">
                             <span><i class="fa-solid fa-location-crosshairs mr-4"></i> Enforce GPS Geofencing</span>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0; font-weight: 500; font-size: 13px; color: var(--accent);">
+                        <label style="display: none; align-items: center; gap: 8px; cursor: pointer; margin: 0; font-weight: 500; font-size: 13px; color: var(--accent);">
                             <input type="checkbox" id="att-is-rolling" style="width: 18px; height: 18px; cursor: pointer;">
                             <span><i class="fa-solid fa-arrows-spin mr-4"></i> Enable Rolling Codes (20s)</span>
                         </label>
@@ -1646,14 +1646,14 @@ window.renderTeacherSchedule = function() {
             <div class="attendance-code-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px;">
                 <span class="attendance-status-pill status-active" id="active-session-label"><i class="fa-solid fa-circle-dot fa-fade"></i> SESSION ACTIVE</span>
                 <div class="attendance-code-number" id="active-code-display">000000</div>
-                <div style="margin: 10px auto; text-align: center;">
+                <div style="display: none; margin: 10px auto; text-align: center;">
                     <img id="active-session-qrcode" style="width: 180px; height: 180px; border: 4px solid white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" src="" alt="Dynamic QR Code">
                     <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px; font-weight: 500;">
                         <i class="fa-solid fa-arrows-rotate fa-spin mr-4"></i> QR Code rotates every 15 seconds
                     </p>
                 </div>
                 <p style="color: var(--text-muted); font-size: 13px;" id="active-session-desc">
-                    Show this code and QR Code on the classroom projector screen.
+                    Show this code on the classroom projector screen.
                 </p>
                 <div id="active-session-verification-wrapper" style="width: 100%; text-align: center; margin-top: 10px;">
                     <button class="btn btn-warning" id="start-verification-btn" style="width: 100%; max-width: 280px; font-weight: bold; color: black;">
@@ -1809,22 +1809,22 @@ window.renderTeacherSchedule = function() {
             const program = progSel.value;
             const duration = document.getElementById("att-duration").value;
             const requireGps = document.getElementById("att-require-gps").checked;
-            const isRolling = document.getElementById("att-is-rolling").checked;
+            const isRolling = false;
             const geofenceRadius = document.getElementById("att-gps-radius").value;
             const lectureSlot = document.getElementById("att-lecture-slot").value;
 
             if (requireGps) {
                 getGPSCoordinates(
                     async (position) => {
-                        await sendCreateSession(className, subject, division, program, duration, true, position.coords.latitude, position.coords.longitude, isRolling, geofenceRadius, lectureSlot);
+                        await sendCreateSession(className, subject, division, program, duration, true, position.coords.latitude, position.coords.longitude, false, geofenceRadius, lectureSlot);
                     },
                     async (err) => {
                         alert("Note: Location coordinates lookup failed or timed out. Creating geofenced session using fixed Tolani College Campus coordinates instead.");
-                        await sendCreateSession(className, subject, division, program, duration, true, null, null, isRolling, geofenceRadius, lectureSlot);
+                        await sendCreateSession(className, subject, division, program, duration, true, null, null, false, geofenceRadius, lectureSlot);
                     }
                 );
             } else {
-                await sendCreateSession(className, subject, division, program, duration, false, null, null, isRolling, 50, lectureSlot);
+                await sendCreateSession(className, subject, division, program, duration, false, null, null, false, 50, lectureSlot);
             }
         });
     }
@@ -2463,14 +2463,10 @@ window.initializeProfessorActiveSession = function(session) {
             label.style.color = "black";
             label.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> FINAL VERIFICATION ACTIVE`;
         }
-        if (desc) desc.textContent = "Show this static verification code and QR Code to students in class.";
+        if (desc) desc.textContent = "Show this static verification code to students in class.";
         
         stopQrRotation();
         if (codeDisplay) codeDisplay.textContent = session.code2;
-        const img = document.getElementById("active-session-qrcode");
-        if (img) {
-            img.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(session.id + ":" + session.code2)}`;
-        }
     } else {
         // Reset Code 1 display
         if (codeDisplay) codeDisplay.textContent = session.code;
@@ -2508,7 +2504,7 @@ window.initializeProfessorActiveSession = function(session) {
                 }
             };
         }
-        startQrRotation(session.id, session.secret_key);
+        stopQrRotation();
     }
 
     window.professorSse = new EventSource(`/api/attendance/session/${session.id}/professor-stream`);
