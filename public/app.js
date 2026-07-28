@@ -663,6 +663,131 @@ window.renderStudentAttendance = async function() {
     }
 };
 
+let activeSse = null;
+let lockdownSessionId = null;
+
+function handleVisibilityChange() {
+    if (document.hidden && lockdownSessionId) {
+        logLockdownViolation("TAB_SWITCHED");
+    }
+}
+
+function handleWindowBlur() {
+    if (lockdownSessionId) {
+        logLockdownViolation("LOST_FOCUS");
+    }
+}
+
+function handleFullscreenChange() {
+    if (!document.fullscreenElement && lockdownSessionId) {
+        logLockdownViolation("EXIT_FULLSCREEN");
+        // Re-request fullscreen
+        setTimeout(() => {
+            if (lockdownSessionId) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+        }, 1000);
+    }
+}
+
+function handleBeforeUnload(e) {
+    if (lockdownSessionId) {
+        e.preventDefault();
+        e.returnValue = "Leaving this page will void your attendance.";
+        return e.returnValue;
+    }
+}
+
+async function logLockdownViolation(type) {
+    if (!lockdownSessionId) return;
+    try {
+        await fetch('/api/attendance/session/violate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: lockdownSessionId,
+                student_id: currentUser.id,
+                type: type
+            })
+        });
+        console.warn("Violation logged:", type);
+    } catch (e) {
+        console.error("Error logging violation:", e);
+    }
+}
+
+window.startAttendanceLockdown = function(sessionId) {
+    lockdownSessionId = sessionId;
+    
+    alert("Entering Attendance Session. You must stay on this screen in fullscreen until the professor finishes.");
+    
+    document.documentElement.requestFullscreen().catch(err => {
+        console.warn("Fullscreen request rejected:", err);
+    });
+
+    dynamicContentArea.innerHTML = `
+        <div class="glass-card text-center" style="padding: 60px 20px; border: 2px solid var(--danger); position: relative; overflow: hidden;">
+            <div style="margin-bottom: 24px;">
+                <i class="fa-solid fa-shield-halved fa-beat" style="font-size: 64px; color: var(--danger); margin-bottom: 20px;"></i>
+                <h2 style="color: var(--danger); margin-bottom: 12px;">Anti-Tamper Lockdown Active</h2>
+                <p style="font-size: 15px; font-weight: 500;">Your check-in is complete. Attendance status: <strong>PRESENT</strong>.</p>
+                <p style="color: var(--text-muted); font-size: 13px; max-width: 480px; margin: 12px auto 0;">
+                    Do NOT switch tabs, minimize the browser, or exit fullscreen. Any focus loss will be immediately flagged to the professor in real-time.
+                </p>
+            </div>
+            <div style="margin-top: 30px;">
+                <i class="fa-solid fa-spinner fa-spin-pulse" style="font-size: 36px; color: var(--danger); margin-bottom: 12px;"></i>
+                <div style="font-size: 12px; color: var(--text-muted);">
+                    Waiting for the instructor to close the session...
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    window.addEventListener('beforeunload', handleBeforeUnload, { capture: true });
+
+    activeSse = new EventSource(`/api/attendance/session/${sessionId}/stream`);
+    activeSse.addEventListener('SESSION_CLOSED', (e) => {
+        window.exitAttendanceLockdown(true);
+    });
+};
+
+window.exitAttendanceLockdown = function(success) {
+    lockdownSessionId = null;
+    
+    if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+    }
+
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.removeEventListener('blur', handleWindowBlur);
+    document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    window.removeEventListener('beforeunload', handleBeforeUnload, { capture: true });
+
+    if (activeSse) {
+        activeSse.close();
+        activeSse = null;
+    }
+
+    dynamicContentArea.innerHTML = `
+        <div class="glass-card text-center" style="padding: 60px 20px; border: 2px solid var(--success);">
+            <div style="margin-bottom: 24px;">
+                <i class="fa-solid fa-circle-check" style="font-size: 64px; color: var(--success); margin-bottom: 20px;"></i>
+                <h2 style="color: var(--success); margin-bottom: 12px;">Attendance Completed</h2>
+                <p style="font-size: 15px; font-weight: 500;">Your check-in has been successfully finalized and saved.</p>
+            </div>
+            <div style="margin-top: 30px;">
+                <button class="btn btn-primary" onclick="window.renderStudentAttendance()">
+                    Return to Dashboard
+                </button>
+            </div>
+        </div>
+    `;
+};
+
 async function submitCheckin(code, lat, lon, accuracy) {
     try {
         const submitRes = await fetch('/api/attendance/check-in', {
@@ -680,8 +805,7 @@ async function submitCheckin(code, lat, lon, accuracy) {
         const submitData = await submitRes.json();
         
         if (submitData.success) {
-            alert(submitData.message);
-            window.renderStudentAttendance();
+            window.startAttendanceLockdown(submitData.session_id);
         } else {
             alert(submitData.error || "Check-in failed.");
         }
@@ -779,7 +903,7 @@ window.renderStudentProfile = function() {
             <div class="form-grid mb-24">
                 <div>
                     <label>Full Name</label>
-                    <input type="text" class="form-control" value="${currentUser.name}" disabled>
+                    <input type="text" id="profile-name" class="form-control" value="${currentUser.name || ''}" ${isLocked ? 'disabled' : ''}>
                 </div>
                 <div>
                     <label>Roll Number (Username)</label>
@@ -798,11 +922,24 @@ window.renderStudentProfile = function() {
                 </div>
                 <div>
                     <label>Email ID</label>
-                    <input type="text" class="form-control" value="${currentUser.email || 'N/A'}" disabled>
+                    <input type="email" id="profile-email" class="form-control" value="${currentUser.email || ''}" ${isLocked ? 'disabled' : ''}>
                 </div>
                 <div>
                     <label>Contact Phone</label>
-                    <input type="text" class="form-control" value="${currentUser.phone || 'N/A'}" disabled>
+                    <input type="text" id="profile-phone" class="form-control" value="${currentUser.phone || ''}" ${isLocked ? 'disabled' : ''}>
+                </div>
+                <div>
+                    <label>Category</label>
+                    ${isLocked ? `
+                        <input type="text" class="form-control" value="${currentUser.category || 'General'}" disabled>
+                    ` : `
+                        <select id="profile-category" class="form-control">
+                            <option value="General" ${currentUser.category === 'General' ? 'selected' : ''}>General</option>
+                            <option value="SEBC" ${currentUser.category === 'SEBC' ? 'selected' : ''}>SEBC</option>
+                            <option value="SC" ${currentUser.category === 'SC' ? 'selected' : ''}>SC</option>
+                            <option value="ST" ${currentUser.category === 'ST' ? 'selected' : ''}>ST</option>
+                        </select>
+                    `}
                 </div>
             </div>
             
@@ -816,7 +953,7 @@ window.renderStudentProfile = function() {
                         <i class="fa-solid fa-lock mr-8"></i> Save & Lock Profile
                     </button>
                     <p style="font-size: 12px; color: var(--danger); margin-top: 12px;">
-                        <i class="fa-solid fa-triangle-exclamation"></i> Warning: You can only set your Roll Number and Gender ONCE. After saving, these fields will be locked permanently.
+                        <i class="fa-solid fa-triangle-exclamation"></i> Warning: You can only edit your profile details ONCE. After saving, these fields will be locked permanently.
                     </p>
                 </div>
             `}
@@ -826,17 +963,26 @@ window.renderStudentProfile = function() {
     if (!isLocked) {
         const saveBtn = document.getElementById("save-student-profile-btn");
         saveBtn.addEventListener("click", async () => {
+            const nameInput = document.getElementById("profile-name");
             const rollInput = document.getElementById("profile-roll-no");
             const genderInput = document.getElementById("profile-gender");
+            const emailInput = document.getElementById("profile-email");
+            const phoneInput = document.getElementById("profile-phone");
+            const categoryInput = document.getElementById("profile-category");
+
+            const nameVal = nameInput.value.trim();
             const rollVal = rollInput.value.trim();
             const genderVal = genderInput.value;
+            const emailVal = emailInput.value.trim();
+            const phoneVal = phoneInput.value.trim();
+            const categoryVal = categoryInput.value;
 
-            if (!rollVal) {
-                alert("Roll Number cannot be empty.");
+            if (!nameVal || !rollVal || !emailVal || !phoneVal) {
+                alert("All profile fields must be filled.");
                 return;
             }
 
-            const confirmSave = confirm("Are you sure? Once saved, you will NOT be able to change your roll number and gender again.");
+            const confirmSave = confirm("Are you sure? Once saved, you will NOT be able to change any profile details again.");
             if (!confirmSave) return;
 
             saveBtn.disabled = true;
@@ -848,8 +994,12 @@ window.renderStudentProfile = function() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         student_id: currentUser.id,
+                        name: nameVal,
                         gender: genderVal,
-                        roll_no: rollVal
+                        roll_no: rollVal,
+                        email: emailVal,
+                        phone: phoneVal,
+                        category: categoryVal
                     })
                 });
 
@@ -1420,11 +1570,17 @@ window.renderTeacherSchedule = function() {
                 </div>
             </div>
 
-            <div class="attendance-code-container">
+            <div class="attendance-code-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px;">
                 <span class="attendance-status-pill status-active" id="active-session-label"><i class="fa-solid fa-circle-dot fa-fade"></i> SESSION ACTIVE</span>
                 <div class="attendance-code-number" id="active-code-display">000000</div>
+                <div style="margin: 10px auto; text-align: center;">
+                    <img id="active-session-qrcode" style="width: 180px; height: 180px; border: 4px solid white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" src="" alt="Dynamic QR Code">
+                    <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px; font-weight: 500;">
+                        <i class="fa-solid fa-arrows-rotate fa-spin mr-4"></i> QR Code rotates every 15 seconds
+                    </p>
+                </div>
                 <p style="color: var(--text-muted); font-size: 13px;" id="active-session-desc">
-                    Show this code on the classroom projector screen. Students enter it in their dashboard.
+                    Show this code and QR Code on the classroom projector screen.
                 </p>
                 <div style="font-size: 12px; margin-top: 8px; color: var(--accent);" id="active-session-timer">Expires at: --:--</div>
             </div>
@@ -1443,10 +1599,11 @@ window.renderTeacherSchedule = function() {
                             <th>Gender</th>
                             <th>Division</th>
                             <th>Marked At</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="checked-in-records-list">
-                        <tr><td colspan="5" style="color: var(--text-muted); padding: 12px;">Waiting for student check-ins...</td></tr>
+                        <tr><td colspan="6" style="color: var(--text-muted); padding: 12px;">Waiting for student check-ins...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1634,6 +1791,9 @@ window.renderTeacherSchedule = function() {
                 // Start Polling records
                 pollCheckedInStudents(activeSessionCode);
                 activeSessionPollingInterval = setInterval(() => pollCheckedInStudents(activeSessionCode), 3000);
+
+                // Initialize QR rotation and professor SSE stream
+                window.initializeProfessorActiveSession(data.session);
             } else {
                 alert(data.error || "Failed to create session.");
             }
@@ -1841,6 +2001,14 @@ window.renderTeacherSchedule = function() {
                     currentSessionObj = null;
                     activeCard.style.display = "none";
                     formCard.style.display = "block";
+                    
+                    // Stop QR code rotation and close professor SSE stream
+                    stopQrRotation();
+                    if (window.professorSse) {
+                        window.professorSse.close();
+                        window.professorSse = null;
+                    }
+
                     alert("Attendance session successfully closed.");
                 }
             } catch (e) {
@@ -1871,6 +2039,9 @@ window.renderTeacherSchedule = function() {
                 pollCheckedInStudents(activeSessionCode);
                 if (activeSessionPollingInterval) clearInterval(activeSessionPollingInterval);
                 activeSessionPollingInterval = setInterval(() => pollCheckedInStudents(activeSessionCode), 3000);
+
+                // Restore QR rotation and professor SSE stream
+                window.initializeProfessorActiveSession(data.session);
             }
         } catch (e) {
             console.error("Failed to recover active session:", e);
@@ -2032,17 +2203,39 @@ async function pollCheckedInStudents(code) {
 
             const tbody = document.getElementById("checked-in-records-list");
             if (records.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="color: var(--text-muted); padding: 12px;">Waiting for student check-ins...</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="color: var(--text-muted); padding: 12px;">Waiting for student check-ins...</td></tr>`;
             } else {
-                tbody.innerHTML = records.map(r => `
-                    <tr>
-                        <td><strong>${r.roll_no}</strong></td>
-                        <td>${r.name}</td>
-                        <td>${r.gender || 'Male'}</td>
-                        <td>Division ${r.division}</td>
-                        <td>${new Date(r.marked_at).toLocaleTimeString()}</td>
-                    </tr>
-                `).join("");
+                tbody.innerHTML = records.map(r => {
+                    const isFlagged = (r.status || '').toUpperCase() === 'FLAGGED';
+                    let statusHtml = `<span class="attendance-status-pill status-active">PRESENT</span>`;
+                    if (isFlagged) {
+                        statusHtml = `<span class="attendance-status-pill status-absent" style="background: var(--danger); color: white; border: none; font-size: 11px;"><i class="fa-solid fa-triangle-exclamation mr-4"></i> FLAGGED (${r.violations_count})</span>`;
+                    }
+                    
+                    let logsHtml = '';
+                    if (r.violation_logs && r.violation_logs !== '[]') {
+                        try {
+                            const logs = JSON.parse(r.violation_logs);
+                            logsHtml = `<div style="font-size: 10px; color: var(--danger); text-align: left; margin-top: 4px; max-width: 250px; overflow-wrap: break-word;">` +
+                                logs.map(l => `• ${l.type} (${new Date(l.timestamp).toLocaleTimeString()})`).join('<br>') +
+                                `</div>`;
+                        } catch (e) {}
+                    }
+
+                    return `
+                        <tr style="${isFlagged ? 'background: rgba(239, 68, 68, 0.05);' : ''}">
+                            <td><strong>${r.roll_no}</strong></td>
+                            <td>
+                                <div style="font-weight: 500;">${r.name}</div>
+                                ${logsHtml}
+                            </td>
+                            <td>${r.gender || 'Male'}</td>
+                            <td>Division ${r.division}</td>
+                            <td>${new Date(r.marked_at).toLocaleTimeString()}</td>
+                            <td>${statusHtml}</td>
+                        </tr>
+                    `;
+                }).join("");
 
                 // Apply search filter locally if query exists
                 const activeSearch = document.getElementById("active-session-search");
@@ -2064,6 +2257,66 @@ async function pollCheckedInStudents(code) {
         console.error("Polling error:", e);
     }
 }
+
+// Dynamic QR Code Rotation and Hashing Helpers
+let qrRotationInterval = null;
+window.professorSse = null;
+
+function get15SecondHash(secretKey, timeWindow) {
+    const input = secretKey + "_" + timeWindow;
+    let hash = 5381;
+    for (let i = 0; i < input.length; i++) {
+        hash = ((hash << 5) + hash) + input.charCodeAt(i);
+    }
+    return (hash >>> 0).toString(16);
+}
+
+function startQrRotation(sessionId, secretKey) {
+    if (qrRotationInterval) clearInterval(qrRotationInterval);
+
+    const img = document.getElementById("active-session-qrcode");
+    if (!img) return;
+
+    let lastWindow = -1;
+
+    function updateQr() {
+        const timeWindow = Math.floor(Date.now() / 15000);
+        if (timeWindow !== lastWindow) {
+            lastWindow = timeWindow;
+            const hash = get15SecondHash(secretKey, timeWindow);
+            const qrData = sessionId + ":" + hash;
+            img.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`;
+        }
+    }
+
+    updateQr();
+    qrRotationInterval = setInterval(updateQr, 1000);
+}
+
+function stopQrRotation() {
+    if (qrRotationInterval) {
+        clearInterval(qrRotationInterval);
+        qrRotationInterval = null;
+    }
+}
+
+window.initializeProfessorActiveSession = function(session) {
+    if (window.professorSse) {
+        window.professorSse.close();
+        window.professorSse = null;
+    }
+
+    startQrRotation(session.id, session.secret_key);
+
+    window.professorSse = new EventSource(`/api/attendance/session/${session.id}/professor-stream`);
+    window.professorSse.addEventListener('STUDENT_JOINED', () => {
+        pollCheckedInStudents(session.code);
+    });
+    window.professorSse.addEventListener('STUDENT_FLAGGED', () => {
+        pollCheckedInStudents(session.code);
+    });
+};
+
 
 window.renderStaffProfile = async function() {
     dynamicContentArea.innerHTML = `

@@ -143,6 +143,14 @@ try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN is_rolling INTEGER DEF
 try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN geofence_radius INTEGER DEFAULT 50"); } catch (e) {}
 try { db.exec("ALTER TABLE attendance_records ADD COLUMN device_id TEXT"); } catch (e) {}
 
+// Safe Schema Upgrades for Strict Attendance Workflow
+try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN secret_key TEXT"); } catch (e) {}
+try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN duration_minutes INTEGER DEFAULT 0"); } catch (e) {}
+try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN status TEXT DEFAULT 'ACTIVE'"); } catch (e) {}
+try { db.exec("ALTER TABLE attendance_records ADD COLUMN violations_count INTEGER DEFAULT 0"); } catch (e) {}
+try { db.exec("ALTER TABLE attendance_records ADD COLUMN violation_logs TEXT DEFAULT '[]'"); } catch (e) {}
+
+
 // Try adding program column to attendance_sessions in case of legacy schema
 try {
     db.exec("ALTER TABLE attendance_sessions ADD COLUMN program TEXT DEFAULT 'B.Com (Regular)'");
@@ -286,6 +294,8 @@ try {
         console.error("Failed to auto-seed timetables:", e);
     }
 
+    const studentsDirectory = path.join(__dirname, 'q', 'students');
+
     // Auto-seed first-year students from q/students directory if not present
     try {
         let isSeededSetting = false;
@@ -312,7 +322,6 @@ try {
             `).run();
             db.prepare("DELETE FROM users WHERE role = 'student' AND year = '1st Year'").run();
 
-            const studentsDirectory = path.join(__dirname, 'q', 'students');
             if (fs.existsSync(studentsDirectory)) {
                 const files = fs.readdirSync(studentsDirectory);
                 let count = 0;
@@ -568,6 +577,19 @@ try {
 }
 
 // --- HELPER FUNCTIONS ---
+// Strict Attendance Workflows State Maps
+const studentStreams = new Map(); // sessionId -> res[]
+const professorStreams = new Map(); // sessionId -> res[]
+
+function get15SecondHash(secretKey, timeWindow) {
+    const input = secretKey + "_" + timeWindow;
+    let hash = 5381;
+    for (let i = 0; i < input.length; i++) {
+        hash = ((hash << 5) + hash) + input.charCodeAt(i);
+    }
+    return (hash >>> 0).toString(16);
+}
+
 function generateAttendanceCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -646,15 +668,17 @@ app.post('/api/attendance/create', (req, res) => {
     const expiresAt = new Date(Date.now() + duration * 60000).toISOString();
     const radius = geofence_radius !== undefined ? parseInt(geofence_radius) : 50;
     const finalSlot = lecture_slot || 'Lecture 1';
+    const secretKey = Math.random().toString(36).substring(2, 10).toUpperCase();
 
     try {
         const stmt = db.prepare(`
-            INSERT INTO attendance_sessions (code, creator_id, class_name, subject, division, program, expires_at, require_gps, creator_lat, creator_lon, is_rolling, geofence_radius, lecture_slot)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO attendance_sessions (code, creator_id, class_name, subject, division, program, expires_at, require_gps, creator_lat, creator_lon, is_rolling, geofence_radius, lecture_slot, secret_key, duration_minutes, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE')
         `);
         const info = stmt.run(
             code, creator_id, class_name, subject, division, program, expiresAt,
-            require_gps ? 1 : 0, creator_lat !== undefined ? creator_lat : null, creator_lon !== undefined ? creator_lon : null, is_rolling ? 1 : 0, radius, finalSlot
+            require_gps ? 1 : 0, creator_lat !== undefined ? creator_lat : null, creator_lon !== undefined ? creator_lon : null, is_rolling ? 1 : 0, radius, finalSlot,
+            secretKey, duration
         );
 
         res.json({
@@ -670,7 +694,9 @@ app.post('/api/attendance/create', (req, res) => {
                 require_gps: require_gps ? 1 : 0,
                 is_rolling: is_rolling ? 1 : 0,
                 geofence_radius: radius,
-                lecture_slot: finalSlot
+                lecture_slot: finalSlot,
+                secret_key: secretKey,
+                duration_minutes: duration
             }
         });
     } catch (err) {
@@ -679,12 +705,12 @@ app.post('/api/attendance/create', (req, res) => {
     }
 });
 
-// 2.5 Student Profile Update (Gender and Roll Number - one-time)
+// 2.5 Student Profile Update (Full Profile - one-time)
 app.post('/api/student/update-profile', (req, res) => {
-    const { student_id, gender, roll_no } = req.body;
+    const { student_id, name, gender, roll_no, email, phone, category } = req.body;
     
-    if (!student_id || !gender || !roll_no) {
-        return res.status(400).json({ error: "Missing required fields." });
+    if (!student_id || !name || !gender || !roll_no || !email || !phone || !category) {
+        return res.status(400).json({ error: "All profile fields are required." });
     }
 
     try {
@@ -724,7 +750,11 @@ app.post('/api/student/update-profile', (req, res) => {
         }
 
         // Update student profile (username is prefixed, password is raw roll number)
-        db.prepare("UPDATE users SET username = ?, password = ?, gender = ?, profile_locked = 1 WHERE id = ?").run(finalUsername, rawRollNo, gender, student_id);
+        db.prepare(`
+            UPDATE users 
+            SET name = ?, username = ?, password = ?, gender = ?, email = ?, phone = ?, category = ?, profile_locked = 1 
+            WHERE id = ?
+        `).run(name, finalUsername, rawRollNo, gender, email, phone, category, student_id);
         
         // Fetch updated user to send back
         const updatedUser = db.prepare("SELECT * FROM users WHERE id = ?").get(student_id);
@@ -752,12 +782,35 @@ app.post('/api/attendance/check-in', (req, res) => {
     const now = new Date().toISOString();
 
     try {
-        // Fetch active/unexpired session
-        const sessionStmt = db.prepare(`
-            SELECT * FROM attendance_sessions 
-            WHERE code = ? AND is_active = 1 AND expires_at > ?
-        `);
-        const session = sessionStmt.get(code, now);
+        let session = null;
+        if (code.includes(':')) {
+            const parts = code.split(':');
+            const sessionId = parseInt(parts[0]);
+            const hash = parts[1];
+
+            if (!isNaN(sessionId)) {
+                const s = db.prepare(`
+                    SELECT * FROM attendance_sessions 
+                    WHERE id = ? AND is_active = 1 AND expires_at > ?
+                `).get(sessionId, now);
+
+                if (s && s.secret_key) {
+                    const timeWindow = Math.floor(Date.now() / 15000);
+                    const expectedCurrent = get15SecondHash(s.secret_key, timeWindow);
+                    const expectedPrev = get15SecondHash(s.secret_key, timeWindow - 1);
+                    if (hash === expectedCurrent || hash === expectedPrev) {
+                        session = s;
+                    } else {
+                        return res.status(400).json({ error: 'Attendance QR Code has expired. Please scan the updated QR Code.' });
+                    }
+                }
+            }
+        } else {
+            session = db.prepare(`
+                SELECT * FROM attendance_sessions 
+                WHERE code = ? AND is_active = 1 AND expires_at > ?
+            `).get(code, now);
+        }
 
         if (!session) {
             return res.status(400).json({ error: 'Invalid, closed, or expired attendance code.' });
@@ -853,12 +906,23 @@ app.post('/api/attendance/check-in', (req, res) => {
         // Insert attendance record (including device_id)
         const recordStmt = db.prepare(`
             INSERT INTO attendance_records (session_id, student_id, device_id, status)
-            VALUES (?, ?, ?, 'present')
+            VALUES (?, ?, ?, 'PRESENT')
         `);
         recordStmt.run(session.id, student.id, device_id);
 
+        // Notify professor in real-time
+        notifyProfessorSse(session.id, 'STUDENT_JOINED', {
+            student_id: student.id,
+            name: student.name,
+            roll_no: student.username,
+            gender: student.gender,
+            division: student.division,
+            marked_at: now
+        });
+
         res.json({ 
             success: true, 
+            session_id: session.id,
             message: `Check-in successful! Present marked for ${session.subject} (${session.class_name}).` 
         });
     } catch (err) {
@@ -880,7 +944,7 @@ app.get('/api/attendance/session/:code/records', (req, res) => {
         }
 
         const recordsStmt = db.prepare(`
-            SELECT r.id, r.marked_at, u.name, u.username as roll_number, u.username as roll_no, u.division, u.gender, r.status
+            SELECT r.id, r.marked_at, u.name, u.username as roll_number, u.username as roll_no, u.division, u.gender, r.status, r.violations_count, r.violation_logs
             FROM attendance_records r
             JOIN users u ON r.student_id = u.id
             WHERE r.session_id = ?
@@ -896,6 +960,139 @@ app.get('/api/attendance/session/:code/records', (req, res) => {
     } catch (err) {
         console.error('Error fetching session records:', err);
         res.status(500).json({ error: 'Failed to fetch session records.' });
+    }
+});
+
+// SSE Helpers
+function sendSseEvent(res, eventName, data) {
+    res.write(`event: ${eventName}\n`);
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+function broadcastStudentSse(sessionId, eventName, data) {
+    const list = studentStreams.get(Number(sessionId));
+    if (list) {
+        list.forEach(res => {
+            try {
+                sendSseEvent(res, eventName, data);
+            } catch (e) {}
+        });
+    }
+}
+
+function notifyProfessorSse(sessionId, eventName, data) {
+    const res = professorStreams.get(Number(sessionId));
+    if (res) {
+        try {
+            sendSseEvent(res, eventName, data);
+        } catch (e) {}
+    }
+}
+
+// Student Real-time SSE Stream
+app.get('/api/attendance/session/:sessionId/stream', (req, res) => {
+    const sessionId = Number(req.params.sessionId);
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    // Add to students list
+    if (!studentStreams.has(sessionId)) {
+        studentStreams.set(sessionId, []);
+    }
+    studentStreams.get(sessionId).push(res);
+
+    sendSseEvent(res, 'CONNECTED', { message: 'Connected to session stream.' });
+
+    req.on('close', () => {
+        const list = studentStreams.get(sessionId);
+        if (list) {
+            const idx = list.indexOf(res);
+            if (idx !== -1) {
+                list.splice(idx, 1);
+            }
+        }
+        res.end();
+    });
+});
+
+// Professor Real-time SSE Stream
+app.get('/api/attendance/session/:sessionId/professor-stream', (req, res) => {
+    const sessionId = Number(req.params.sessionId);
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    professorStreams.set(sessionId, res);
+
+    sendSseEvent(res, 'CONNECTED', { message: 'Professor stream connected.' });
+
+    req.on('close', () => {
+        if (professorStreams.get(sessionId) === res) {
+            professorStreams.delete(sessionId);
+        }
+        res.end();
+    });
+});
+
+// Student Violation Endpoint
+app.post('/api/attendance/session/violate', (req, res) => {
+    const { session_id, student_id, type } = req.body;
+
+    if (!session_id || !student_id || !type) {
+        return res.status(400).json({ error: 'Missing required parameters.' });
+    }
+
+    try {
+        const student = db.prepare("SELECT * FROM users WHERE id = ?").get(student_id);
+        if (!student) {
+            return res.status(404).json({ error: 'Student not found.' });
+        }
+
+        // Fetch or create record
+        let record = db.prepare("SELECT * FROM attendance_records WHERE session_id = ? AND student_id = ?").get(session_id, student_id);
+        if (!record) {
+            // If they violate before checking in, create a flagged record
+            db.prepare(`
+                INSERT INTO attendance_records (session_id, student_id, status)
+                VALUES (?, ?, 'FLAGGED')
+            `).run(session_id, student_id);
+            record = db.prepare("SELECT * FROM attendance_records WHERE session_id = ? AND student_id = ?").get(session_id, student_id);
+        }
+
+        const currentCount = record.violations_count || 0;
+        const newCount = currentCount + 1;
+
+        let logs = [];
+        try {
+            logs = JSON.parse(record.violation_logs || '[]');
+        } catch (e) {
+            logs = [];
+        }
+        logs.push({ timestamp: new Date().toISOString(), type });
+
+        db.prepare(`
+            UPDATE attendance_records 
+            SET status = 'FLAGGED', violations_count = ?, violation_logs = ?
+            WHERE session_id = ? AND student_id = ?
+        `).run(newCount, JSON.stringify(logs), session_id, student_id);
+
+        // Notify professor in real-time
+        notifyProfessorSse(session_id, 'STUDENT_FLAGGED', {
+            student_id,
+            name: student.name,
+            roll_no: student.username,
+            violationType: type,
+            violations_count: newCount,
+            violation_logs: logs
+        });
+
+        res.json({ success: true, message: 'Violation logged successfully.' });
+    } catch (err) {
+        console.error('Error logging violation:', err);
+        res.status(500).json({ error: 'Server error logging violation.' });
     }
 });
 
@@ -1303,12 +1500,15 @@ app.post('/api/attendance/session/close', (req, res) => {
     }
 
     try {
-        const stmt = db.prepare('UPDATE attendance_sessions SET is_active = 0 WHERE code = ?');
-        const info = stmt.run(code);
-
-        if (info.changes === 0) {
+        const session = db.prepare('SELECT * FROM attendance_sessions WHERE code = ?').get(code);
+        if (!session) {
             return res.status(404).json({ error: 'No active session found with this code.' });
         }
+
+        db.prepare("UPDATE attendance_sessions SET is_active = 0, status = 'CLOSED' WHERE id = ?").run(session.id);
+
+        // Broadcast to all connected students
+        broadcastStudentSse(session.id, 'SESSION_CLOSED', { message: 'Attendance session completed.' });
 
         // Trigger Google Drive auto-sync in the background
         triggerGoogleDriveUpload(code);
