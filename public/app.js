@@ -1703,6 +1703,8 @@ window.renderTeacherSchedule = function() {
                 const studentsData = await studentsRes.json();
                 const students = studentsData.students || [];
 
+                let searchQuery = "";
+
                 function renderList() {
                     if (students.length === 0) {
                         generalModalBody.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 16px;">No students enrolled in ${currentSessionObj.class_name} Div ${currentSessionObj.division}.</p>`;
@@ -1712,9 +1714,12 @@ window.renderTeacherSchedule = function() {
                     const presentIds = new Set((window.currentActiveSessionRecords || []).map(r => r.student_id));
 
                     generalModalBody.innerHTML = `
-                        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-                            Class: <strong>${currentSessionObj.class_name} - Division ${currentSessionObj.division}</strong> | Subject: <strong>${currentSessionObj.subject}</strong>
-                        </p>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap;">
+                            <p style="font-size: 13px; color: var(--text-muted); margin: 0;">
+                                Class: <strong>${currentSessionObj.class_name} - Division ${currentSessionObj.division}</strong> | Subject: <strong>${currentSessionObj.subject}</strong>
+                            </p>
+                            <input type="text" id="manual-att-search" class="form-control" placeholder="Search student..." style="width: 180px; font-size: 11px; height: 26px; padding: 2px 6px; margin: 0;">
+                        </div>
                         <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                             <table class="custom-table text-center" style="font-size: 13px;">
                                 <thead>
@@ -1725,7 +1730,7 @@ window.renderTeacherSchedule = function() {
                                         <th>Action</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="manual-att-tbody">
                                     ${students.map(s => {
                                         const isPresent = presentIds.has(s.id);
                                         const statusLabel = isPresent 
@@ -1736,7 +1741,7 @@ window.renderTeacherSchedule = function() {
                                             : `<button class="btn btn-primary btn-sm manual-toggle-btn" data-id="${s.id}" data-action="present" style="padding: 4px 8px; font-size: 11px; background: #10b981; border-color: #10b981;">Mark Present</button>`;
                                         
                                         return `
-                                            <tr>
+                                            <tr data-name="${s.name.toLowerCase()}" data-roll="${String(s.roll_no).toLowerCase()}">
                                                 <td><strong>${s.roll_no}</strong></td>
                                                 <td style="text-align: left;">${s.name}</td>
                                                 <td>${statusLabel}</td>
@@ -1748,6 +1753,18 @@ window.renderTeacherSchedule = function() {
                             </table>
                         </div>
                     `;
+
+                    // Restore search value and apply filtering
+                    const searchInput = document.getElementById("manual-att-search");
+                    if (searchInput) {
+                        searchInput.value = searchQuery;
+                        applyFilter(searchQuery);
+
+                        searchInput.addEventListener("input", (e) => {
+                            searchQuery = e.target.value.toLowerCase().trim();
+                            applyFilter(searchQuery);
+                        });
+                    }
 
                     generalModalBody.querySelectorAll(".manual-toggle-btn").forEach(btn => {
                         btn.addEventListener("click", async () => {
@@ -1779,6 +1796,21 @@ window.renderTeacherSchedule = function() {
                                 btn.disabled = false;
                             }
                         });
+                    });
+                }
+
+                function applyFilter(query) {
+                    const tbody = document.getElementById("manual-att-tbody");
+                    if (!tbody) return;
+                    const rows = tbody.querySelectorAll("tr");
+                    rows.forEach(tr => {
+                        const name = tr.dataset.name || "";
+                        const roll = tr.dataset.roll || "";
+                        if (!query || name.includes(query) || roll.includes(query)) {
+                            tr.style.display = "";
+                        } else {
+                            tr.style.display = "none";
+                        }
                     });
                 }
 
