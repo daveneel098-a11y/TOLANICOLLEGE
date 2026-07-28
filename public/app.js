@@ -2346,7 +2346,8 @@ function get15SecondHash(secretKey, timeWindow) {
     for (let i = 0; i < input.length; i++) {
         hash = ((hash << 5) + hash) + input.charCodeAt(i);
     }
-    return (hash >>> 0).toString(16);
+    const num = (hash >>> 0) % 900000 + 100000;
+    return num.toString();
 }
 
 function startQrRotation(sessionId, secretKey) {
