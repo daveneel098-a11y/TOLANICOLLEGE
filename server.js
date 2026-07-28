@@ -913,7 +913,7 @@ app.post('/api/attendance/check-in', (req, res) => {
         // Insert attendance record (including device_id)
         const recordStmt = db.prepare(`
             INSERT INTO attendance_records (session_id, student_id, device_id, status)
-            VALUES (?, ?, ?, 'PENDING')
+            VALUES (?, ?, ?, 'pending')
         `);
         recordStmt.run(session.id, student.id, device_id);
 
@@ -1064,7 +1064,7 @@ app.post('/api/attendance/session/violate', (req, res) => {
             // If they violate before checking in, create a flagged record
             db.prepare(`
                 INSERT INTO attendance_records (session_id, student_id, status)
-                VALUES (?, ?, 'FLAGGED')
+                VALUES (?, ?, 'flagged')
             `).run(session_id, student_id);
             record = db.prepare("SELECT * FROM attendance_records WHERE session_id = ? AND student_id = ?").get(session_id, student_id);
         }
@@ -1082,7 +1082,7 @@ app.post('/api/attendance/session/violate', (req, res) => {
 
         db.prepare(`
             UPDATE attendance_records 
-            SET status = 'FLAGGED', violations_count = ?, violation_logs = ?
+            SET status = 'flagged', violations_count = ?, violation_logs = ?
             WHERE session_id = ? AND student_id = ?
         `).run(newCount, JSON.stringify(logs), session_id, student_id);
 
@@ -1170,16 +1170,18 @@ app.post('/api/attendance/mark-manual', (req, res) => {
     }
 
     try {
-        if (status === 'present') {
-            const check = db.prepare("SELECT * FROM attendance_records WHERE session_id = ? AND student_id = ?").get(session_id, student_id);
-            if (!check) {
-                db.prepare(`
-                    INSERT INTO attendance_records (session_id, student_id, device_id, status)
-                    VALUES (?, ?, 'MANUAL', 'present')
-                `).run(session_id, student_id);
-            }
-        } else if (status === 'absent') {
-            db.prepare("DELETE FROM attendance_records WHERE session_id = ? AND student_id = ?").run(session_id, student_id);
+        const check = db.prepare("SELECT * FROM attendance_records WHERE session_id = ? AND student_id = ?").get(session_id, student_id);
+        if (!check) {
+            db.prepare(`
+                INSERT INTO attendance_records (session_id, student_id, device_id, status)
+                VALUES (?, ?, 'MANUAL', ?)
+            `).run(session_id, student_id, status.toLowerCase());
+        } else {
+            db.prepare(`
+                UPDATE attendance_records 
+                SET status = ? 
+                WHERE session_id = ? AND student_id = ?
+            `).run(status.toLowerCase(), session_id, student_id);
         }
 
         res.json({ success: true, message: `Student attendance updated to ${status}.` });
@@ -1515,7 +1517,7 @@ app.post('/api/attendance/session/close', (req, res) => {
         db.prepare("UPDATE attendance_sessions SET is_active = 0, status = 'CLOSED' WHERE id = ?").run(session.id);
 
         // Mark any remaining PENDING student check-ins as ABSENT
-        db.prepare("UPDATE attendance_records SET status = 'ABSENT' WHERE session_id = ? AND status = 'PENDING'").run(session.id);
+        db.prepare("UPDATE attendance_records SET status = 'absent' WHERE session_id = ? AND (status = 'pending' OR status = 'PENDING')").run(session.id);
 
         // Broadcast to all connected students
         broadcastStudentSse(session.id, 'SESSION_CLOSED', { message: 'Attendance session completed.' });
@@ -1615,7 +1617,7 @@ app.post('/api/attendance/verify-code2', (req, res) => {
         }
 
         // Update record to PRESENT (or FLAGGED if focus violations were already caught)
-        const finalStatus = record.status === 'FLAGGED' ? 'FLAGGED' : 'PRESENT';
+        const finalStatus = (record.status === 'flagged' || record.status === 'FLAGGED') ? 'flagged' : 'present';
         db.prepare('UPDATE attendance_records SET status = ? WHERE id = ?').run(finalStatus, record.id);
 
         const student = db.prepare('SELECT * FROM users WHERE id = ?').get(student_id);

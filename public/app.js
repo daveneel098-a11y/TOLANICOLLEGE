@@ -1678,10 +1678,11 @@ window.renderTeacherSchedule = function() {
                             <th>Division</th>
                             <th>Marked At</th>
                             <th>Status</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="checked-in-records-list">
-                        <tr><td colspan="6" style="color: var(--text-muted); padding: 12px;">Waiting for student check-ins...</td></tr>
+                        <tr><td colspan="7" style="color: var(--text-muted); padding: 12px;">Waiting for student check-ins...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -2265,8 +2266,54 @@ window.openProjectorMode = function(session) {
         if (projectorTimerInterval) clearInterval(projectorTimerInterval);
         if (window.projectorPollInterval) clearInterval(window.projectorPollInterval);
         const overlay = document.getElementById("projector-overlay");
-        if (overlay) overlay.remove();
     };
+};
+
+window.markStudentAbsentManual = async function(studentId) {
+    if (!confirm("Are you sure you want to mark this student as absent for the current session?")) return;
+    try {
+        const res = await fetch('/api/attendance/mark-manual', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: currentSessionObj.id,
+                student_id: studentId,
+                status: 'absent'
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            await pollCheckedInStudents(activeSessionCode);
+        } else {
+            alert(data.error || "Failed to update status.");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Connection error.");
+    }
+};
+
+window.markStudentPresentManual = async function(studentId) {
+    try {
+        const res = await fetch('/api/attendance/mark-manual', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: currentSessionObj.id,
+                student_id: studentId,
+                status: 'present'
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            await pollCheckedInStudents(activeSessionCode);
+        } else {
+            alert(data.error || "Failed to update status.");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Connection error.");
+    }
 };
 
 async function pollCheckedInStudents(code) {
@@ -2281,13 +2328,24 @@ async function pollCheckedInStudents(code) {
 
             const tbody = document.getElementById("checked-in-records-list");
             if (records.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="color: var(--text-muted); padding: 12px;">Waiting for student check-ins...</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="color: var(--text-muted); padding: 12px;">Waiting for student check-ins...</td></tr>`;
             } else {
                 tbody.innerHTML = records.map(r => {
-                    const isFlagged = (r.status || '').toUpperCase() === 'FLAGGED';
+                    const statusStr = (r.status || '').toUpperCase();
+                    const isFlagged = statusStr === 'FLAGGED';
+                    const isPending = statusStr === 'PENDING';
+                    const isAbsent = statusStr === 'ABSENT';
+
                     let statusHtml = `<span class="attendance-status-pill status-active">PRESENT</span>`;
+                    let actionHtml = `<button class="btn btn-danger btn-sm" onclick="window.markStudentAbsentManual(${r.student_id})" style="padding: 4px 8px; font-size: 11px;"><i class="fa-solid fa-user-slash mr-4"></i> Mark Absent</button>`;
+
                     if (isFlagged) {
                         statusHtml = `<span class="attendance-status-pill status-absent" style="background: var(--danger); color: white; border: none; font-size: 11px;"><i class="fa-solid fa-triangle-exclamation mr-4"></i> FLAGGED (${r.violations_count})</span>`;
+                    } else if (isPending) {
+                        statusHtml = `<span class="attendance-status-pill status-warning" style="background: var(--warning); color: black; border: none; font-size: 11px;"><i class="fa-solid fa-hourglass-half mr-4"></i> PENDING</span>`;
+                    } else if (isAbsent) {
+                        statusHtml = `<span class="attendance-status-pill status-absent">ABSENT</span>`;
+                        actionHtml = `<button class="btn btn-primary btn-sm" onclick="window.markStudentPresentManual(${r.student_id})" style="padding: 4px 8px; font-size: 11px; background: #10b981; border-color: #10b981;"><i class="fa-solid fa-user-check mr-4"></i> Mark Present</button>`;
                     }
                     
                     let logsHtml = '';
@@ -2311,6 +2369,7 @@ async function pollCheckedInStudents(code) {
                             <td>Division ${r.division}</td>
                             <td>${new Date(r.marked_at).toLocaleTimeString()}</td>
                             <td>${statusHtml}</td>
+                            <td>${actionHtml}</td>
                         </tr>
                     `;
                 }).join("");
