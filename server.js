@@ -1418,7 +1418,7 @@ app.get('/api/attendance/history', (req, res) => {
 // 8. Get All Users (Admin GUI)
 app.get('/api/users', (req, res) => {
     try {
-        const stmt = db.prepare('SELECT id, username, role, name, email, phone, division, class, department, program, year, semester, gender, fee_due, fee_paid, fee_total FROM users');
+        const stmt = db.prepare('SELECT id, username, role, name, email, phone, division, class, department, program, year, semester, gender, fee_due, fee_paid, fee_total, subject FROM users');
         const users = stmt.all();
         res.json({ success: true, users });
     } catch (err) {
