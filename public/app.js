@@ -1160,6 +1160,7 @@ window.renderTeacherStudents = async function() {
                 <div class="card-header-flex mb-16" style="flex-wrap: wrap; gap: 12px;">
                     <h3 class="card-title">Student Registry (Roster List)</h3>
                     <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <input type="text" id="teacher-student-search" class="form-control" placeholder="Search by Name or Roll No..." style="width: 200px; padding: 4px 8px; font-size: 13px; height: 32px; margin: 0;">
                         <select id="teacher-student-program-filter" class="form-control" style="width: 170px; padding: 4px 8px; font-size: 13px; height: 32px;">
                             <option value="All">All Programs</option>
                             <option value="B.Com (Regular)">B.Com (Regular)</option>
@@ -1206,6 +1207,7 @@ window.renderTeacherStudents = async function() {
             </div>
         `;
 
+        const searchInput = document.getElementById("teacher-student-search");
         const progFilter = document.getElementById("teacher-student-program-filter");
         const divFilter = document.getElementById("teacher-student-div-filter");
         const yearFilter = document.getElementById("teacher-student-year-filter");
@@ -1216,18 +1218,23 @@ window.renderTeacherStudents = async function() {
             const pVal = progFilter.value;
             const dVal = divFilter.value;
             const yVal = yearFilter.value;
+            const q = searchInput.value.toLowerCase().trim();
 
             const filtered = allStudents.filter(s => {
                 const matchesP = (pVal === "All") || (s.program === pVal);
                 const matchesD = (dVal === "All") || (s.division === dVal);
                 const matchesY = (yVal === "All") || (s.year === yVal);
-                return matchesP && matchesD && matchesY;
+                const matchesSearch = !q || 
+                    (s.name && s.name.toLowerCase().includes(q)) || 
+                    (s.username && String(s.username).toLowerCase().includes(q));
+                return matchesP && matchesD && matchesY && matchesSearch;
             });
 
             tbody.innerHTML = renderRows(filtered);
             countSpan.textContent = `${filtered.length} students`;
         };
 
+        searchInput.addEventListener("input", filterHandler);
         progFilter.addEventListener("change", filterHandler);
         divFilter.addEventListener("change", filterHandler);
         yearFilter.addEventListener("change", filterHandler);
@@ -1422,7 +1429,10 @@ window.renderTeacherSchedule = function() {
                 <div style="font-size: 12px; margin-top: 8px; color: var(--accent);" id="active-session-timer">Expires at: --:--</div>
             </div>
 
-            <h4 class="mb-12"><i class="fa-solid fa-users-viewfinder mr-8"></i> Checked-in Students (<span id="checked-in-count">0</span>)</h4>
+            <h4 class="mb-12" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <span><i class="fa-solid fa-users-viewfinder mr-8"></i> Checked-in Students (<span id="checked-in-count">0</span>)</span>
+                <input type="text" id="active-session-search" class="form-control" placeholder="Search student name or roll..." style="width: 220px; font-size: 11px; height: 28px; padding: 4px 8px; margin: 0;">
+            </h4>
             
             <div class="table-responsive">
                 <table class="custom-table text-center" style="font-size: 12px;">
@@ -2001,6 +2011,21 @@ async function pollCheckedInStudents(code) {
                         <td>${new Date(r.marked_at).toLocaleTimeString()}</td>
                     </tr>
                 `).join("");
+
+                // Apply search filter locally if query exists
+                const activeSearch = document.getElementById("active-session-search");
+                const q = activeSearch ? activeSearch.value.toLowerCase().trim() : "";
+                if (q) {
+                    const rows = tbody.querySelectorAll("tr");
+                    rows.forEach(tr => {
+                        const text = tr.innerText.toLowerCase();
+                        if (text.includes(q)) {
+                            tr.style.display = "";
+                        } else {
+                            tr.style.display = "none";
+                        }
+                    });
+                }
             }
         }
     } catch (e) {
@@ -2306,13 +2331,12 @@ window.renderAdminStudents = async function() {
                     </td>
                 </tr>
             `).join("");
-        }
-
-        dynamicContentArea.innerHTML = `
+        }        dynamicContentArea.innerHTML = `
             <div class="glass-card">
                 <div class="card-header-flex mb-16" style="flex-wrap: wrap; gap: 12px;">
                     <h3 class="card-title">User Registry Console</h3>
                     <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <input type="text" id="admin-user-search" class="form-control" placeholder="Search by Name or Roll No..." style="width: 200px; padding: 4px 8px; font-size: 13px; height: 32px; margin: 0;">
                         <select id="admin-user-role-filter" class="form-control" style="width: 120px; padding: 4px 8px; font-size: 13px; height: 32px;">
                             <option value="All">All Roles</option>
                             <option value="admin">Admins</option>
@@ -2368,30 +2392,36 @@ window.renderAdminStudents = async function() {
                 </div>
             </div>
         `;
-
+ 
+        const searchInput = document.getElementById("admin-user-search");
         const rFilter = document.getElementById("admin-user-role-filter");
         const pFilter = document.getElementById("admin-user-program-filter");
         const yFilter = document.getElementById("admin-user-year-filter");
         const dFilter = document.getElementById("admin-user-div-filter");
         const tbody = document.getElementById("admin-user-tbody");
-
+ 
         const filterHandler = () => {
             const rVal = rFilter.value;
             const pVal = pFilter.value;
             const yVal = yFilter.value;
             const dVal = dFilter.value;
-
+            const q = searchInput.value.toLowerCase().trim();
+ 
             const filtered = users.filter(u => {
                 const matchesR = (rVal === "All") || (u.role === rVal);
                 const matchesP = (pVal === "All") || (u.role !== "student") || (u.program === pVal);
                 const matchesY = (yVal === "All") || (u.role !== "student") || (u.year === yVal);
                 const matchesD = (dVal === "All") || (u.role !== "student") || (u.division === dVal);
-                return matchesR && matchesP && matchesY && matchesD;
+                const matchesSearch = !q || 
+                    (u.name && u.name.toLowerCase().includes(q)) || 
+                    (u.username && String(u.username).toLowerCase().includes(q));
+                return matchesR && matchesP && matchesY && matchesD && matchesSearch;
             });
-
+ 
             tbody.innerHTML = renderRows(filtered);
         };
-
+ 
+        searchInput.addEventListener("input", filterHandler);
         rFilter.addEventListener("change", filterHandler);
         pFilter.addEventListener("change", filterHandler);
         yFilter.addEventListener("change", filterHandler);
@@ -3195,9 +3225,12 @@ window.renderProgramManagement = async function(programName) {
             `).join("");
 
             document.getElementById("program-tab-content").innerHTML = `
-                <div class="card-header-flex mb-16">
+                <div class="card-header-flex mb-16" style="flex-wrap: wrap; gap: 12px;">
                     <h4 style="margin: 0;">Assigned Professors</h4>
-                    <button class="btn btn-primary btn-sm" id="add-program-teacher-btn"><i class="fa-solid fa-user-plus mr-4"></i> Add Professor</button>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <input type="text" id="program-prof-search" class="form-control" placeholder="Search professor name or subject..." style="width: 250px; font-size: 12px; height: 28px; padding: 4px 8px; margin: 0;">
+                        <button class="btn btn-primary btn-sm" id="add-program-teacher-btn"><i class="fa-solid fa-user-plus mr-4"></i> Add Professor</button>
+                    </div>
                 </div>
                 <div class="table-responsive">
                     <table class="custom-table" style="font-size: 12px;">
@@ -3213,11 +3246,29 @@ window.renderProgramManagement = async function(programName) {
                             </tr>
                         </thead>
                         <tbody>
-                            ${rowHTML.length > 0 ? rowHTML : `<tr><td colspan="6" style="color: var(--text-muted); padding: 16px; text-align: center;">No teachers assigned to this program.</td></tr>`}
+                            ${rowHTML.length > 0 ? rowHTML : `<tr><td colspan="7" style="color: var(--text-muted); padding: 16px; text-align: center;">No teachers assigned to this program.</td></tr>`}
                         </tbody>
                     </table>
                 </div>
             `;
+
+            const profSearchInput = document.getElementById("program-prof-search");
+            if (profSearchInput) {
+                profSearchInput.addEventListener("input", (e) => {
+                    const q = e.target.value.toLowerCase().trim();
+                    const tbody = document.querySelector("#program-tab-content tbody");
+                    if (!tbody) return;
+                    const rows = tbody.querySelectorAll("tr");
+                    rows.forEach(tr => {
+                        const text = tr.innerText.toLowerCase();
+                        if (!q || text.includes(q)) {
+                            tr.style.display = "";
+                        } else {
+                            tr.style.display = "none";
+                        }
+                    });
+                });
+            }
 
             document.getElementById("add-program-teacher-btn").addEventListener("click", async () => {
                 generalModalTitle.textContent = `Register Professor for ${programName}`;
@@ -3482,9 +3533,12 @@ window.renderProgramManagement = async function(programName) {
             `).join("");
 
             document.getElementById("program-tab-content").innerHTML = `
-                <div class="card-header-flex mb-16">
+                <div class="card-header-flex mb-16" style="flex-wrap: wrap; gap: 12px;">
                     <h4 style="margin: 0;">Academic Subjects Curriculum</h4>
-                    <button class="btn btn-primary btn-sm" id="add-program-subject-btn"><i class="fa-solid fa-plus mr-4"></i> Add Subject</button>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <input type="text" id="subject-search" class="form-control" placeholder="Search subject code or name..." style="width: 250px; font-size: 12px; height: 28px; padding: 4px 8px; margin: 0;">
+                        <button class="btn btn-primary btn-sm" id="add-program-subject-btn"><i class="fa-solid fa-plus mr-4"></i> Add Subject</button>
+                    </div>
                 </div>
                 <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
                     <table class="custom-table">
@@ -3503,6 +3557,24 @@ window.renderProgramManagement = async function(programName) {
                     </table>
                 </div>
             `;
+
+            const subSearch = document.getElementById("subject-search");
+            if (subSearch) {
+                subSearch.addEventListener("input", (e) => {
+                    const q = e.target.value.toLowerCase().trim();
+                    const tbody = document.querySelector("#program-tab-content tbody");
+                    if (!tbody) return;
+                    const rows = tbody.querySelectorAll("tr");
+                    rows.forEach(tr => {
+                        const text = tr.innerText.toLowerCase();
+                        if (!q || text.includes(q)) {
+                            tr.style.display = "";
+                        } else {
+                            tr.style.display = "none";
+                        }
+                    });
+                });
+            }
 
             // Add delete bindings
             subjects.forEach(s => {
@@ -3938,7 +4010,10 @@ window.renderUnifiedAttendanceReport = async function(isTeacherOnly) {
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;" class="mb-24 content-split-section">
                 <!-- Record Table -->
                 <div class="glass-card" style="padding: 20px; display: flex; flex-direction: column;">
-                    <h3 class="card-title mb-16"><i class="fa-solid fa-table-list mr-8"></i> Student Attendance Record</h3>
+                    <h3 class="card-title mb-16" style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 8px;">
+                        <span><i class="fa-solid fa-table-list mr-8"></i> Student Attendance Record</span>
+                        <input type="text" id="sheet-student-search" class="form-control" placeholder="Search student name or roll..." style="width: 220px; font-size: 12px; height: 28px; padding: 4px 8px; margin: 0;">
+                    </h3>
                     <div class="table-responsive" style="max-height: 440px; overflow-y: auto; flex-grow: 1;">
                         <table class="custom-table text-center" style="font-size: 13px;">
                             <thead>
@@ -4188,6 +4263,24 @@ window.renderUnifiedAttendanceReport = async function(isTeacherOnly) {
 
         // Search Button Click handler
         document.getElementById("sheet-search-btn").addEventListener("click", updateSheetData);
+
+        const sheetSearchInput = document.getElementById("sheet-student-search");
+        if (sheetSearchInput) {
+            sheetSearchInput.addEventListener("input", (e) => {
+                const q = e.target.value.toLowerCase().trim();
+                const tbody = document.getElementById("sheet-tbody");
+                if (!tbody) return;
+                const rows = tbody.querySelectorAll("tr");
+                rows.forEach(tr => {
+                    const text = tr.innerText.toLowerCase();
+                    if (!q || text.includes(q)) {
+                        tr.style.display = "";
+                    } else {
+                        tr.style.display = "none";
+                    }
+                });
+            });
+        }
 
         // Print Button handler
         document.getElementById("sheet-print-btn").addEventListener("click", () => {
@@ -5559,4 +5652,22 @@ if (storedUser) {
         }
     }
 }
+
+// Active session search event delegation
+document.addEventListener("input", (e) => {
+    if (e.target && e.target.id === "active-session-search") {
+        const qVal = e.target.value.toLowerCase().trim();
+        const tbody = document.getElementById("checked-in-records-list");
+        if (!tbody) return;
+        const rows = tbody.querySelectorAll("tr");
+        rows.forEach(tr => {
+            const text = tr.innerText.toLowerCase();
+            if (!qVal || text.includes(qVal)) {
+                tr.style.display = "";
+            } else {
+                tr.style.display = "none";
+            }
+        });
+    }
+});
 
