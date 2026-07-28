@@ -150,6 +150,11 @@ try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN status TEXT DEFAULT 'A
 try { db.exec("ALTER TABLE attendance_records ADD COLUMN violations_count INTEGER DEFAULT 0"); } catch (e) {}
 try { db.exec("ALTER TABLE attendance_records ADD COLUMN violation_logs TEXT DEFAULT '[]'"); } catch (e) {}
 
+// Safe Schema Upgrades for Two-Code Verification Flow
+try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN code2 TEXT"); } catch (e) {}
+try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN secret_key2 TEXT"); } catch (e) {}
+try { db.exec("ALTER TABLE attendance_sessions ADD COLUMN verification_started INTEGER DEFAULT 0"); } catch (e) {}
+
 
 // Try adding program column to attendance_sessions in case of legacy schema
 try {
@@ -672,8 +677,8 @@ app.post('/api/attendance/create', (req, res) => {
 
     try {
         const stmt = db.prepare(`
-            INSERT INTO attendance_sessions (code, creator_id, class_name, subject, division, program, expires_at, require_gps, creator_lat, creator_lon, is_rolling, geofence_radius, lecture_slot, secret_key, duration_minutes, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE')
+            INSERT INTO attendance_sessions (code, creator_id, class_name, subject, division, program, expires_at, require_gps, creator_lat, creator_lon, is_rolling, geofence_radius, lecture_slot, secret_key, duration_minutes, status, verification_started)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', 0)
         `);
         const info = stmt.run(
             code, creator_id, class_name, subject, division, program, expiresAt,
@@ -696,7 +701,8 @@ app.post('/api/attendance/create', (req, res) => {
                 geofence_radius: radius,
                 lecture_slot: finalSlot,
                 secret_key: secretKey,
-                duration_minutes: duration
+                duration_minutes: duration,
+                verification_started: 0
             }
         });
     } catch (err) {
@@ -906,7 +912,7 @@ app.post('/api/attendance/check-in', (req, res) => {
         // Insert attendance record (including device_id)
         const recordStmt = db.prepare(`
             INSERT INTO attendance_records (session_id, student_id, device_id, status)
-            VALUES (?, ?, ?, 'PRESENT')
+            VALUES (?, ?, ?, 'PENDING')
         `);
         recordStmt.run(session.id, student.id, device_id);
 
@@ -1517,6 +1523,124 @@ app.post('/api/attendance/session/close', (req, res) => {
     } catch (err) {
         console.error('Error closing session:', err);
         res.status(500).json({ error: 'Failed to close session.' });
+    }
+});
+
+// 5.5 Start Verification (Code 2 generation by Professor)
+app.post('/api/attendance/session/start-verification', (req, res) => {
+    const { code } = req.body;
+    if (!code) {
+        return res.status(400).json({ error: 'Session code is required.' });
+    }
+
+    try {
+        const session = db.prepare('SELECT * FROM attendance_sessions WHERE code = ? AND is_active = 1').get(code);
+        if (!session) {
+            return res.status(404).json({ error: 'No active session found with this code.' });
+        }
+
+        const code2 = generateAttendanceCode(); // Generates random 6-digit code
+        const secretKey2 = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+        db.prepare(`
+            UPDATE attendance_sessions 
+            SET code2 = ?, secret_key2 = ?, verification_started = 1 
+            WHERE id = ?
+        `).run(code2, secretKey2, session.id);
+
+        // Broadcast to all students connected to the session
+        broadcastStudentSse(session.id, 'VERIFICATION_STARTED', {
+            session_id: session.id,
+            secret_key2: secretKey2
+        });
+
+        res.json({
+            success: true,
+            session_id: session.id,
+            code2: code2,
+            secret_key2: secretKey2
+        });
+    } catch (err) {
+        console.error('Error starting verification:', err);
+        res.status(500).json({ error: 'Failed to start verification.' });
+    }
+});
+
+// 5.6 Verify Verification Code (Code 2 verification by Student)
+app.post('/api/attendance/verify-code2', (req, res) => {
+    const { session_id, student_id, code2, student_lat, student_lon, student_accuracy } = req.body;
+
+    if (!session_id || !student_id || !code2) {
+        return res.status(400).json({ error: 'Missing required validation inputs.' });
+    }
+
+    try {
+        const session = db.prepare('SELECT * FROM attendance_sessions WHERE id = ?').get(session_id);
+        if (!session) {
+            return res.status(404).json({ error: 'Session not found.' });
+        }
+
+        if (session.is_active !== 1 || session.verification_started !== 1) {
+            return res.status(400).json({ error: 'Verification is not active for this session.' });
+        }
+
+        // Validate dynamic TOTP hash
+        const timeWindow = Math.floor(Date.now() / 15000);
+        const hashCurrent = get15SecondHash(session.secret_key2, timeWindow);
+        const hashPrevious = get15SecondHash(session.secret_key2, timeWindow - 1);
+
+        if (code2 !== hashCurrent && code2 !== hashPrevious) {
+            return res.status(403).json({ error: 'Verification code expired or invalid.' });
+        }
+
+        // Check if student record exists
+        const record = db.prepare('SELECT * FROM attendance_records WHERE session_id = ? AND student_id = ?').get(session_id, student_id);
+        if (!record) {
+            return res.status(404).json({ error: 'Student check-in record not found. Did you check-in first?' });
+        }
+
+        // Geofencing verification (if enabled)
+        if (session.require_gps === 1) {
+            if (student_lat === undefined || student_lon === undefined || student_accuracy === undefined) {
+                return res.status(400).json({ error: 'GPS coordinates required for verification.' });
+            }
+
+            const distanceMeters = getDistance(session.creator_lat, session.creator_lon, student_lat, student_lon);
+            const errorMargin = student_accuracy;
+            const radiusMeters = session.geofence_radius || 50;
+            const adjustedDistance = distanceMeters - errorMargin;
+
+            if (adjustedDistance > radiusMeters) {
+                return res.status(403).json({
+                    error: `Geofencing failure during verification. You must be in close proximity to the room.`
+                });
+            }
+        }
+
+        // Update record to PRESENT (or FLAGGED if focus violations were already caught)
+        const finalStatus = record.status === 'FLAGGED' ? 'FLAGGED' : 'PRESENT';
+        db.prepare('UPDATE attendance_records SET status = ? WHERE id = ?').run(finalStatus, record.id);
+
+        const student = db.prepare('SELECT * FROM users WHERE id = ?').get(student_id);
+
+        // Notify professor roster
+        notifyProfessorSse(session_id, 'STUDENT_JOINED', {
+            student_id: student.id,
+            name: student.name,
+            roll_no: student.username,
+            gender: student.gender,
+            division: student.division,
+            marked_at: record.marked_at,
+            status: finalStatus
+        });
+
+        res.json({
+            success: true,
+            message: `Verification complete! Present marked for ${session.subject}.`
+        });
+    } catch (err) {
+        console.error('Error verifying Code 2:', err);
+        res.status(500).json({ error: 'Verification failed due to server error.' });
     }
 });
 

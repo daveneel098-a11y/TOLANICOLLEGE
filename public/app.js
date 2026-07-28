@@ -730,15 +730,15 @@ window.startAttendanceLockdown = function(sessionId) {
             <div style="margin-bottom: 24px;">
                 <i class="fa-solid fa-shield-halved fa-beat" style="font-size: 64px; color: var(--danger); margin-bottom: 20px;"></i>
                 <h2 style="color: var(--danger); margin-bottom: 12px;">Anti-Tamper Lockdown Active</h2>
-                <p style="font-size: 15px; font-weight: 500;">Your check-in is complete. Attendance status: <strong>PRESENT</strong>.</p>
+                <p style="font-size: 15px; font-weight: 500;">Your check-in is complete. Status: <strong style="color: var(--warning);">PENDING VERIFICATION</strong>.</p>
                 <p style="color: var(--text-muted); font-size: 13px; max-width: 480px; margin: 12px auto 0;">
                     Do NOT switch tabs, minimize the browser, or exit fullscreen. Any focus loss will be immediately flagged to the professor in real-time.
                 </p>
             </div>
-            <div style="margin-top: 30px;">
+            <div style="margin-top: 30px;" id="lockdown-status-area">
                 <i class="fa-solid fa-spinner fa-spin-pulse" style="font-size: 36px; color: var(--danger); margin-bottom: 12px;"></i>
                 <div style="font-size: 12px; color: var(--text-muted);">
-                    Waiting for the instructor to close the session...
+                    Waiting for the instructor to release the final verification code...
                 </div>
             </div>
         </div>
@@ -753,7 +753,80 @@ window.startAttendanceLockdown = function(sessionId) {
     activeSse.addEventListener('SESSION_CLOSED', (e) => {
         window.exitAttendanceLockdown(true);
     });
+
+    activeSse.addEventListener('VERIFICATION_STARTED', (e) => {
+        const verificationArea = document.getElementById("lockdown-status-area");
+        if (verificationArea) {
+            verificationArea.innerHTML = `
+                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 24px; margin-top: 24px;">
+                    <h3 style="color: var(--warning); margin-bottom: 8px;">Final Verification Required</h3>
+                    <p style="color: var(--text-muted); font-size: 13px;">Enter the second verification code currently displayed on the classroom screen:</p>
+                    <input type="text" id="lockdown-code2-input" class="form-control text-center" placeholder="000000" style="font-size: 24px; letter-spacing: 4px; max-width: 240px; margin: 16px auto; font-weight: bold; color: var(--warning);">
+                    <button class="btn btn-warning" id="lockdown-verify-btn" style="color: black; font-weight: bold;">
+                        <i class="fa-solid fa-circle-check mr-8"></i> Complete Verification
+                    </button>
+                    <div id="verification-error-msg" style="color: var(--danger); font-size: 12px; margin-top: 8px;"></div>
+                </div>
+            `;
+
+            const verifyBtn = document.getElementById("lockdown-verify-btn");
+            verifyBtn.addEventListener("click", async () => {
+                const code2Input = document.getElementById("lockdown-code2-input");
+                const code2Val = code2Input.value.trim();
+                if (!code2Val) {
+                    alert("Please enter the verification code.");
+                    return;
+                }
+
+                verifyBtn.disabled = true;
+                verifyBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-8"></i> Verifying...`;
+
+                navigator.geolocation.getCurrentPosition(
+                    async (pos) => {
+                        await submitCode2(sessionId, code2Val, pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, verifyBtn);
+                    },
+                    async (err) => {
+                        await submitCode2(sessionId, code2Val, null, null, null, verifyBtn);
+                    },
+                    { enableHighAccuracy: true, timeout: 5000 }
+                );
+            });
+        }
+    });
 };
+
+async function submitCode2(sessionId, code2, lat, lon, accuracy, button) {
+    const errorDiv = document.getElementById("verification-error-msg");
+    if (errorDiv) errorDiv.textContent = "";
+
+    try {
+        const response = await fetch('/api/attendance/verify-code2', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: sessionId,
+                student_id: currentUser.id,
+                code2: code2,
+                student_lat: lat,
+                student_lon: lon,
+                student_accuracy: accuracy
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            window.exitAttendanceLockdown(true);
+        } else {
+            if (errorDiv) errorDiv.textContent = data.error || "Verification failed.";
+            button.disabled = false;
+            button.innerHTML = `<i class="fa-solid fa-circle-check mr-8"></i> Complete Verification`;
+        }
+    } catch (err) {
+        if (errorDiv) errorDiv.textContent = "Network error. Please try again.";
+        button.disabled = false;
+        button.innerHTML = `<i class="fa-solid fa-circle-check mr-8"></i> Complete Verification`;
+    }
+}
 
 window.exitAttendanceLockdown = function(success) {
     lockdownSessionId = null;
@@ -1582,6 +1655,11 @@ window.renderTeacherSchedule = function() {
                 <p style="color: var(--text-muted); font-size: 13px;" id="active-session-desc">
                     Show this code and QR Code on the classroom projector screen.
                 </p>
+                <div id="active-session-verification-wrapper" style="width: 100%; text-align: center; margin-top: 10px;">
+                    <button class="btn btn-warning" id="start-verification-btn" style="width: 100%; max-width: 280px; font-weight: bold; color: black;">
+                        <i class="fa-solid fa-hourglass-start mr-8"></i> Start Verification Phase (Code 2)
+                    </button>
+                </div>
                 <div style="font-size: 12px; margin-top: 8px; color: var(--accent);" id="active-session-timer">Expires at: --:--</div>
             </div>
 
@@ -2275,6 +2353,7 @@ function startQrRotation(sessionId, secretKey) {
     if (qrRotationInterval) clearInterval(qrRotationInterval);
 
     const img = document.getElementById("active-session-qrcode");
+    const codeDisplay = document.getElementById("active-code-display");
     if (!img) return;
 
     let lastWindow = -1;
@@ -2286,6 +2365,13 @@ function startQrRotation(sessionId, secretKey) {
             const hash = get15SecondHash(secretKey, timeWindow);
             const qrData = sessionId + ":" + hash;
             img.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`;
+            
+            // If verification phase has started, update active code display to Code 2 TOTP!
+            if (currentSessionObj && currentSessionObj.verification_started === 1) {
+                if (codeDisplay) {
+                    codeDisplay.textContent = hash.toUpperCase();
+                }
+            }
         }
     }
 
@@ -2306,7 +2392,63 @@ window.initializeProfessorActiveSession = function(session) {
         window.professorSse = null;
     }
 
-    startQrRotation(session.id, session.secret_key);
+    const startBtn = document.getElementById("start-verification-btn");
+    const label = document.getElementById("active-session-label");
+    const desc = document.getElementById("active-session-desc");
+    const codeDisplay = document.getElementById("active-code-display");
+
+    if (session.verification_started === 1) {
+        // Verification started state
+        if (startBtn) startBtn.style.display = "none";
+        if (label) {
+            label.className = "attendance-status-pill";
+            label.style.background = "var(--warning)";
+            label.style.color = "black";
+            label.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> FINAL VERIFICATION ACTIVE`;
+        }
+        if (desc) desc.textContent = "Show this rotating verification code and QR Code to students in class.";
+        
+        startQrRotation(session.id, session.secret_key2);
+    } else {
+        // Reset Code 1 display
+        if (codeDisplay) codeDisplay.textContent = session.code;
+        if (startBtn) {
+            startBtn.style.display = "inline-block";
+            startBtn.onclick = async () => {
+                const confirmStart = confirm("Are you sure you want to start the final verification phase? Only students who have already checked in can verify.");
+                if (!confirmStart) return;
+
+                startBtn.disabled = true;
+                startBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-8"></i> Starting...`;
+
+                try {
+                    const res = await fetch('/api/attendance/session/start-verification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: session.code })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        session.verification_started = 1;
+                        session.code2 = data.code2;
+                        session.secret_key2 = data.secret_key2;
+                        currentSessionObj = session;
+                        
+                        window.initializeProfessorActiveSession(session);
+                    } else {
+                        alert(data.error || "Failed to start verification.");
+                        startBtn.disabled = false;
+                        startBtn.innerHTML = `<i class="fa-solid fa-hourglass-start mr-8"></i> Start Verification Phase (Code 2)`;
+                    }
+                } catch (e) {
+                    alert("Error starting verification.");
+                    startBtn.disabled = false;
+                    startBtn.innerHTML = `<i class="fa-solid fa-hourglass-start mr-8"></i> Start Verification Phase (Code 2)`;
+                }
+            };
+        }
+        startQrRotation(session.id, session.secret_key);
+    }
 
     window.professorSse = new EventSource(`/api/attendance/session/${session.id}/professor-stream`);
     window.professorSse.addEventListener('STUDENT_JOINED', () => {
