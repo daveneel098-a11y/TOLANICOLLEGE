@@ -1543,25 +1543,22 @@ app.post('/api/attendance/session/start-verification', (req, res) => {
         }
 
         const code2 = generateAttendanceCode(); // Generates random 6-digit code
-        const secretKey2 = Math.random().toString(36).substring(2, 10).toUpperCase();
 
         db.prepare(`
             UPDATE attendance_sessions 
-            SET code2 = ?, secret_key2 = ?, verification_started = 1 
+            SET code2 = ?, verification_started = 1 
             WHERE id = ?
-        `).run(code2, secretKey2, session.id);
+        `).run(code2, session.id);
 
         // Broadcast to all students connected to the session
         broadcastStudentSse(session.id, 'VERIFICATION_STARTED', {
-            session_id: session.id,
-            secret_key2: secretKey2
+            session_id: session.id
         });
 
         res.json({
             success: true,
             session_id: session.id,
-            code2: code2,
-            secret_key2: secretKey2
+            code2: code2
         });
     } catch (err) {
         console.error('Error starting verification:', err);
@@ -1587,13 +1584,9 @@ app.post('/api/attendance/verify-code2', (req, res) => {
             return res.status(400).json({ error: 'Verification is not active for this session.' });
         }
 
-        // Validate dynamic TOTP hash
-        const timeWindow = Math.floor(Date.now() / 15000);
-        const hashCurrent = get15SecondHash(session.secret_key2, timeWindow);
-        const hashPrevious = get15SecondHash(session.secret_key2, timeWindow - 1);
-
-        if (code2 !== hashCurrent && code2 !== hashPrevious) {
-            return res.status(403).json({ error: 'Verification code expired or invalid.' });
+        // Validate static code2
+        if (code2 !== session.code2) {
+            return res.status(403).json({ error: 'Verification code is invalid.' });
         }
 
         // Check if student record exists

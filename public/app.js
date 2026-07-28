@@ -2366,11 +2366,8 @@ function startQrRotation(sessionId, secretKey) {
             const qrData = sessionId + ":" + hash;
             img.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`;
             
-            // If verification phase has started, update active code display to Code 2 TOTP!
-            if (currentSessionObj && currentSessionObj.verification_started === 1) {
-                if (codeDisplay) {
-                    codeDisplay.textContent = hash.toUpperCase();
-                }
+            if (codeDisplay) {
+                codeDisplay.textContent = hash.toUpperCase();
             }
         }
     }
@@ -2398,7 +2395,7 @@ window.initializeProfessorActiveSession = function(session) {
     const codeDisplay = document.getElementById("active-code-display");
 
     if (session.verification_started === 1) {
-        // Verification started state
+        // Verification started state (Static Code 2)
         if (startBtn) startBtn.style.display = "none";
         if (label) {
             label.className = "attendance-status-pill";
@@ -2406,9 +2403,14 @@ window.initializeProfessorActiveSession = function(session) {
             label.style.color = "black";
             label.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> FINAL VERIFICATION ACTIVE`;
         }
-        if (desc) desc.textContent = "Show this rotating verification code and QR Code to students in class.";
+        if (desc) desc.textContent = "Show this static verification code and QR Code to students in class.";
         
-        startQrRotation(session.id, session.secret_key2);
+        stopQrRotation();
+        if (codeDisplay) codeDisplay.textContent = session.code2;
+        const img = document.getElementById("active-session-qrcode");
+        if (img) {
+            img.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(session.id + ":" + session.code2)}`;
+        }
     } else {
         // Reset Code 1 display
         if (codeDisplay) codeDisplay.textContent = session.code;
@@ -2431,7 +2433,6 @@ window.initializeProfessorActiveSession = function(session) {
                     if (data.success) {
                         session.verification_started = 1;
                         session.code2 = data.code2;
-                        session.secret_key2 = data.secret_key2;
                         currentSessionObj = session;
                         
                         window.initializeProfessorActiveSession(session);

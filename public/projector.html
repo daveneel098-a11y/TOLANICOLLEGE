@@ -534,13 +534,33 @@
             function update() {
                 if (!activeSessionObj) return;
 
-                const timeWindow = Math.floor(Date.now() / 15000);
                 const isVerification = activeSessionObj.verification_started === 1;
-                const secretKey = isVerification ? activeSessionObj.secret_key2 : activeSessionObj.secret_key;
+                
+                if (isVerification) {
+                    if (labelDisplay) {
+                        labelDisplay.textContent = "Active Verification Code 2";
+                        labelDisplay.style.color = "var(--warning)";
+                    }
+                    if (codeDisplay) {
+                        codeDisplay.textContent = activeSessionObj.code2.toUpperCase();
+                        codeDisplay.style.color = "var(--warning)";
+                    }
+                    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(activeSessionObj.id + ":" + activeSessionObj.code2)}`;
+                    
+                    // Stop interval since Code 2 is static
+                    if (qrRotationInterval) {
+                        clearInterval(qrRotationInterval);
+                        qrRotationInterval = null;
+                    }
+                    return;
+                }
+
+                const timeWindow = Math.floor(Date.now() / 15000);
+                const secretKey = activeSessionObj.secret_key;
                 
                 if (labelDisplay) {
-                    labelDisplay.textContent = isVerification ? "Active Verification Code 2" : "Active Classroom Check-In Code 1";
-                    labelDisplay.style.color = isVerification ? "var(--warning)" : "var(--text-muted)";
+                    labelDisplay.textContent = "Active Classroom Check-In Code 1";
+                    labelDisplay.style.color = "var(--text-muted)";
                 }
 
                 if (timeWindow !== lastWindow) {
@@ -551,13 +571,15 @@
                     
                     if (codeDisplay) {
                         codeDisplay.textContent = hash.toUpperCase();
-                        codeDisplay.style.color = isVerification ? "var(--warning)" : "#ffffff";
+                        codeDisplay.style.color = "#ffffff";
                     }
                 }
             }
 
             update();
-            qrRotationInterval = setInterval(update, 1000);
+            if (activeSessionObj && activeSessionObj.verification_started !== 1) {
+                qrRotationInterval = setInterval(update, 1000);
+            }
         }
 
         function stopProjectorQrAndCodeRotation() {
