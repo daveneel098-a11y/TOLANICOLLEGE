@@ -6369,7 +6369,7 @@ if (storedUser) {
     }
 }
 
-});
+
 
 
 // ==========================================
@@ -6643,6 +6643,9 @@ window.renderAdminAdmin_lectures = async function() {
         dynamicContentArea.innerHTML = `<div class="alert alert-danger">Failed to load admin lectures report.</div>`;
     }
 };
+
+// Active session search event delegation
+document.addEventListener("input", (e) => {
     if (e.target && e.target.id === "active-session-search") {
         const qVal = e.target.value.toLowerCase().trim();
         const tbody = document.getElementById("checked-in-records-list");
