@@ -746,7 +746,20 @@ app.post('/api/student/update-profile', (req, res) => {
         const rawRollNo = roll_no.replace(/^(VI|IV|III|II|I|V)/i, '').replace(/P$/i, '').trim();
 
         let romanPrefix = 'I';
-        if (user.semester) {
+        const cls = (user.class || '').toUpperCase();
+        if (cls.includes('SEM-V') || cls.includes('SEM-5')) {
+            romanPrefix = 'V';
+        } else if (cls.includes('SEM-III') || cls.includes('SEM-3')) {
+            romanPrefix = 'III';
+        } else if (cls.includes('SEM-I') || cls.includes('SEM-1')) {
+            romanPrefix = 'I';
+        } else if (cls.includes('SEM-II') || cls.includes('SEM-2')) {
+            romanPrefix = 'II';
+        } else if (cls.includes('SEM-IV') || cls.includes('SEM-4')) {
+            romanPrefix = 'IV';
+        } else if (cls.includes('SEM-VI') || cls.includes('SEM-6')) {
+            romanPrefix = 'VI';
+        } else if (user.semester) {
             const semNum = parseInt(user.semester.replace(/\D/g, ''));
             const romanMapping = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI' };
             romanPrefix = romanMapping[semNum] || 'I';
