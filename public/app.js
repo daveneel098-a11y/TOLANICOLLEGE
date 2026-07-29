@@ -518,7 +518,28 @@ window.renderStudentTimetable = async function() {
     dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
 
     try {
-        const progKey = `${currentUser.program} - ${currentUser.semester} - Div ${currentUser.division}`;
+        let semester = currentUser.semester;
+        if (!semester || semester === '0.0') {
+            const cls = (currentUser.class || '').toUpperCase();
+            if (cls.includes('SEM-V') || cls.includes('SEM-5')) semester = 'Semester 5';
+            else if (cls.includes('SEM-III') || cls.includes('SEM-3')) semester = 'Semester 3';
+            else if (cls.includes('SEM-I') || cls.includes('SEM-1')) semester = 'Semester 1';
+            else if (cls.includes('SEM-II') || cls.includes('SEM-2')) semester = 'Semester 2';
+            else if (cls.includes('SEM-IV') || cls.includes('SEM-4')) semester = 'Semester 4';
+            else if (cls.includes('SEM-VI') || cls.includes('SEM-6')) semester = 'Semester 6';
+        }
+        
+        let program = currentUser.program;
+        if (!program || program === '1st Year' || program === '2nd Year' || program === '3rd Year') {
+            program = 'B.Com (Regular)';
+        }
+        
+        let division = currentUser.division;
+        if (!division || division === 'B.Com (Regular)' || division === 'B.Com (Professional)') {
+            division = currentUser.department || 'A';
+        }
+
+        const progKey = `${program} - ${semester} - Div ${division}`;
         const res = await fetch(`/api/timetables?program=${encodeURIComponent(progKey)}`);
         const data = await res.json();
         let tRows = data.timetables || [];
