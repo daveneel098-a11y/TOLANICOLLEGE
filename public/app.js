@@ -717,13 +717,15 @@ async function logLockdownViolation(type) {
 }
 
 window.startAttendanceLockdown = function(sessionId) {
-    lockdownSessionId = sessionId;
-    
-    alert("Entering Attendance Session. You must stay on this screen in fullscreen until the professor finishes.");
-    
+    // Request fullscreen directly to keep user gesture context valid
     document.documentElement.requestFullscreen().catch(err => {
         console.warn("Fullscreen request rejected:", err);
     });
+
+    // Set lockdownSessionId after a 1.5 second delay to let fullscreen and layout changes settle, preventing false positive blur flags
+    setTimeout(() => {
+        lockdownSessionId = sessionId;
+    }, 1500);
 
     dynamicContentArea.innerHTML = `
         <div class="glass-card text-center" style="padding: 60px 20px; border: 2px solid var(--danger); position: relative; overflow: hidden;">
