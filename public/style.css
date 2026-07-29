@@ -115,7 +115,10 @@ body {
     justify-content: center;
     min-height: 100vh;
     padding: 20px;
-    background: #ffffff;
+    background-image: linear-gradient(rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.4)), url('login-bg.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 .auth-card {
