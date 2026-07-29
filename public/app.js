@@ -595,15 +595,26 @@ window.renderStudentAttendance = async function() {
         const data = await res.json();
         
         const history = data.records || [];
-        const tableRows = history.map(r => `
-            <tr>
-                <td><strong>${r.code}</strong></td>
-                <td>${r.subject}</td>
-                <td>${r.class_name}</td>
-                <td>${parseUTCDate(r.marked_at) ? parseUTCDate(r.marked_at).toLocaleString() : '--'}</td>
-                <td><span class="attendance-status-pill status-active">PRESENT</span></td>
-            </tr>
-        `).join("");
+        const tableRows = history.map(r => {
+            const statusStr = (r.status || '').toLowerCase();
+            let statusPill = `<span class="attendance-status-pill status-active">PRESENT</span>`;
+            if (statusStr === 'absent') {
+                statusPill = `<span class="attendance-status-pill status-absent">ABSENT</span>`;
+            } else if (statusStr === 'flagged') {
+                statusPill = `<span class="attendance-status-pill status-absent" style="background: var(--danger); color: white; border: none; font-size: 11px;"><i class="fa-solid fa-triangle-exclamation mr-4"></i> FLAGGED</span>`;
+            } else if (statusStr === 'pending') {
+                statusPill = `<span class="attendance-status-pill status-warning" style="background: var(--warning); color: black; border: none; font-size: 11px;"><i class="fa-solid fa-hourglass-half mr-4"></i> PENDING</span>`;
+            }
+            return `
+                <tr>
+                    <td><strong>${r.code}</strong></td>
+                    <td>${r.subject}</td>
+                    <td>${r.class_name}</td>
+                    <td>${parseUTCDate(r.marked_at) ? parseUTCDate(r.marked_at).toLocaleString() : '--'}</td>
+                    <td>${statusPill}</td>
+                </tr>
+            `;
+        }).join("");
 
         dynamicContentArea.innerHTML = `
             <div class="glass-card mb-24">
