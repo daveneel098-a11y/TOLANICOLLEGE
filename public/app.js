@@ -6553,7 +6553,7 @@ window.editSessionRoster = async function(sessionId, className, subject, divisio
     dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
 
     try {
-        const studentsRes = await fetch(`/api/students?class_name=${encodeURIComponent(className)}&division=${encodeURIComponent(division)}`);
+        const studentsRes = await fetch(`/api/students/list?class_name=${encodeURIComponent(className)}&division=${encodeURIComponent(division)}`);
         const studentsData = await studentsRes.json();
         const students = studentsData.students || [];
 
