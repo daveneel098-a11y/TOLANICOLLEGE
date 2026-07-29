@@ -193,7 +193,7 @@ try {
     // Auto-seed Semester 3 and Semester 5 timetables for B.Com Regular if missing
     try {
         const check = db.prepare("SELECT count(*) as count FROM timetables WHERE program LIKE '%Semester 3%' OR program LIKE '%Semester 5%'").get();
-        if (!check || check.count === 0) {
+        if (true) {
             console.log("Seeding B.Com Regular Semester 3 and 5 timetables...");
             const insertTimetable = db.prepare(`
                 INSERT INTO timetables (program, day, slot_1, slot_2, slot_3, slot_4)
@@ -309,7 +309,7 @@ try {
     // Auto-seed Semester 1 timetables for B.Com Regular if missing
     try {
         const checkSem1 = db.prepare("SELECT count(*) as count FROM timetables WHERE program LIKE '%Semester 1%'").get();
-        if (!checkSem1 || checkSem1.count === 0) {
+        if (true) {
             console.log("Seeding B.Com Regular Semester 1 timetables...");
             const insertTimetable = db.prepare(`
                 INSERT INTO timetables (program, day, slot_1, slot_2, slot_3, slot_4)
