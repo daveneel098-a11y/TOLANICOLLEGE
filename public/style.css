@@ -26,6 +26,33 @@
     --glass-blur: 12px;
 }
 
+body.light-theme {
+    --bg-primary: #f0f2f5;
+    --bg-secondary: #ffffff;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --border-color: rgba(0, 0, 0, 0.1);
+    --border-color-glow: rgba(37, 99, 235, 0.2);
+    
+    --primary: #1e40af;
+    --primary-glow: rgba(30, 64, 175, 0.08);
+    --secondary: #dc2626;
+    --secondary-glow: rgba(220, 38, 38, 0.08);
+    --accent: #0f766e;
+    
+    --text-main: #1f2937;
+    --text-muted: #4b5563;
+    --text-inverse: #ffffff;
+    
+    --card-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+}
+
+body.light-theme .ambient-glow-1 {
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.04) 0%, rgba(0,0,0,0) 70%);
+}
+body.light-theme .ambient-glow-2 {
+    background: radial-gradient(circle, rgba(239, 68, 68, 0.03) 0%, rgba(0,0,0,0) 70%);
+}
+
 * {
     margin: 0;
     padding: 0;
