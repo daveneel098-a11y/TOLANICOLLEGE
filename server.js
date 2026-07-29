@@ -306,6 +306,86 @@ try {
         console.error("Failed to auto-seed timetables:", e);
     }
 
+    // Auto-seed Semester 1 timetables for B.Com Regular if missing
+    try {
+        const checkSem1 = db.prepare("SELECT count(*) as count FROM timetables WHERE program LIKE '%Semester 1%'").get();
+        if (!checkSem1 || checkSem1.count === 0) {
+            console.log("Seeding B.Com Regular Semester 1 timetables...");
+            const insertTimetable = db.prepare(`
+                INSERT INTO timetables (program, day, slot_1, slot_2, slot_3, slot_4)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(program, day) DO UPDATE SET
+                    slot_1 = excluded.slot_1,
+                    slot_2 = excluded.slot_2,
+                    slot_3 = excluded.slot_3,
+                    slot_4 = excluded.slot_4
+            `);
+
+            const sem1Timetables = {
+                'A': [
+                    ['Monday', 'Env. Sci. (MKP)', 'MD/ECO (PMT)', 'FIN. A/C (PKT)', 'AEC/ENG (KVM)'],
+                    ['Tuesday', 'BUSI. A/C (HNG)', 'MIC/Stats (TA)', 'SEC/TB (DRM)', 'Env. Sci. (DJ)'],
+                    ['Wednesday', 'MIC/Stats (KRT)', 'MD/ECO (PMT)', 'FIN. A/C (PKT)', 'BUSI. A/C (TA)'],
+                    ['Thursday', 'MD/ECO (PMT)', 'MIC/Stats (TA)', 'FIN. A/C (PKT)', 'Free Slot'],
+                    ['Friday', 'AEC/ENG (KVM)', 'BUSI. A/C (HNG)', 'MD/ECO (PMT)', 'FIN. A/C (TA)'],
+                    ['Saturday', 'BUSI. A/C (HNG)', 'SEC/TB (DRM)', 'BUSI. A/C (TA)', 'Free Slot']
+                ],
+                'B': [
+                    ['Monday', 'MD/ECO (PMT)', 'MIC/Stats (TA)', 'BUSI. A/C (HNG)', 'Free Slot'],
+                    ['Tuesday', 'Env. Sci. (MKP)', 'AEC/ENG (KVM)', 'FIN. A/C (TA)', 'MD/ECO (PMT)'],
+                    ['Wednesday', 'MD/ECO (PMT)', 'FIN. A/C (PKT)', 'SEC/TB (DRM)', 'BUSI. A/C (HNG)'],
+                    ['Thursday', 'BUSI. A/C (HNG)', 'SEC/TB (DRM)', 'MIC/Stats (TA)', 'FIN. A/C (PKT)'],
+                    ['Friday', 'FIN. A/C (PKT)', 'MIC/Stats (TA)', 'AEC/ENG (KVM)', 'Env. Sci. (DJ)'],
+                    ['Saturday', 'BUSI. A/C (TA)', 'MD/ECO (PMT)', 'MIC/Stats (KRT)', 'Free Slot']
+                ],
+                'C': [
+                    ['Monday', 'AEC/ENG (KVM)', 'MD/ECO (DJ)', 'SEC/TB (DRM)', 'BUSI. A/C (TA)'],
+                    ['Tuesday', 'MIC/BA (GD)', 'MD/ECO (DJ)', 'FIN. A/C (PKT)', 'Free Slot'],
+                    ['Wednesday', 'Env. Sci. (MKP)', 'FIN. A/C (TA)', 'MIC/BA (GD)', 'AEC/ENG (KVM)'],
+                    ['Thursday', 'FIN. A/C (PKT)', 'Env. Sci. (DJ)', 'BUSI. A/C (HNG)', 'MD/ECO (DJ)'],
+                    ['Friday', 'MIC/BA (GD)', 'FIN. A/C (PKT)', 'SEC/TB (DRM)', 'BUSI. A/C (HNG)'],
+                    ['Saturday', 'MIC/BA (GD)', 'BUSI. A/C (HNG)', 'MD/ECO (DJ)', 'Free Slot']
+                ],
+                'D': [
+                    ['Monday', 'BUSI. A/C (HNG)', 'MIC/BA (GD)', 'MD/ECO (DJ)', 'FIN. A/C (PKT)'],
+                    ['Tuesday', 'AEC/ENG (KVM)', 'BUSI. A/C (HNG)', 'MIC/BA (GD)', 'FIN. A/C (TA)'],
+                    ['Wednesday', 'SEC/TB (KVM)', 'Env. Sci. (DJ)', 'BUSI. A/C (TA)', 'MD/ECO (DJ)'],
+                    ['Thursday', 'Env. Sci. (MKP)', 'AEC/ENG (KVM)', 'MIC/BA (GD)', 'BUSI. A/C (HNG)'],
+                    ['Friday', 'MD/ECO (DJ)', 'MIC/BA (GD)', 'FIN. A/C (PKT)', 'Free Slot'],
+                    ['Saturday', 'SEC/TB (KVM)', 'MD/ECO (DJ)', 'FIN. A/C (PKT)', 'Free Slot']
+                ],
+                'E': [
+                    ['Monday', 'Env. Sci. (DJ)', 'MIC/BA (PBC)', 'AEC/ENG (KVM)', 'Free Slot'],
+                    ['Tuesday', 'FIN. A/C (PKT)', 'MD/ECO (PMT)', 'BUSI. A/C (HNG)', 'SEC/TB (KVM)'],
+                    ['Wednesday', 'FIN. A/C (PKT)', 'MIC/BA (PBC)', 'BUSI. A/C (HNG)', 'MD/ECO (PMT)'],
+                    ['Thursday', 'FIN. A/C (TA)', 'MD/ECO (PMT)', 'SEC/TB (KVM)', 'Free Slot'],
+                    ['Friday', 'MD/ECO (PMT)', 'AEC/ENG (KVM)', 'BUSI. A/C (TA)', 'MIC/BA (PBC)'],
+                    ['Saturday', 'Env. Sci. (MKP)', 'MIC/BA (PBC)', 'BUSI. A/C (HNG)', 'FIN. A/C (PKT)']
+                ],
+                'F': [
+                    ['Monday', 'FIN. A/C (PKT)', 'BUSI. A/C (HNG)', 'FIN. A/C (TA)', 'Free Slot'],
+                    ['Tuesday', 'MD/ECO (PMT)', 'FIN. A/C (PKT)', 'SEC/TB (RK)', 'Free Slot'],
+                    ['Wednesday', 'BUSI. A/C (HNG)', 'AEC/ENG (KVM)', 'Env. Sci. (DJ)', 'MIC/Comp'],
+                    ['Thursday', 'AEC/ENG (KVM)', 'SEC/TB (RK)', 'MD/ECO (PMT)', 'MIC/Comp'],
+                    ['Friday', 'Env. Sci. (MKP)', 'MD/ECO (PMT)', 'BUSI. A/C (HNG)', 'MIC/Comp'],
+                    ['Saturday', 'FIN. A/C (PKT)', 'BUSI. A/C (TA)', 'MD/ECO (PMT)', 'MIC/Comp']
+                ]
+            };
+
+            for (const [div, rows] of Object.entries(sem1Timetables)) {
+                const programName = `B.Com (Regular) - Semester 1 - Div ${div}`;
+                rows.forEach(([day, s1, s2, s3, s4]) => {
+                    insertTimetable.run(programName, day, s1, s2, s3, s4);
+                });
+            }
+
+            dbChanged = true; // Mark as changed to trigger MongoDB upload
+            console.log("Auto-seeded Semester 1 timetables successfully!");
+        }
+    } catch (e) {
+        console.error("Failed to auto-seed Semester 1 timetables:", e);
+    }
+
     const studentsDirectory = path.join(__dirname, 'q', 'students');
 
     // Auto-seed first-year students from q/students directory if not present
