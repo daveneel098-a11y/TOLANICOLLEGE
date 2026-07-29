@@ -711,7 +711,12 @@ function handleFullscreenChange() {
         // Re-request fullscreen
         setTimeout(() => {
             if (lockdownSessionId) {
-                document.documentElement.requestFullscreen().catch(() => {});
+                const el = document.documentElement;
+                if (typeof el.requestFullscreen === "function") {
+                    el.requestFullscreen().catch(() => {});
+                } else if (typeof el.webkitRequestFullscreen === "function") {
+                    el.webkitRequestFullscreen();
+                }
             }
         }, 1000);
     }
@@ -765,10 +770,17 @@ async function logLockdownViolation(type) {
 }
 
 window.startAttendanceLockdown = function(sessionId) {
-    // Request fullscreen directly to keep user gesture context valid
-    document.documentElement.requestFullscreen().catch(err => {
-        console.warn("Fullscreen request rejected:", err);
-    });
+    // Request fullscreen directly to keep user gesture context valid (safely fallback if not supported on iOS)
+    const el = document.documentElement;
+    if (typeof el.requestFullscreen === "function") {
+        el.requestFullscreen().catch(err => {
+            console.warn("Fullscreen request rejected:", err);
+        });
+    } else if (typeof el.webkitRequestFullscreen === "function") {
+        el.webkitRequestFullscreen();
+    } else {
+        console.warn("Fullscreen API not supported on this browser/device.");
+    }
 
     // Set lockdownSessionId after a 5 second delay to let fullscreen, layout, and keyboard dismissal transitions completely settle
     setTimeout(() => {
@@ -880,7 +892,7 @@ async function submitCode2(sessionId, code2, lat, lon, accuracy, button) {
 window.exitAttendanceLockdown = function(success) {
     lockdownSessionId = null;
     
-    if (document.fullscreenElement) {
+    if (document.fullscreenElement && typeof document.exitFullscreen === "function") {
         document.exitFullscreen().catch(() => {});
     }
 
@@ -929,6 +941,11 @@ async function submitCheckin(code, lat, lon, accuracy) {
             window.startAttendanceLockdown(submitData.session_id);
         } else {
             alert(submitData.error || "Check-in failed.");
+            if (submitData.error && (submitData.error.includes("Student record not found") || submitRes.status === 404)) {
+                alert("Your session has expired or is invalid. You will be logged out. Please log in again to sync your details.");
+                localStorage.removeItem("es_current_user");
+                location.reload();
+            }
         }
     } catch (err) {
         console.error(err);
