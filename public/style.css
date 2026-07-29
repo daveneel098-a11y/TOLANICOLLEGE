@@ -122,11 +122,11 @@ body {
 }
 
 .auth-card {
-    background: var(--bg-card);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    border: 1px solid var(--border-color);
-    box-shadow: var(--card-shadow);
+    background: rgba(255, 255, 255, 0.65) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
     border-radius: 20px;
     width: 100%;
     max-width: 440px;
