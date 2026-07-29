@@ -241,6 +241,7 @@ const ROLE_NAV = {
         { id: "projector", label: "Classroom Projector", icon: "fa-display" },
         { id: "attendance_report", label: "Attendance Sheet", icon: "fa-table-list" },
         { id: "lecture_attendance", label: "Lecture Wise Sheet", icon: "fa-list-check" },
+        { id: "lecture_history", label: "Manage Taken Lectures", icon: "fa-clock-rotate-left" },
         { id: "coursework_manager", label: "Coursework Suite", icon: "fa-folder-open" },
         { id: "profile", label: "Profile Settings", icon: "fa-user-gear" }
     ],
@@ -254,6 +255,7 @@ const ROLE_NAV = {
         { id: "projector", label: "Classroom Projector", icon: "fa-display" },
         { id: "attendance_report", label: "Attendance Sheet", icon: "fa-table-list" },
         { id: "lecture_attendance", label: "Lecture Wise Sheet", icon: "fa-list-check" },
+        { id: "admin_lectures", label: "Teacher Lectures Report", icon: "fa-chalkboard-user" },
         { id: "coursework_manager", label: "Coursework Suite", icon: "fa-folder-open" },
         { id: "database", label: "Postgres Console", icon: "fa-database" },
         { id: "profile", label: "Profile Settings", icon: "fa-user-gear" }
@@ -6351,8 +6353,280 @@ if (storedUser) {
     }
 }
 
-// Active session search event delegation
-document.addEventListener("input", (e) => {
+});
+
+
+// ==========================================
+// Lecture History and Reports Management Modules
+// ==========================================
+
+window.renderTeacherLecture_history = async function() {
+    dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
+
+    try {
+        const res = await fetch(`/api/attendance/sessions?creator_id=${currentUser.id}`);
+        const data = await res.json();
+        const sessions = data.sessions || [];
+
+        let rowsHTML = sessions.map(s => {
+            const dateStr = s.created_at ? new Date(s.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'Unknown';
+            return `
+                <tr>
+                    <td>${dateStr}</td>
+                    <td><strong>${s.subject}</strong></td>
+                    <td>${s.class_name} (Div ${s.division})</td>
+                    <td>${s.lecture_slot || 'N/A'}</td>
+                    <td>
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.1); color: var(--success); padding: 4px 8px; border-radius: 6px; font-weight: 600;">P: ${s.present_count}</span>
+                        <span class="badge" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 4px 8px; border-radius: 6px; font-weight: 600; margin-left: 4px;">A: ${s.absent_count}</span>
+                        ${s.flagged_count > 0 ? `<span class="badge" style="background: rgba(245, 158, 11, 0.1); color: var(--warning); padding: 4px 8px; border-radius: 6px; font-weight: 600; margin-left: 4px;">F: ${s.flagged_count}</span>` : ''}
+                    </td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="window.editSessionRoster(${s.id}, '${s.class_name}', '${s.subject}', '${s.division}')" style="padding: 4px 8px; font-size: 11px; margin-right: 6px; cursor: pointer;">
+                            <i class="fa-solid fa-user-pen"></i> Edit
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="window.deleteSession(${s.id})" style="padding: 4px 8px; font-size: 11px; cursor: pointer;">
+                            <i class="fa-solid fa-trash-can"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+
+        dynamicContentArea.innerHTML = `
+            <div class="glass-card">
+                <div class="card-header-flex mb-16">
+                    <h3 class="card-title"><i class="fa-solid fa-clock-rotate-left mr-8"></i> Manage Taken Lectures</h3>
+                    <span class="attendance-status-pill status-active">${sessions.length} Lectures Taken</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="custom-table text-center">
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Subject</th>
+                                <th>Class & Division</th>
+                                <th>Lecture Slot</th>
+                                <th>Attendance Summary</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHTML.length > 0 ? rowsHTML : `<tr><td colspan="6" style="color: var(--text-muted); padding: 24px;">No lecture sessions recorded yet.</td></tr>`}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    } catch (err) {
+        console.error(err);
+        dynamicContentArea.innerHTML = `<div class="alert alert-danger">Failed to load lecture history.</div>`;
+    }
+};
+
+window.deleteSession = async function(sessionId) {
+    if (!confirm("Are you sure you want to delete this lecture session? This will permanently erase the session and all student attendance marks associated with it.")) return;
+    try {
+        const res = await fetch(`/api/attendance/session/${sessionId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            alert("Lecture session deleted successfully.");
+            if (currentUser.role === 'admin') {
+                window.renderAdminAdmin_lectures();
+            } else {
+                window.renderTeacherLecture_history();
+            }
+        } else {
+            alert(data.error || "Failed to delete session.");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("An error occurred while deleting the session.");
+    }
+};
+
+window.editSessionRoster = async function(sessionId, className, subject, division) {
+    dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
+
+    try {
+        const studentsRes = await fetch(`/api/students?class_name=${encodeURIComponent(className)}&division=${encodeURIComponent(division)}`);
+        const studentsData = await studentsRes.json();
+        const students = studentsData.students || [];
+
+        const recordsRes = await fetch(`/api/attendance/session/${sessionId}/records`);
+        const recordsData = await recordsRes.json();
+        const records = recordsData.records || [];
+
+        const recordsMap = {};
+        records.forEach(r => { recordsMap[r.student_id] = r.status; });
+
+        let rosterHTML = students.map(s => {
+            const currentStatus = recordsMap[s.id] || 'absent';
+            return `
+                <tr>
+                    <td><strong>${s.username.replace(/^(I|II|III|IV|V|VI)/, '')}</strong></td>
+                    <td class="text-left">${s.name}</td>
+                    <td>
+                        <select class="form-control" onchange="window.updateStudentAttendanceInSession(${sessionId}, ${s.id}, this.value)" style="width: 130px; margin: 0 auto; padding: 6px; border-radius: 8px;">
+                            <option value="present" ${currentStatus === 'present' ? 'selected' : ''}>Present</option>
+                            <option value="absent" ${currentStatus === 'absent' ? 'selected' : ''}>Absent</option>
+                            <option value="flagged" ${currentStatus === 'flagged' ? 'selected' : ''}>Flagged</option>
+                        </select>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+
+        dynamicContentArea.innerHTML = `
+            <div class="glass-card">
+                <div class="card-header-flex mb-16">
+                    <div>
+                        <h3 class="card-title"><i class="fa-solid fa-user-pen mr-8"></i> Edit Lecture Attendance</h3>
+                        <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+                            ${subject} | ${className} (Div ${division})
+                        </p>
+                    </div>
+                    <button class="btn btn-secondary" onclick="window.backToLectureHistory()" style="padding: 8px 16px; cursor: pointer;">
+                        <i class="fa-solid fa-arrow-left mr-8"></i> Back to Lectures
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="custom-table text-center">
+                        <thead>
+                            <tr>
+                                <th>Roll No</th>
+                                <th class="text-left">Student Name</th>
+                                <th>Attendance Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rosterHTML.length > 0 ? rosterHTML : `<tr><td colspan="3" style="color: var(--text-muted); padding: 24px;">No students found for this class division.</td></tr>`}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    } catch (err) {
+        console.error(err);
+        dynamicContentArea.innerHTML = `<div class="alert alert-danger">Failed to load attendance editor.</div>`;
+    }
+};
+
+window.updateStudentAttendanceInSession = async function(sessionId, studentId, status) {
+    try {
+        const res = await fetch('/api/attendance/mark-manual', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: sessionId, student_id: studentId, status })
+        });
+        const data = await res.json();
+        if (!data.success) {
+            alert(data.error || "Failed to update attendance status.");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Network error updating attendance.");
+    }
+};
+
+window.backToLectureHistory = function() {
+    if (currentUser.role === 'admin') {
+        window.renderAdminAdmin_lectures();
+    } else {
+        window.renderTeacherLecture_history();
+    }
+};
+
+window.renderAdminAdmin_lectures = async function() {
+    dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
+
+    try {
+        const teachersRes = await fetch('/api/users?role=teacher');
+        const teachersData = await teachersRes.json();
+        const teachers = teachersData.users || [];
+
+        const sessionsRes = await fetch('/api/attendance/sessions');
+        const sessionsData = await sessionsRes.json();
+        const allSessions = sessionsData.sessions || [];
+
+        window.renderTeacherWiseLecturesTable = function(selectedTeacherId) {
+            const filteredSessions = selectedTeacherId ? allSessions.filter(s => s.creator_id === parseInt(selectedTeacherId)) : allSessions;
+
+            let rowsHTML = filteredSessions.map(s => {
+                const dateStr = s.created_at ? new Date(s.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'Unknown';
+                return `
+                    <tr>
+                        <td><strong>${s.creator_name}</strong></td>
+                        <td>${dateStr}</td>
+                        <td><strong>${s.subject}</strong></td>
+                        <td>${s.class_name} (Div ${s.division})</td>
+                        <td>${s.lecture_slot || 'N/A'}</td>
+                        <td>
+                            <span class="badge" style="background: rgba(16, 185, 129, 0.1); color: var(--success); padding: 4px 8px; border-radius: 6px; font-weight: 600;">P: ${s.present_count}</span>
+                            <span class="badge" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 4px 8px; border-radius: 6px; font-weight: 600; margin-left: 4px;">A: ${s.absent_count}</span>
+                            ${s.flagged_count > 0 ? `<span class="badge" style="background: rgba(245, 158, 11, 0.1); color: var(--warning); padding: 4px 8px; border-radius: 6px; font-weight: 600; margin-left: 4px;">F: ${s.flagged_count}</span>` : ''}
+                        </td>
+                        <td>
+                            <button class="btn btn-primary btn-sm" onclick="window.editSessionRoster(${s.id}, '${s.class_name}', '${s.subject}', '${s.division}')" style="padding: 4px 8px; font-size: 11px; margin-right: 6px; cursor: pointer;">
+                                <i class="fa-solid fa-user-pen"></i> Edit
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="window.deleteSession(${s.id})" style="padding: 4px 8px; font-size: 11px; cursor: pointer;">
+                                <i class="fa-solid fa-trash-can"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+
+            document.getElementById("admin-lectures-tbody").innerHTML = rowsHTML.length > 0 ? rowsHTML : `<tr><td colspan="7" style="color: var(--text-muted); padding: 24px;">No lecture sessions recorded for the selected filter.</td></tr>`;
+            document.getElementById("admin-total-lectures-badge").textContent = `${filteredSessions.length} Lectures Taken`;
+        };
+
+        let teacherOptionsHTML = teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
+
+        dynamicContentArea.innerHTML = `
+            <div class="glass-card mb-24">
+                <h3 class="card-title mb-16"><i class="fa-solid fa-filter mr-8"></i> Filter by Faculty Member</h3>
+                <div class="form-group" style="max-width: 400px; margin-bottom: 0;">
+                    <select class="form-control" onchange="window.renderTeacherWiseLecturesTable(this.value)" style="padding: 10px; border-radius: 10px;">
+                        <option value="">All Faculty Members</option>
+                        ${teacherOptionsHTML}
+                    </select>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div class="card-header-flex mb-16">
+                    <h3 class="card-title"><i class="fa-solid fa-chalkboard-user mr-8"></i> Faculty Lectures Report</h3>
+                    <span class="attendance-status-pill status-active" id="admin-total-lectures-badge">${allSessions.length} Lectures Taken</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="custom-table text-center">
+                        <thead>
+                            <tr>
+                                <th>Faculty Name</th>
+                                <th>Date & Time</th>
+                                <th>Subject</th>
+                                <th>Class & Division</th>
+                                <th>Lecture Slot</th>
+                                <th>Attendance Summary</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-lectures-tbody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        window.renderTeacherWiseLecturesTable("");
+    } catch (err) {
+        console.error(err);
+        dynamicContentArea.innerHTML = `<div class="alert alert-danger">Failed to load admin lectures report.</div>`;
+    }
+};
     if (e.target && e.target.id === "active-session-search") {
         const qVal = e.target.value.toLowerCase().trim();
         const tbody = document.getElementById("checked-in-records-list");

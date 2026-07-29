@@ -1362,12 +1362,15 @@ app.get('/api/attendance/active-sessions', (req, res) => {
     }
 });
 
-// Retrieve list of attendance sessions (lectures) with filters
+// Retrieve list of attendance sessions (lectures) with filters and summary counts
 app.get('/api/attendance/sessions', (req, res) => {
     const { creator_id, class_name, division } = req.query;
     try {
         let sql = `
-            SELECT s.id, s.code, s.class_name, s.subject, s.division, s.program, s.created_at, s.is_active, s.lecture_slot, u.name as creator_name
+            SELECT s.id, s.code, s.class_name, s.subject, s.division, s.program, s.created_at, s.is_active, s.lecture_slot, u.name as creator_name,
+              (SELECT count(*) FROM attendance_records WHERE session_id = s.id AND status = 'present') as present_count,
+              (SELECT count(*) FROM attendance_records WHERE session_id = s.id AND status = 'absent') as absent_count,
+              (SELECT count(*) FROM attendance_records WHERE session_id = s.id AND status = 'flagged') as flagged_count
             FROM attendance_sessions s
             JOIN users u ON s.creator_id = u.id
         `;
@@ -1396,6 +1399,20 @@ app.get('/api/attendance/sessions', (req, res) => {
     } catch (err) {
         console.error('Error fetching attendance sessions:', err);
         res.status(500).json({ error: 'Failed to fetch sessions.' });
+    }
+});
+
+// Delete a specific attendance session and its corresponding student records
+app.delete('/api/attendance/session/:sessionId', (req, res) => {
+    const { sessionId } = req.params;
+    try {
+        db.prepare('DELETE FROM attendance_records WHERE session_id = ?').run(sessionId);
+        db.prepare('DELETE FROM attendance_sessions WHERE id = ?').run(sessionId);
+        dbChanged = true; // Trigger MongoDB sync
+        res.json({ success: true, message: 'Lecture session and attendance records deleted successfully.' });
+    } catch (err) {
+        console.error('Error deleting session:', err);
+        res.status(500).json({ error: 'Failed to delete lecture session.' });
     }
 });
 
