@@ -707,7 +707,8 @@ function handleBeforeUnload(e) {
 async function logLockdownViolation(type) {
     if (!lockdownSessionId) return;
     try {
-        await fetch('/api/attendance/session/violate', {
+        // Send violation report to server
+        fetch('/api/attendance/session/violate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -715,8 +716,28 @@ async function logLockdownViolation(type) {
                 student_id: currentUser.id,
                 type: type
             })
-        });
-        console.warn("Violation logged:", type);
+        }).catch(() => {});
+
+        // Lock out student screen immediately
+        window.exitAttendanceLockdown(false);
+
+        dynamicContentArea.innerHTML = `
+            <div class="glass-card text-center" style="padding: 60px 20px; border: 2px solid var(--danger);">
+                <div style="margin-bottom: 24px;">
+                    <i class="fa-solid fa-ban fa-beat" style="font-size: 64px; color: var(--danger); margin-bottom: 20px;"></i>
+                    <h2 style="color: var(--danger); margin-bottom: 12px;">Lockdown Violated</h2>
+                    <p style="font-size: 15px; font-weight: 500; color: var(--text);">Your attendance has been flagged and voided.</p>
+                    <p style="color: var(--text-muted); font-size: 13px; max-width: 480px; margin: 12px auto 0;">
+                        You left the active attendance screen or exited fullscreen before the session completed. This violation has been reported to the instructor in real-time.
+                    </p>
+                </div>
+                <div style="margin-top: 30px;">
+                    <button class="btn btn-secondary" onclick="window.renderStudentAttendance()">
+                        Return to Dashboard
+                    </button>
+                </div>
+            </div>
+        `;
     } catch (e) {
         console.error("Error logging violation:", e);
     }
