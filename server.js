@@ -1815,6 +1815,29 @@ app.post('/api/attendance/verify-code2', (req, res) => {
     }
 });
 
+// Retrieve student active check-in status (for lockdown recovery and state validation)
+app.get('/api/attendance/student/:student_id/active-checkin', (req, res) => {
+    const studentId = parseInt(req.params.student_id);
+    const now = new Date().toISOString();
+    try {
+        const record = db.prepare(`
+            SELECT r.*, s.code, s.subject, s.class_name, s.division, s.expires_at, s.verification_started, s.code2
+            FROM attendance_records r
+            JOIN attendance_sessions s ON r.session_id = s.id
+            WHERE r.student_id = ? AND s.is_active = 1 AND s.expires_at > ?
+        `).get(studentId, now);
+
+        if (record) {
+            res.json({ success: true, active: true, record });
+        } else {
+            res.json({ success: true, active: false });
+        }
+    } catch (err) {
+        console.error('Error checking active student checkin:', err);
+        res.status(500).json({ error: 'Failed to query active session status.' });
+    }
+});
+
 // Google Drive Settings Configuration
 app.get('/api/settings/drive', (req, res) => {
     try {

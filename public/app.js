@@ -234,6 +234,9 @@ function initializeDashboard() {
     currentView = "dashboard";
     buildSidebarMenu(currentUser.role);
     navigateTo("dashboard");
+    if (typeof window.checkStudentLockdownRecovery === "function") {
+        window.checkStudentLockdownRecovery();
+    }
 }
 
 // Navigation Configuration
@@ -317,6 +320,10 @@ function buildSidebarMenu(role) {
 }
 
 function navigateTo(viewId) {
+    if (lockdownSessionId) {
+        alert("Anti-tamper protection is active. You cannot navigate away from this screen until the attendance session is closed by the instructor.");
+        return;
+    }
     if (viewId === "projector") {
         window.open('projector.html', '_blank');
         return;
@@ -853,8 +860,7 @@ async function logLockdownViolation(type) {
     }
 }
 
-window.startAttendanceLockdown = function(sessionId) {
-    // Request fullscreen directly to keep user gesture context valid (safely fallback if not supported on iOS)
+window.startAttendanceLockdown = async function(sessionId) {
     const el = document.documentElement;
     if (typeof el.requestFullscreen === "function") {
         el.requestFullscreen().catch(err => {
@@ -866,7 +872,6 @@ window.startAttendanceLockdown = function(sessionId) {
         console.warn("Fullscreen API not supported on this browser/device.");
     }
 
-    // Set lockdownSessionId after a 5 second delay to let fullscreen, layout, and keyboard dismissal transitions completely settle
     setTimeout(() => {
         lockdownSessionId = sessionId;
     }, 5000);
@@ -876,7 +881,7 @@ window.startAttendanceLockdown = function(sessionId) {
             <div style="margin-bottom: 24px;">
                 <i class="fa-solid fa-shield-halved fa-beat" style="font-size: 64px; color: var(--danger); margin-bottom: 20px;"></i>
                 <h2 style="color: var(--danger); margin-bottom: 12px;">Anti-Tamper Lockdown Active</h2>
-                <p style="font-size: 15px; font-weight: 500;">Your check-in is complete. Status: <strong style="color: var(--warning);">PENDING VERIFICATION</strong>.</p>
+                <p style="font-size: 15px; font-weight: 500;">Your check-in is complete. Status: <strong style="color: var(--warning);" id="lockdown-status-label">PENDING VERIFICATION</strong>.</p>
                 <p style="color: var(--text-muted); font-size: 13px; max-width: 480px; margin: 12px auto 0;">
                     Do NOT switch tabs, minimize the browser, or exit fullscreen. Any focus loss will be immediately flagged to the professor in real-time.
                 </p>
@@ -894,8 +899,49 @@ window.startAttendanceLockdown = function(sessionId) {
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     window.addEventListener('beforeunload', handleBeforeUnload, { capture: true });
 
+    let expiresAt = null;
+    let sessionExpiryTime = null;
+    try {
+        const sRes = await fetch(`/api/attendance/student/${currentUser.id}/active-checkin`);
+        const sData = await sRes.json();
+        if (sData.success && sData.record) {
+            expiresAt = sData.record.expires_at;
+            sessionExpiryTime = new Date(expiresAt).getTime();
+        }
+    } catch (e) {
+        console.error("Error fetching active checkin details:", e);
+    }
+
+    const standbyInterval = setInterval(async () => {
+        if (!lockdownSessionId) {
+            clearInterval(standbyInterval);
+            return;
+        }
+
+        if (sessionExpiryTime && Date.now() > sessionExpiryTime) {
+            clearInterval(standbyInterval);
+            window.exitAttendanceLockdown(true);
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/attendance/student/${currentUser.id}/active-checkin`);
+            const data = await res.json();
+            if (data.success) {
+                if (!data.active) {
+                    clearInterval(standbyInterval);
+                    window.exitAttendanceLockdown(true);
+                }
+            } else {
+                clearInterval(standbyInterval);
+                window.exitAttendanceLockdown(true);
+            }
+        } catch (e) {}
+    }, 5000);
+
     activeSse = new EventSource(`/api/attendance/session/${sessionId}/stream`);
     activeSse.addEventListener('SESSION_CLOSED', (e) => {
+        clearInterval(standbyInterval);
         window.exitAttendanceLockdown(true);
     });
 
@@ -907,7 +953,7 @@ window.startAttendanceLockdown = function(sessionId) {
                     <h3 style="color: var(--warning); margin-bottom: 8px;">Final Verification Required</h3>
                     <p style="color: var(--text-muted); font-size: 13px;">Enter the second verification code currently displayed on the classroom screen:</p>
                     <input type="text" id="lockdown-code2-input" class="form-control text-center" placeholder="000000" style="font-size: 24px; letter-spacing: 4px; max-width: 240px; margin: 16px auto; font-weight: bold; color: var(--warning);">
-                    <button class="btn btn-warning" id="lockdown-verify-btn" style="color: black; font-weight: bold;">
+                    <button class="btn btn-warning" id="lockdown-verify-btn" style="color: black; font-weight: bold; cursor: pointer;">
                         <i class="fa-solid fa-circle-check mr-8"></i> Complete Verification
                     </button>
                     <div id="verification-error-msg" style="color: var(--danger); font-size: 12px; margin-top: 8px;"></div>
@@ -960,7 +1006,28 @@ async function submitCode2(sessionId, code2, lat, lon, accuracy, button) {
 
         const data = await response.json();
         if (data.success) {
-            window.exitAttendanceLockdown(true);
+            const statusLabel = document.getElementById("lockdown-status-label");
+            if (statusLabel) {
+                statusLabel.textContent = "VERIFIED (PRESENT)";
+                statusLabel.style.color = "var(--success)";
+            }
+            const standbyArea = document.getElementById("lockdown-status-area");
+            if (standbyArea) {
+                standbyArea.innerHTML = `
+                    <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 24px; margin-top: 24px; text-align: center;">
+                        <i class="fa-solid fa-circle-check fa-beat" style="font-size: 56px; color: var(--success); margin-bottom: 16px;"></i>
+                        <h3 style="color: var(--success); margin-bottom: 8px;">Verification Successful!</h3>
+                        <p style="font-size: 15px; font-weight: 600; color: #ffffff;">Status: PRESENT</p>
+                        <p style="color: var(--text-muted); font-size: 13px; max-width: 400px; margin: 12px auto 0;">
+                            Please remain on this screen. Fullscreen anti-tamper tracking is still active.
+                        </p>
+                        <div style="margin-top: 24px;">
+                            <i class="fa-solid fa-spinner fa-spin-pulse" style="font-size: 24px; color: var(--success); margin-bottom: 8px;"></i>
+                            <p style="font-size: 12px; color: var(--text-muted);">Waiting for the instructor to close the session...</p>
+                        </div>
+                    </div>
+                `;
+            }
         } else {
             if (errorDiv) errorDiv.textContent = data.error || "Verification failed.";
             button.disabled = false;
@@ -6662,6 +6729,52 @@ window.renderAdminAdmin_lectures = async function() {
     } catch (err) {
         console.error(err);
         dynamicContentArea.innerHTML = `<div class="alert alert-danger">Failed to load admin lectures report.</div>`;
+    }
+};
+
+window.checkStudentLockdownRecovery = async function() {
+    if (currentUser && currentUser.role === 'student') {
+        try {
+            const res = await fetch(`/api/attendance/student/${currentUser.id}/active-checkin`);
+            const data = await res.json();
+            if (data.success && data.active && data.record) {
+                const rec = data.record;
+                window.startAttendanceLockdown(rec.session_id);
+                if (rec.status === 'present' || rec.status === 'FLAGGED' || rec.status === 'flagged') {
+                    setTimeout(() => {
+                        const statusLabel = document.getElementById("lockdown-status-label");
+                        if (statusLabel) {
+                            statusLabel.textContent = "VERIFIED (PRESENT)";
+                            statusLabel.style.color = "var(--success)";
+                        }
+                        const standbyArea = document.getElementById("lockdown-status-area");
+                        if (standbyArea) {
+                            standbyArea.innerHTML = `
+                                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 24px; margin-top: 24px; text-align: center;">
+                                    <i class="fa-solid fa-circle-check fa-beat" style="font-size: 56px; color: var(--success); margin-bottom: 16px;"></i>
+                                    <h3 style="color: var(--success); margin-bottom: 8px;">Verification Successful!</h3>
+                                    <p style="font-size: 15px; font-weight: 600; color: #ffffff;">Status: PRESENT</p>
+                                    <p style="color: var(--text-muted); font-size: 13px; max-width: 400px; margin: 12px auto 0;">
+                                        Please remain on this screen. Fullscreen anti-tamper tracking is still active.
+                                    </p>
+                                    <div style="margin-top: 24px;">
+                                        <i class="fa-solid fa-spinner fa-spin-pulse" style="font-size: 24px; color: var(--success); margin-bottom: 8px;"></i>
+                                        <p style="font-size: 12px; color: var(--text-muted);">Waiting for the instructor to close the session...</p>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }, 1000);
+                } else if (rec.verification_started === 1) {
+                    setTimeout(() => {
+                        const event = new MessageEvent('VERIFICATION_STARTED', { data: '' });
+                        if (activeSse) activeSse.dispatchEvent(event);
+                    }, 1000);
+                }
+            }
+        } catch (e) {
+            console.error("Lockdown recovery check failed:", e);
+        }
     }
 };
 
