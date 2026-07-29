@@ -673,7 +673,7 @@ function handleVisibilityChange() {
 }
 
 function handleWindowBlur() {
-    if (lockdownSessionId) {
+    if (lockdownSessionId && (document.hidden || !document.fullscreenElement)) {
         logLockdownViolation("LOST_FOCUS");
     }
 }
@@ -722,10 +722,10 @@ window.startAttendanceLockdown = function(sessionId) {
         console.warn("Fullscreen request rejected:", err);
     });
 
-    // Set lockdownSessionId after a 1.5 second delay to let fullscreen and layout changes settle, preventing false positive blur flags
+    // Set lockdownSessionId after a 5 second delay to let fullscreen, layout, and keyboard dismissal transitions completely settle
     setTimeout(() => {
         lockdownSessionId = sessionId;
-    }, 1500);
+    }, 5000);
 
     dynamicContentArea.innerHTML = `
         <div class="glass-card text-center" style="padding: 60px 20px; border: 2px solid var(--danger); position: relative; overflow: hidden;">
