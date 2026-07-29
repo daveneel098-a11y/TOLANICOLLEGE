@@ -53,11 +53,16 @@ if (currentDateDisplay) {
 
 // --- Theme Toggle Handling ---
 (function() {
-    const savedTheme = localStorage.getItem("es_theme") || "dark";
-    if (savedTheme === "light") {
+    const storedUser = localStorage.getItem("es_current_user");
+    if (!storedUser) {
         document.body.classList.add("light-theme");
     } else {
-        document.body.classList.remove("light-theme");
+        const savedTheme = localStorage.getItem("es_theme") || "dark";
+        if (savedTheme === "light") {
+            document.body.classList.add("light-theme");
+        } else {
+            document.body.classList.remove("light-theme");
+        }
     }
 
     window.addEventListener("load", () => {
@@ -119,6 +124,16 @@ if (loginForm) {
             if (data.success) {
                 currentUser = data.user;
                 localStorage.setItem("es_current_user", JSON.stringify(currentUser));
+                const savedTheme = localStorage.getItem("es_theme") || "dark";
+                if (savedTheme === "light") {
+                    document.body.classList.add("light-theme");
+                } else {
+                    document.body.classList.remove("light-theme");
+                }
+                const themeIcon = document.getElementById("theme-toggle-icon");
+                if (themeIcon) {
+                    themeIcon.className = savedTheme === "light" ? "fa-solid fa-moon" : "fa-solid fa-sun";
+                }
                 initializeDashboard();
             } else {
                 alert(data.error || 'Login failed.');
@@ -140,6 +155,7 @@ if (logoutButton) {
             clearInterval(activeSessionPollingInterval);
         }
         activeSessionCode = null;
+        document.body.classList.add("light-theme");
         dashboardView.style.display = "none";
         authView.style.display = "flex";
         loginForm.reset();
