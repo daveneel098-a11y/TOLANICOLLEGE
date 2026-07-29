@@ -390,7 +390,13 @@ window.renderStudentDashboard = async function() {
         // --- FETCH TODAY'S DAILY LECTURE STATUS OVERRIDES ---
         const todayDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const todayDayName = todayDays[new Date().getDay()];
-        const todayDateStr = new Date().toISOString().split('T')[0];
+        const todayDateStr = (function() {
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        })();
 
         let dailyLectureStatusHTML = '';
 
@@ -1325,7 +1331,13 @@ window.renderStudentProfile = function() {
 window.renderTeacherDashboard = async function() {
     dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
 
-    const todayDateStr = new Date().toISOString().split('T')[0];
+    const todayDateStr = (function() {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    })();
 
     try {
         // Fetch current overrides to list them
@@ -2535,8 +2547,11 @@ window.markStudentPresentManual = async function(studentId) {
 function parseUTCDate(timeStr) {
     if (!timeStr) return null;
     let dateStr = timeStr;
-    if (timeStr.includes(' ') && !timeStr.includes('T') && !timeStr.includes('Z')) {
-        dateStr = timeStr.replace(' ', 'T') + 'Z';
+    if (!dateStr.endsWith('Z') && !/\+\d{2}:\d{2}$/.test(dateStr) && !/-\d{2}:\d{2}$/.test(dateStr)) {
+        if (dateStr.includes(' ') && !dateStr.includes('T')) {
+            dateStr = dateStr.replace(' ', 'T');
+        }
+        dateStr += 'Z';
     }
     const d = new Date(dateStr);
     return isNaN(d.getTime()) ? new Date(timeStr) : d;
@@ -2877,7 +2892,13 @@ window.renderAdminDashboard = async function() {
         const mcomCount = students.filter(s => s.program === 'M.Com').length;
 
         // Fetch today's live lecture overrides for admin monitor
-        const todayDateStr = new Date().toISOString().split('T')[0];
+        const todayDateStr = (function() {
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        })();
         const adjRes = await fetch(`/api/daily-lectures?date=${todayDateStr}`);
         const adjData = await adjRes.json();
         const overrides = adjData.lectures || [];
