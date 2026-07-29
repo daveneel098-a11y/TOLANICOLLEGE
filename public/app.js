@@ -355,13 +355,44 @@ window.renderStudentDashboard = async function() {
                 </div>
             `;
         } else {
-            // Get timetable for today's weekday
-            const ttRes = await fetch(`/api/timetables?program=${encodeURIComponent(currentUser.program)}`);
-            const ttData = await ttRes.json();
-            const todayTimetable = (ttData.timetables || []).find(t => t.day === todayDayName) || {};
+            // Build the correct program key (robust version)
+            let semester = currentUser.semester;
+            if (!semester || semester === '0.0') {
+                const cls = (currentUser.class || '').toUpperCase();
+                if (cls.includes('SEM-V') || cls.includes('SEM-5')) semester = 'Semester 5';
+                else if (cls.includes('SEM-III') || cls.includes('SEM-3')) semester = 'Semester 3';
+                else if (cls.includes('SEM-I') || cls.includes('SEM-1')) semester = 'Semester 1';
+                else if (cls.includes('SEM-II') || cls.includes('SEM-2')) semester = 'Semester 2';
+                else if (cls.includes('SEM-IV') || cls.includes('SEM-4')) semester = 'Semester 4';
+                else if (cls.includes('SEM-VI') || cls.includes('SEM-6')) semester = 'Semester 6';
+            }
+            
+            let program = currentUser.program;
+            if (!program || program === '1st Year' || program === '2nd Year' || program === '3rd Year') {
+                program = 'B.Com (Regular)';
+            }
+            
+            let division = currentUser.division;
+            if (!division || division === 'B.Com (Regular)' || division === 'B.Com (Professional)') {
+                division = currentUser.department || 'A';
+            }
 
-            // Get status overrides for today's date
-            const adjRes = await fetch(`/api/daily-lectures?date=${todayDateStr}&program=${encodeURIComponent(currentUser.program)}&division=${encodeURIComponent(currentUser.division)}`);
+            const progKey = `${program} - ${semester} - Div ${division}`;
+
+            // Get timetable for today's weekday using the correct division-specific key
+            const ttRes = await fetch(`/api/timetables?program=${encodeURIComponent(progKey)}`);
+            const ttData = await ttRes.json();
+            let todayTimetable = (ttData.timetables || []).find(t => t.day === todayDayName) || {};
+
+            if (!todayTimetable.slot_1 && !todayTimetable.slot_2 && !todayTimetable.slot_3 && !todayTimetable.slot_4) {
+                // Fallback to program-level timetable if division-specific one is empty
+                const fallbackRes = await fetch(`/api/timetables?program=${encodeURIComponent(program)}`);
+                const fallbackData = await fallbackRes.json();
+                todayTimetable = (fallbackData.timetables || []).find(t => t.day === todayDayName) || {};
+            }
+
+            // Get status overrides for today's date using robust program/division
+            const adjRes = await fetch(`/api/daily-lectures?date=${todayDateStr}&program=${encodeURIComponent(program)}&division=${encodeURIComponent(division)}`);
             const adjData = await adjRes.json();
             const overrides = adjData.lectures || [];
             const overridesMap = {};
