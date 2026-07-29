@@ -683,11 +683,6 @@ function handleVisibilityChange() {
     }
 }
 
-function handleWindowBlur() {
-    if (lockdownSessionId && (document.hidden || !document.fullscreenElement)) {
-        logLockdownViolation("LOST_FOCUS");
-    }
-}
 
 function handleFullscreenChange() {
     if (!document.fullscreenElement && lockdownSessionId) {
@@ -758,7 +753,6 @@ window.startAttendanceLockdown = function(sessionId) {
     `;
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleWindowBlur);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     window.addEventListener('beforeunload', handleBeforeUnload, { capture: true });
 
@@ -849,7 +843,6 @@ window.exitAttendanceLockdown = function(success) {
     }
 
     document.removeEventListener('visibilitychange', handleVisibilityChange);
-    window.removeEventListener('blur', handleWindowBlur);
     document.removeEventListener('fullscreenchange', handleFullscreenChange);
     window.removeEventListener('beforeunload', handleBeforeUnload, { capture: true });
 
