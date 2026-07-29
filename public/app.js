@@ -600,7 +600,7 @@ window.renderStudentAttendance = async function() {
                 <td><strong>${r.code}</strong></td>
                 <td>${r.subject}</td>
                 <td>${r.class_name}</td>
-                <td>${new Date(r.marked_at).toLocaleString()}</td>
+                <td>${parseUTCDate(r.marked_at) ? parseUTCDate(r.marked_at).toLocaleString() : '--'}</td>
                 <td><span class="attendance-status-pill status-active">PRESENT</span></td>
             </tr>
         `).join("");
@@ -1904,7 +1904,7 @@ window.renderTeacherSchedule = function() {
                 r.name,
                 r.gender || 'Male',
                 `Division ${r.division}`,
-                new Date(r.marked_at).toLocaleTimeString()
+                formatRosterTime(r.marked_at)
             ]);
             
             const csvContent = "\uFEFF" + [
@@ -2316,6 +2316,22 @@ window.markStudentPresentManual = async function(studentId) {
     }
 };
 
+function parseUTCDate(timeStr) {
+    if (!timeStr) return null;
+    let dateStr = timeStr;
+    if (timeStr.includes(' ') && !timeStr.includes('T') && !timeStr.includes('Z')) {
+        dateStr = timeStr.replace(' ', 'T') + 'Z';
+    }
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? new Date(timeStr) : d;
+}
+
+function formatRosterTime(timeStr) {
+    if (!timeStr) return '--:--';
+    const d = parseUTCDate(timeStr);
+    return !d ? timeStr : d.toLocaleTimeString();
+}
+
 async function pollCheckedInStudents(code) {
     try {
         const res = await fetch(`/api/attendance/session/${code}/records`);
@@ -2367,7 +2383,7 @@ async function pollCheckedInStudents(code) {
                             </td>
                             <td>${r.gender || 'Male'}</td>
                             <td>Division ${r.division}</td>
-                            <td>${new Date(r.marked_at).toLocaleTimeString()}</td>
+                            <td>${formatRosterTime(r.marked_at)}</td>
                             <td>${statusHtml}</td>
                             <td>${actionHtml}</td>
                         </tr>
@@ -5055,7 +5071,7 @@ window.renderLectureWiseAttendanceReport = async function(isTeacherOnly) {
                         lecture: lectureLabel,
                         name: s.name,
                         status: isPresent ? 'Present' : 'Absent',
-                        date: isPresent ? new Date(record.marked_at).toLocaleDateString('en-GB') : '-'
+                        date: isPresent ? (parseUTCDate(record.marked_at) ? parseUTCDate(record.marked_at).toLocaleDateString('en-GB') : '-') : '-'
                     });
                 });
 

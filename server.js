@@ -687,6 +687,7 @@ app.post('/api/attendance/create', (req, res) => {
             secretKey, duration
         );
 
+        dbChanged = true;
         res.json({
             success: true,
             session: {
@@ -912,10 +913,11 @@ app.post('/api/attendance/check-in', (req, res) => {
 
         // Insert attendance record (including device_id)
         const recordStmt = db.prepare(`
-            INSERT INTO attendance_records (session_id, student_id, device_id, status)
-            VALUES (?, ?, ?, 'pending')
+            INSERT INTO attendance_records (session_id, student_id, device_id, status, marked_at)
+            VALUES (?, ?, ?, 'pending', ?)
         `);
-        recordStmt.run(session.id, student.id, device_id);
+        recordStmt.run(session.id, student.id, device_id, now);
+        dbChanged = true;
 
         // Notify professor in real-time
         notifyProfessorSse(session.id, 'STUDENT_JOINED', {
@@ -1085,6 +1087,7 @@ app.post('/api/attendance/session/violate', (req, res) => {
             SET status = 'flagged', violations_count = ?, violation_logs = ?
             WHERE session_id = ? AND student_id = ?
         `).run(newCount, JSON.stringify(logs), session_id, student_id);
+        dbChanged = true;
 
         // Notify professor in real-time
         notifyProfessorSse(session_id, 'STUDENT_FLAGGED', {
@@ -1112,7 +1115,7 @@ app.get('/api/attendance/session/active', (req, res) => {
     }
 
     try {
-        const now = Date.now();
+        const now = new Date().toISOString();
         // Retrieve the most recent active session that hasn't expired yet
         const sessionStmt = db.prepare(`
             SELECT * FROM attendance_sessions 
@@ -1171,18 +1174,20 @@ app.post('/api/attendance/mark-manual', (req, res) => {
 
     try {
         const check = db.prepare("SELECT * FROM attendance_records WHERE session_id = ? AND student_id = ?").get(session_id, student_id);
+        const markedAt = new Date().toISOString();
         if (!check) {
             db.prepare(`
-                INSERT INTO attendance_records (session_id, student_id, device_id, status)
-                VALUES (?, ?, 'MANUAL', ?)
-            `).run(session_id, student_id, status.toLowerCase());
+                INSERT INTO attendance_records (session_id, student_id, device_id, status, marked_at)
+                VALUES (?, ?, 'MANUAL', ?, ?)
+            `).run(session_id, student_id, status.toLowerCase(), markedAt);
         } else {
             db.prepare(`
                 UPDATE attendance_records 
-                SET status = ? 
+                SET status = ?, marked_at = ? 
                 WHERE session_id = ? AND student_id = ?
-            `).run(status.toLowerCase(), session_id, student_id);
+            `).run(status.toLowerCase(), markedAt, session_id, student_id);
         }
+        dbChanged = true;
 
         res.json({ success: true, message: `Student attendance updated to ${status}.` });
     } catch (err) {
@@ -1518,6 +1523,7 @@ app.post('/api/attendance/session/close', (req, res) => {
 
         // Mark any remaining PENDING student check-ins as ABSENT
         db.prepare("UPDATE attendance_records SET status = 'absent' WHERE session_id = ? AND (status = 'pending' OR status = 'PENDING')").run(session.id);
+        dbChanged = true;
 
         // Broadcast to all connected students
         broadcastStudentSse(session.id, 'SESSION_CLOSED', { message: 'Attendance session completed.' });
@@ -1552,6 +1558,7 @@ app.post('/api/attendance/session/start-verification', (req, res) => {
             SET code2 = ?, verification_started = 1 
             WHERE id = ?
         `).run(code2, session.id);
+        dbChanged = true;
 
         // Broadcast to all students connected to the session
         broadcastStudentSse(session.id, 'VERIFICATION_STARTED', {
@@ -1619,6 +1626,7 @@ app.post('/api/attendance/verify-code2', (req, res) => {
         // Update record to PRESENT (or FLAGGED if focus violations were already caught)
         const finalStatus = (record.status === 'flagged' || record.status === 'FLAGGED') ? 'flagged' : 'present';
         db.prepare('UPDATE attendance_records SET status = ? WHERE id = ?').run(finalStatus, record.id);
+        dbChanged = true;
 
         const student = db.prepare('SELECT * FROM users WHERE id = ?').get(student_id);
 
