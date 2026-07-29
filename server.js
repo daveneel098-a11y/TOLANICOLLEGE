@@ -176,6 +176,13 @@ try {
     // Column already exists, ignore
 }
 
+// Try adding password_locked column to users in case of legacy schema
+try {
+    db.exec("ALTER TABLE users ADD COLUMN password_locked INTEGER DEFAULT 0");
+} catch (e) {
+    // Column already exists, ignore
+}
+
 // Try adding lecture_slot column to attendance_sessions in case of legacy schema
 try {
     db.exec("ALTER TABLE attendance_sessions ADD COLUMN lecture_slot TEXT DEFAULT 'Lecture 1'");
@@ -757,12 +764,20 @@ app.post('/api/student/update-profile', (req, res) => {
             }
         }
 
-        // Update student profile (username is prefixed, password is raw roll number)
-        db.prepare(`
-            UPDATE users 
-            SET name = ?, username = ?, password = ?, gender = ?, email = ?, phone = ?, category = ?, profile_locked = 1 
-            WHERE id = ?
-        `).run(name, finalUsername, rawRollNo, gender, email, phone, category, student_id);
+        // Update student profile (username is prefixed; update password to raw roll number only if password is not locked)
+        if (user.password_locked === 1) {
+            db.prepare(`
+                UPDATE users 
+                SET name = ?, username = ?, gender = ?, email = ?, phone = ?, category = ?, profile_locked = 1 
+                WHERE id = ?
+            `).run(name, finalUsername, gender, email, phone, category, student_id);
+        } else {
+            db.prepare(`
+                UPDATE users 
+                SET name = ?, username = ?, password = ?, gender = ?, email = ?, phone = ?, category = ?, profile_locked = 1 
+                WHERE id = ?
+            `).run(name, finalUsername, rawRollNo, gender, email, phone, category, student_id);
+        }
         
         // Fetch updated user to send back
         const updatedUser = db.prepare("SELECT * FROM users WHERE id = ?").get(student_id);
@@ -771,6 +786,45 @@ app.post('/api/student/update-profile', (req, res) => {
         return res.json({ success: true, message: "Profile updated and locked successfully!", user: updatedUser });
     } catch (err) {
         console.error("Error updating student profile:", err);
+        return res.status(500).json({ error: "Internal server error." });
+    }
+});
+
+// 2.6 Student Password Update (one-time)
+app.post('/api/student/update-password', (req, res) => {
+    const { student_id, password } = req.body;
+
+    if (!student_id || !password || password.trim() === '') {
+        return res.status(400).json({ error: "Password cannot be empty." });
+    }
+
+    try {
+        const user = db.prepare("SELECT * FROM users WHERE id = ?").get(student_id);
+        if (!user) {
+            return res.status(404).json({ error: "Student not found." });
+        }
+
+        if (user.role !== 'student') {
+            return res.status(403).json({ error: "Only students can update their password." });
+        }
+
+        if (user.password_locked === 1) {
+            return res.status(400).json({ error: "Password modification is locked because it was already updated once." });
+        }
+
+        // Update password and lock it
+        db.prepare(`
+            UPDATE users 
+            SET password = ?, password_locked = 1 
+            WHERE id = ?
+        `).run(password.trim(), student_id);
+
+        const updatedUser = db.prepare("SELECT * FROM users WHERE id = ?").get(student_id);
+
+        dbChanged = true;
+        return res.json({ success: true, message: "Password updated and locked successfully!", user: updatedUser });
+    } catch (err) {
+        console.error("Error updating student password:", err);
         return res.status(500).json({ error: "Internal server error." });
     }
 });

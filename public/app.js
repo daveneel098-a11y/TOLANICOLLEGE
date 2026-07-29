@@ -975,9 +975,10 @@ if (feePayForm) {
 
 window.renderStudentProfile = function() {
     const isLocked = currentUser.profile_locked === 1 || currentUser.profile_locked === '1';
+    const isPassLocked = currentUser.password_locked === 1 || currentUser.password_locked === '1';
     
     dynamicContentArea.innerHTML = `
-        <div class="glass-card">
+        <div class="glass-card mb-24">
             <h3 class="card-title mb-16"><i class="fa-solid fa-shield-halved mr-8"></i> Security & Details</h3>
             <div class="form-grid mb-24">
                 <div>
@@ -1037,6 +1038,31 @@ window.renderStudentProfile = function() {
                 </div>
             `}
         </div>
+
+        <div class="glass-card">
+            <h3 class="card-title mb-16"><i class="fa-solid fa-key mr-8"></i> Password Management</h3>
+            <div class="form-grid mb-24" style="max-width: 480px;">
+                <div>
+                    <label>New Password</label>
+                    <input type="password" id="profile-new-password" class="form-control" placeholder="Enter new custom password" ${isPassLocked ? 'disabled' : ''}>
+                </div>
+            </div>
+            
+            ${isPassLocked ? `
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 12px;">
+                    <i class="fa-solid fa-circle-info"></i> Password modification is locked. You have already changed your password once.
+                </p>
+            ` : `
+                <div style="margin-top: 24px;">
+                    <button class="btn btn-primary" id="save-student-password-btn">
+                        <i class="fa-solid fa-lock mr-8"></i> Save & Lock Password
+                    </button>
+                    <p style="font-size: 12px; color: var(--danger); margin-top: 12px;">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Warning: You can only change your password ONCE. Make sure to write it down securely.
+                    </p>
+                </div>
+            `}
+        </div>
     `;
 
     if (!isLocked) {
@@ -1051,10 +1077,10 @@ window.renderStudentProfile = function() {
 
             const nameVal = nameInput.value.trim();
             const rollVal = rollInput.value.trim();
-            const genderVal = genderInput.value;
+            const genderVal = genderInput ? genderInput.value : currentUser.gender;
             const emailVal = emailInput.value.trim();
             const phoneVal = phoneInput.value.trim();
-            const categoryVal = categoryInput.value;
+            const categoryVal = categoryInput ? categoryInput.value : currentUser.category;
 
             if (!nameVal || !rollVal || !emailVal || !phoneVal) {
                 alert("All profile fields must be filled.");
@@ -1102,6 +1128,53 @@ window.renderStudentProfile = function() {
                 alert("Network error. Please try again.");
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = `<i class="fa-solid fa-lock mr-8"></i> Save & Lock Profile`;
+            }
+        });
+    }
+
+    if (!isPassLocked) {
+        const savePassBtn = document.getElementById("save-student-password-btn");
+        savePassBtn.addEventListener("click", async () => {
+            const passInput = document.getElementById("profile-new-password");
+            const passVal = passInput.value.trim();
+
+            if (!passVal) {
+                alert("Password field cannot be empty.");
+                return;
+            }
+
+            const confirmSave = confirm("Are you sure? Once saved, you will NOT be able to change your password again.");
+            if (!confirmSave) return;
+
+            savePassBtn.disabled = true;
+            savePassBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-8"></i> Saving...`;
+
+            try {
+                const response = await fetch('/api/student/update-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        student_id: currentUser.id,
+                        password: passVal
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    currentUser = data.user;
+                    localStorage.setItem("es_current_user", JSON.stringify(currentUser));
+                    window.renderStudentProfile();
+                } else {
+                    alert(data.error || "Failed to update password.");
+                    savePassBtn.disabled = false;
+                    savePassBtn.innerHTML = `<i class="fa-solid fa-lock mr-8"></i> Save & Lock Password`;
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Network error. Please try again.");
+                savePassBtn.disabled = false;
+                savePassBtn.innerHTML = `<i class="fa-solid fa-lock mr-8"></i> Save & Lock Password`;
             }
         });
     }
