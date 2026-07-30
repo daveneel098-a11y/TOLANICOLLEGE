@@ -898,19 +898,21 @@ app.post('/api/teacher/update-profile', (req, res) => {
     }
 
     try {
-        // Check if teacher profile editing is disabled globally
-        const setting = db.prepare("SELECT value FROM settings WHERE key = 'allow_teacher_profile_edit'").get();
-        if (setting && setting.value === 'false') {
-            return res.status(403).json({ error: "Profile editing has been disabled by the administrator." });
-        }
-
         const user = db.prepare("SELECT * FROM users WHERE id = ?").get(teacher_id);
         if (!user) {
-            return res.status(404).json({ error: "Professor not found." });
+            return res.status(404).json({ error: "User not found." });
         }
         
-        if (user.role !== 'teacher') {
-            return res.status(403).json({ error: "Only professors can update their profiles through this endpoint." });
+        if (user.role !== 'teacher' && user.role !== 'admin') {
+            return res.status(403).json({ error: "Unauthorized role for profile updates." });
+        }
+
+        // Only check permission toggles if user is a teacher
+        if (user.role === 'teacher') {
+            const setting = db.prepare("SELECT value FROM settings WHERE key = 'allow_teacher_profile_edit'").get();
+            if (setting && setting.value === 'false') {
+                return res.status(403).json({ error: "Profile editing has been disabled by the administrator." });
+            }
         }
 
         db.prepare("UPDATE users SET email = ?, phone = ?, gender = ?, department = ? WHERE id = ?").run(email, phone, gender, department, teacher_id);
@@ -921,7 +923,7 @@ app.post('/api/teacher/update-profile', (req, res) => {
         dbChanged = true; // Trigger Mongo sync
         return res.json({ success: true, message: "Profile details updated successfully.", user: updatedUser });
     } catch (err) {
-        console.error("Error updating teacher profile:", err);
+        console.error("Error updating profile details:", err);
         return res.status(500).json({ error: "Failed to update profile details." });
     }
 });

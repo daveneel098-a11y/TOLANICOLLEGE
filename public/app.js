@@ -2927,15 +2927,15 @@ window.renderStaffProfile = async function() {
                 </div>
                 <div>
                     <label>Email ID</label>
-                    <input type="text" id="staff-profile-email" class="form-control" value="${currentUser.email || ''}" ${isTeacherLocked || currentUser.role === 'admin' ? 'disabled' : ''}>
+                    <input type="text" id="staff-profile-email" class="form-control" value="${currentUser.email || ''}" ${isTeacherLocked ? 'disabled' : ''}>
                 </div>
                 <div>
                     <label>Contact Phone</label>
-                    <input type="text" id="staff-profile-phone" class="form-control" value="${currentUser.phone || ''}" ${isTeacherLocked || currentUser.role === 'admin' ? 'disabled' : ''}>
+                    <input type="text" id="staff-profile-phone" class="form-control" value="${currentUser.phone || ''}" ${isTeacherLocked ? 'disabled' : ''}>
                 </div>
                 <div>
                     <label>Gender</label>
-                    ${isTeacherLocked || currentUser.role === 'admin' ? `
+                    ${isTeacherLocked ? `
                         <input type="text" class="form-control" value="${currentUser.gender || 'Male'}" disabled>
                     ` : `
                         <select id="staff-profile-gender" class="form-control">
@@ -2946,10 +2946,10 @@ window.renderStaffProfile = async function() {
                 </div>
                 <div>
                     <label>Department</label>
-                    <input type="text" id="staff-profile-dept" class="form-control" value="${currentUser.department || ''}" ${isTeacherLocked || currentUser.role === 'admin' ? 'disabled' : ''}>
+                    <input type="text" id="staff-profile-dept" class="form-control" value="${currentUser.department || ''}" ${isTeacherLocked ? 'disabled' : ''}>
                 </div>
             </div>
-            ${isTeacher ? `
+            ${isTeacher || currentUser.role === 'admin' ? `
                 ${isTeacherLocked ? `
                     <p style="font-size: 12px; color: var(--text-muted);">
                         <i class="fa-solid fa-circle-info"></i> Profile modification is locked. Profile editing has been disabled by the Administrator.
@@ -3088,7 +3088,8 @@ function doPost(e) {
         }
     }
 
-    if (isTeacher && !isTeacherLocked) {
+    const isStaff = isTeacher || currentUser.role === 'admin';
+    if (isStaff && !isTeacherLocked) {
         const saveStaffBtn = document.getElementById("save-staff-profile-btn");
         if (saveStaffBtn) {
             saveStaffBtn.addEventListener("click", async () => {
