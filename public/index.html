@@ -16,41 +16,46 @@
 
     <!-- 1. Authentication View -->
     <div id="auth-view" class="auth-wrapper">
-        <div class="auth-card">
-            <div class="auth-header">
-                <div class="auth-logo" style="background: none; box-shadow: none; width: auto; height: 90px; margin-bottom: 20px; display: flex; justify-content: center;">
-                    <img src="logo.png" alt="Tolani Logo" style="height: 100%; object-fit: contain; mix-blend-mode: multiply;">
-                </div>
-                <h2 style="font-size: 20px; font-weight: 800; color: #1e3a8a; margin-top: 10px; margin-bottom: 4px; letter-spacing: 0.5px;">TOLANI COMMERCE COLLEGE</h2>
-                <p class="auth-subtitle">B.Com NEP Student & Faculty Portal</p>
-            </div>
-            
-            <form id="login-form">
-                <div class="form-group">
-                    <label for="login-username">Roll Number or Email ID</label>
-                    <div class="input-container">
-                        <i class="fa-solid fa-user input-icon"></i>
-                        <input type="text" id="login-username" class="form-control" placeholder="Enter Roll No or Email ID" required autocomplete="username">
+        <div class="auth-image-panel">
+            <div class="auth-image-overlay"></div>
+        </div>
+        <div class="auth-form-panel">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="auth-logo" style="background: none; box-shadow: none; width: auto; height: 90px; margin-bottom: 20px; display: flex; justify-content: center;">
+                        <img src="logo.png" alt="Tolani Logo" style="height: 100%; object-fit: contain; mix-blend-mode: multiply;">
                     </div>
+                    <h2 style="font-size: 20px; font-weight: 800; color: #000000; margin-top: 10px; margin-bottom: 4px; letter-spacing: 0.5px;">TOLANI COMMERCE COLLEGE</h2>
+                    <p class="auth-subtitle">B.Com NEP Student & Faculty Portal</p>
                 </div>
-
-                <div class="form-group">
-                    <label for="login-password">Password (SPID / Security Key)</label>
-                    <div class="input-container">
-                        <i class="fa-solid fa-lock input-icon"></i>
-                        <input type="password" id="login-password" class="form-control" placeholder="Enter SPID or password" required autocomplete="current-password">
+                
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-username">Roll Number or Email ID</label>
+                        <div class="input-container">
+                            <i class="fa-solid fa-user input-icon"></i>
+                            <input type="text" id="login-username" class="form-control" placeholder="Enter Roll No or Email ID" required autocomplete="username">
+                        </div>
                     </div>
-                </div>
 
-                <button type="submit" class="btn btn-primary" style="margin-top: 8px;">
-                    <span>Sign In</span>
-                    <i class="fa-solid fa-arrow-right-to-bracket"></i>
-                </button>
-            </form>
-            
-            <div class="auth-footer" style="display: flex; flex-direction: column; gap: 8px;">
-                <span style="color: var(--text-muted);">© 2026 Tolani Commerce College - Adipur. All rights reserved.</span>
-                <a href="#" onclick="state.resetDatabaseDefaults()" style="font-size: 11px; color: var(--primary); text-decoration: underline;">Emergency Restore Defaults (Recover Deleted Admin)</a>
+                    <div class="form-group">
+                        <label for="login-password">Password (SPID / Security Key)</label>
+                        <div class="input-container">
+                            <i class="fa-solid fa-lock input-icon"></i>
+                            <input type="password" id="login-password" class="form-control" placeholder="Enter SPID or password" required autocomplete="current-password">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="margin-top: 8px;">
+                        <span>Sign In</span>
+                        <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                    </button>
+                </form>
+                
+                <div class="auth-footer" style="display: flex; flex-direction: column; gap: 8px; margin-top: 24px;">
+                    <span style="color: var(--text-muted);">© 2026 Tolani Commerce College - Adipur. All rights reserved.</span>
+                    <a href="#" onclick="state.resetDatabaseDefaults()" style="font-size: 11px; color: #000000; text-decoration: underline; font-weight: 600;">Emergency Restore Defaults (Recover Deleted Admin)</a>
+                </div>
             </div>
         </div>
     </div>
