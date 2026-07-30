@@ -115,19 +115,16 @@ body {
     justify-content: center;
     min-height: 100vh;
     padding: 20px;
-    background-image: linear-gradient(rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.4)), url('login-bg.png?v=1.2.0');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    background: #ffffff;
 }
 
 .auth-card {
-    background: rgba(255, 255, 255, 0.65) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.4) !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
-    border-radius: 20px;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05), 0 20px 48px rgba(0, 0, 0, 0.05) !important;
+    border-radius: 24px !important;
     width: 100%;
     max-width: 440px;
     padding: 40px;
@@ -182,11 +179,11 @@ body {
 
 /* Premium Auth Card UI Enhancements */
 .auth-card {
-    background: rgba(255, 255, 255, 0.72) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.45) !important;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12) !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05), 0 20px 48px rgba(0, 0, 0, 0.05) !important;
     border-radius: 24px !important;
 }
 
