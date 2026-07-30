@@ -51,38 +51,10 @@ if (currentDateDisplay) {
     currentDateDisplay.textContent = new Date().toLocaleDateString('en-US', options);
 }
 
-// --- Theme Toggle Handling ---
+// --- Theme Handling: Force light theme (white background & black text) ---
 (function() {
-    const storedUser = localStorage.getItem("es_current_user");
-    if (!storedUser) {
-        document.body.classList.add("light-theme");
-    } else {
-        const savedTheme = localStorage.getItem("es_theme") || "dark";
-        if (savedTheme === "light") {
-            document.body.classList.add("light-theme");
-        } else {
-            document.body.classList.remove("light-theme");
-        }
-    }
-
-    window.addEventListener("load", () => {
-        const themeBtn = document.getElementById("theme-toggle-btn");
-        const themeIcon = document.getElementById("theme-toggle-icon");
-        
-        if (themeIcon) {
-            themeIcon.className = document.body.classList.contains("light-theme") ? "fa-solid fa-moon" : "fa-solid fa-sun";
-        }
-
-        if (themeBtn) {
-            themeBtn.addEventListener("click", () => {
-                const isLight = document.body.classList.toggle("light-theme");
-                localStorage.setItem("es_theme", isLight ? "light" : "dark");
-                if (themeIcon) {
-                    themeIcon.className = isLight ? "fa-solid fa-moon" : "fa-solid fa-sun";
-                }
-            });
-        }
-    });
+    document.body.classList.add("light-theme");
+    localStorage.setItem("es_theme", "light");
 })();
 
 
