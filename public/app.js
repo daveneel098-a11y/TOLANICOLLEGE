@@ -6623,20 +6623,24 @@ window.editSessionRoster = async function(sessionId, className, subject, divisio
 
         dynamicContentArea.innerHTML = `
             <div class="glass-card">
-                <div class="card-header-flex mb-16" style="flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center;">
+                <div class="card-header-flex mb-16">
                     <div>
                         <h3 class="card-title"><i class="fa-solid fa-user-pen mr-8"></i> Edit Lecture Attendance</h3>
                         <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
                             ${subject} | ${className} (Div ${division})
                         </p>
                     </div>
-                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                        <input type="text" id="roster-student-search" class="form-control" placeholder="Search student name/roll..." style="width: 220px; font-size: 12px; height: 32px; padding: 4px 8px; margin: 0;">
-                        <button class="btn btn-secondary" onclick="window.backToLectureHistory()" style="padding: 8px 16px; cursor: pointer;">
-                            <i class="fa-solid fa-arrow-left mr-8"></i> Back to Lectures
-                        </button>
-                    </div>
+                    <button class="btn btn-secondary" onclick="window.backToLectureHistory()" style="padding: 8px 16px; cursor: pointer;">
+                        <i class="fa-solid fa-arrow-left mr-8"></i> Back to Lectures
+                    </button>
                 </div>
+
+                <!-- Dedicated Search Engine Box -->
+                <div style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 10px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);">
+                    <i class="fa-solid fa-magnifying-glass" style="color: #64748b; font-size: 14px;"></i>
+                    <input type="text" id="roster-student-search" class="form-control" placeholder="Search student name or roll number..." style="background: transparent !important; border: none !important; color: #0f172a !important; padding: 0 !important; margin: 0 !important; height: auto !important; font-size: 13px !important; box-shadow: none !important; width: 100%;">
+                </div>
+
                 <div class="table-responsive">
                     <table class="custom-table text-center">
                         <thead>
