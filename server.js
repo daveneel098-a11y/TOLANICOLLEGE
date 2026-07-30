@@ -1229,11 +1229,14 @@ app.post('/api/attendance/session/violate', (req, res) => {
         }
         logs.push({ timestamp: new Date().toISOString(), type });
 
+        const shouldFlag = newCount > 1;
+        const newStatus = shouldFlag ? 'flagged' : record.status;
+
         db.prepare(`
             UPDATE attendance_records 
-            SET status = 'flagged', violations_count = ?, violation_logs = ?
+            SET status = ?, violations_count = ?, violation_logs = ?
             WHERE session_id = ? AND student_id = ?
-        `).run(newCount, JSON.stringify(logs), session_id, student_id);
+        `).run(newStatus, newCount, JSON.stringify(logs), session_id, student_id);
         dbChanged = true;
 
         // Notify professor in real-time
@@ -1243,10 +1246,16 @@ app.post('/api/attendance/session/violate', (req, res) => {
             roll_no: student.username,
             violationType: type,
             violations_count: newCount,
-            violation_logs: logs
+            violation_logs: logs,
+            status: newStatus
         });
 
-        res.json({ success: true, message: 'Violation logged successfully.' });
+        res.json({ 
+            success: true, 
+            warning: !shouldFlag,
+            violations_count: newCount,
+            message: !shouldFlag ? 'Warning issued.' : 'Violation logged, student flagged.' 
+        });
     } catch (err) {
         console.error('Error logging violation:', err);
         res.status(500).json({ error: 'Server error logging violation.' });

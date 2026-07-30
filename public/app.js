@@ -824,8 +824,7 @@ function handleBeforeUnload(e) {
 async function logLockdownViolation(type) {
     if (!lockdownSessionId) return;
     try {
-        // Send violation report to server
-        fetch('/api/attendance/session/violate', {
+        const response = await fetch('/api/attendance/session/violate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -833,32 +832,58 @@ async function logLockdownViolation(type) {
                 student_id: currentUser.id,
                 type: type
             })
-        }).catch(() => {});
+        });
+        const data = await response.json();
+        if (data.success && data.warning) {
+            // Display custom float warning banner
+            let banner = document.getElementById("lockdown-warning-banner");
+            if (!banner) {
+                banner = document.createElement("div");
+                banner.id = "lockdown-warning-banner";
+                banner.style.position = "fixed";
+                banner.style.top = "20px";
+                banner.style.left = "50%";
+                banner.style.transform = "translateX(-50%)";
+                banner.style.background = "rgba(245, 158, 11, 0.95)";
+                banner.style.color = "#000000";
+                banner.style.padding = "16px 24px";
+                banner.style.borderRadius = "12px";
+                banner.style.boxShadow = "0 10px 25px rgba(0,0,0,0.3)";
+                banner.style.zIndex = "999999";
+                banner.style.fontWeight = "bold";
+                banner.style.textAlign = "center";
+                banner.style.maxWidth = "90%";
+                banner.style.width = "400px";
+                banner.style.animation = "slideDown 0.4s ease-out";
+                document.body.appendChild(banner);
+            }
+            
+            banner.innerHTML = `
+                <div style="font-size: 16px; margin-bottom: 8px;">⚠️ Focus Violation Warning</div>
+                <div style="font-size: 13px; font-weight: normal;">You exited the lockdown environment. This is warning <strong>${data.violations_count}</strong>. Next violation will void your attendance!</div>
+                <button class="btn btn-sm btn-dark" style="margin-top: 12px; background: #000; color: #fff; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer;" onclick="document.getElementById('lockdown-warning-banner').remove()">Dismiss Warning</button>
+            `;
 
-        // Lock out student screen immediately
-        window.exitAttendanceLockdown(false);
+            // Re-request fullscreen to keep anti-tamper locked
+            const el = document.documentElement;
+            if (typeof el.requestFullscreen === "function") {
+                el.requestFullscreen().catch(() => {});
+            } else if (typeof el.webkitRequestFullscreen === "function") {
+                el.webkitRequestFullscreen();
+            }
 
-        dynamicContentArea.innerHTML = `
-            <div class="glass-card text-center" style="padding: 60px 20px; border: 2px solid var(--danger);">
-                <div style="margin-bottom: 24px;">
-                    <i class="fa-solid fa-ban fa-beat" style="font-size: 64px; color: var(--danger); margin-bottom: 20px;"></i>
-                    <h2 style="color: var(--danger); margin-bottom: 12px;">Lockdown Violated</h2>
-                    <p style="font-size: 15px; font-weight: 500; color: var(--text);">Your attendance has been flagged and voided.</p>
-                    <p style="color: var(--text-muted); font-size: 13px; max-width: 480px; margin: 12px auto 0;">
-                        You left the active attendance screen or exited fullscreen before the session completed. This violation has been reported to the instructor in real-time.
-                    </p>
-                </div>
-                <div style="margin-top: 30px;">
-                    <button class="btn btn-secondary" onclick="window.renderStudentAttendance()">
-                        Return to Dashboard
-                    </button>
-                </div>
-            </div>
-        `;
+            setTimeout(() => {
+                const b = document.getElementById("lockdown-warning-banner");
+                if (b) b.remove();
+            }, 10000);
+        } else {
+            window.exitAttendanceLockdown(false);
+        }
     } catch (e) {
-        console.error("Error logging violation:", e);
+        window.exitAttendanceLockdown(false);
     }
 }
+
 
 window.startAttendanceLockdown = async function(sessionId) {
     const el = document.documentElement;
@@ -2675,6 +2700,8 @@ async function pollCheckedInStudents(code) {
 
                     if (isFlagged) {
                         statusHtml = `<span class="attendance-status-pill status-absent" style="background: var(--danger); color: white; border: none; font-size: 11px;"><i class="fa-solid fa-triangle-exclamation mr-4"></i> FLAGGED (${r.violations_count})</span>`;
+                    } else if (r.violations_count > 0) {
+                        statusHtml = `<span class="attendance-status-pill status-warning" style="background: var(--warning); color: black; border: none; font-size: 11px;"><i class="fa-solid fa-circle-exclamation mr-4"></i> WARNING (${r.violations_count})</span>`;
                     } else if (isPending) {
                         statusHtml = `<span class="attendance-status-pill status-warning" style="background: var(--warning); color: black; border: none; font-size: 11px;"><i class="fa-solid fa-hourglass-half mr-4"></i> PENDING</span>`;
                     } else if (isAbsent) {
