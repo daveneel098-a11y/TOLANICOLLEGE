@@ -111,48 +111,24 @@ body {
 /* Auth / Login Container */
 .auth-wrapper {
     display: flex;
-    min-height: 100vh;
-    background: #ffffff;
-    padding: 0;
-    overflow: hidden;
-}
-
-.auth-image-panel {
-    flex: 1.2;
-    background-image: url('login-bg.png?v=1.3.0');
-    background-size: cover;
-    background-position: center;
-    position: relative;
-}
-
-.auth-image-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.55) 100%);
-}
-
-.auth-form-panel {
-    flex: 1;
-    display: flex;
     align-items: center;
     justify-content: center;
-    padding: 40px;
-    background: #ffffff;
-    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.02);
-    z-index: 10;
+    min-height: 100vh;
+    padding: 20px;
+    background-image: linear-gradient(rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.45)), url('login-bg.png?v=1.3.0');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 .auth-card {
     background: #ffffff !important;
-    border: none !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
+    border: 2px solid #000000 !important;
+    box-shadow: 6px 6px 0px 0px #000000 !important;
+    border-radius: 24px !important;
     width: 100%;
-    max-width: 400px;
-    padding: 0 !important;
+    max-width: 440px;
+    padding: 40px !important;
     position: relative;
     overflow: hidden;
     animation: fadeIn 0.6s ease-out;
