@@ -119,7 +119,7 @@ body {
 
 .auth-image-panel {
     flex: 1.2;
-    background-image: url('login-bg.png?v=1.2.0');
+    background-image: url('login-bg.png?v=1.3.0');
     background-size: cover;
     background-position: center;
     position: relative;
