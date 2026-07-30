@@ -891,9 +891,9 @@ app.post('/api/student/update-profile', (req, res) => {
 
 // 2.6 Teacher/Staff Profile Update
 app.post('/api/teacher/update-profile', (req, res) => {
-    const { teacher_id, email, phone } = req.body;
+    const { teacher_id, email, phone, gender, department } = req.body;
     
-    if (!teacher_id || !email || !phone) {
+    if (!teacher_id || !email || !phone || !gender || !department) {
         return res.status(400).json({ error: "All profile fields are required." });
     }
 
@@ -913,7 +913,7 @@ app.post('/api/teacher/update-profile', (req, res) => {
             return res.status(403).json({ error: "Only professors can update their profiles through this endpoint." });
         }
 
-        db.prepare("UPDATE users SET email = ?, phone = ? WHERE id = ?").run(email, phone, teacher_id);
+        db.prepare("UPDATE users SET email = ?, phone = ?, gender = ?, department = ? WHERE id = ?").run(email, phone, gender, department, teacher_id);
         
         const updatedUser = db.prepare("SELECT * FROM users WHERE id = ?").get(teacher_id);
         delete updatedUser.password;

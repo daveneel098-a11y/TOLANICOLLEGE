@@ -2896,11 +2896,11 @@ window.renderStaffProfile = async function() {
                 <div style="display: flex; flex-direction: column; gap: 16px;">
                     <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 14px; font-weight: 600;">
                         <input type="checkbox" id="perm-student-edit" style="width: 20px; height: 20px; cursor: pointer;" ${allowStudentEdit ? 'checked' : ''}>
-                        <span>Allow Students to Edit Profile Details (Email, Phone)</span>
+                        <span>Allow Students to Edit Profile Details (except Name & Roll No.)</span>
                     </label>
                     <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 14px; font-weight: 600;">
                         <input type="checkbox" id="perm-teacher-edit" style="width: 20px; height: 20px; cursor: pointer;" ${allowTeacherEdit ? 'checked' : ''}>
-                        <span>Allow Professors to Edit Profile Details (Email, Phone)</span>
+                        <span>Allow Professors to Edit Profile Details (except Name & ID)</span>
                     </label>
                     <button class="btn btn-primary" id="save-permissions-btn" style="padding: 8px 16px; width: fit-content; margin-top: 8px;">
                         <i class="fa-solid fa-floppy-disk mr-4"></i> Save Permissions
@@ -2932,6 +2932,21 @@ window.renderStaffProfile = async function() {
                 <div>
                     <label>Contact Phone</label>
                     <input type="text" id="staff-profile-phone" class="form-control" value="${currentUser.phone || ''}" ${isTeacherLocked || currentUser.role === 'admin' ? 'disabled' : ''}>
+                </div>
+                <div>
+                    <label>Gender</label>
+                    ${isTeacherLocked || currentUser.role === 'admin' ? `
+                        <input type="text" class="form-control" value="${currentUser.gender || 'Male'}" disabled>
+                    ` : `
+                        <select id="staff-profile-gender" class="form-control">
+                            <option value="Male" ${currentUser.gender === 'Male' ? 'selected' : ''}>Male</option>
+                            <option value="Female" ${currentUser.gender === 'Female' ? 'selected' : ''}>Female</option>
+                        </select>
+                    `}
+                </div>
+                <div>
+                    <label>Department</label>
+                    <input type="text" id="staff-profile-dept" class="form-control" value="${currentUser.department || ''}" ${isTeacherLocked || currentUser.role === 'admin' ? 'disabled' : ''}>
                 </div>
             </div>
             ${isTeacher ? `
@@ -3079,9 +3094,11 @@ function doPost(e) {
             saveStaffBtn.addEventListener("click", async () => {
                 const emailVal = document.getElementById("staff-profile-email").value.trim();
                 const phoneVal = document.getElementById("staff-profile-phone").value.trim();
+                const genderVal = document.getElementById("staff-profile-gender") ? document.getElementById("staff-profile-gender").value : currentUser.gender;
+                const deptVal = document.getElementById("staff-profile-dept").value.trim();
 
-                if (!emailVal || !phoneVal) {
-                    alert("Email and phone fields cannot be empty.");
+                if (!emailVal || !phoneVal || !deptVal) {
+                    alert("Email, phone, and department fields cannot be empty.");
                     return;
                 }
 
@@ -3095,7 +3112,9 @@ function doPost(e) {
                         body: JSON.stringify({
                             teacher_id: currentUser.id,
                             email: emailVal,
-                            phone: phoneVal
+                            phone: phoneVal,
+                            gender: genderVal,
+                            department: deptVal
                         })
                     });
                     const data = await res.json();
