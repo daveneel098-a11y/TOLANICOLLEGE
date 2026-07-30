@@ -1056,20 +1056,40 @@ window.exitAttendanceLockdown = function(success) {
         activeSse = null;
     }
 
-    dynamicContentArea.innerHTML = `
-        <div class="glass-card text-center" style="padding: 60px 20px; border: 2px solid var(--success);">
-            <div style="margin-bottom: 24px;">
-                <i class="fa-solid fa-circle-check" style="font-size: 64px; color: var(--success); margin-bottom: 20px;"></i>
-                <h2 style="color: var(--success); margin-bottom: 12px;">Attendance Completed</h2>
-                <p style="font-size: 15px; font-weight: 500;">Your check-in has been successfully finalized and saved.</p>
+    if (success) {
+        dynamicContentArea.innerHTML = `
+            <div class="glass-card text-center" style="padding: 60px 20px; border: 2px solid var(--success);">
+                <div style="margin-bottom: 24px;">
+                    <i class="fa-solid fa-circle-check" style="font-size: 64px; color: var(--success); margin-bottom: 20px;"></i>
+                    <h2 style="color: var(--success); margin-bottom: 12px;">Attendance Completed</h2>
+                    <p style="font-size: 15px; font-weight: 500;">Your check-in has been successfully finalized and saved.</p>
+                </div>
+                <div style="margin-top: 30px;">
+                    <button class="btn btn-primary" onclick="window.renderStudentAttendance()">
+                        Return to Dashboard
+                    </button>
+                </div>
             </div>
-            <div style="margin-top: 30px;">
-                <button class="btn btn-primary" onclick="window.renderStudentAttendance()">
-                    Return to Dashboard
-                </button>
+        `;
+    } else {
+        dynamicContentArea.innerHTML = `
+            <div class="glass-card text-center" style="padding: 60px 20px; border: 2px solid var(--danger);">
+                <div style="margin-bottom: 24px;">
+                    <i class="fa-solid fa-ban fa-beat" style="font-size: 64px; color: var(--danger); margin-bottom: 20px;"></i>
+                    <h2 style="color: var(--danger); margin-bottom: 12px;">Lockdown Violated</h2>
+                    <p style="font-size: 15px; font-weight: 500; color: var(--text);">Your attendance has been flagged and voided.</p>
+                    <p style="color: var(--text-muted); font-size: 13px; max-width: 480px; margin: 12px auto 0;">
+                        You left the active attendance screen or exited fullscreen before the session completed. This violation has been reported to the instructor in real-time.
+                    </p>
+                </div>
+                <div style="margin-top: 30px;">
+                    <button class="btn btn-secondary" onclick="window.renderStudentAttendance()">
+                        Return to Dashboard
+                    </button>
+                </div>
             </div>
-        </div>
-    `;
+        `;
+    }
 };
 
 async function submitCheckin(code, lat, lon, accuracy) {
@@ -6645,9 +6665,9 @@ window.renderAdminAdmin_lectures = async function() {
     dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
 
     try {
-        const teachersRes = await fetch('/api/users?role=teacher');
+        const teachersRes = await fetch('/api/users');
         const teachersData = await teachersRes.json();
-        const teachers = teachersData.users || [];
+        const teachers = (teachersData.users || []).filter(u => u.role === 'teacher');
 
         const sessionsRes = await fetch('/api/attendance/sessions');
         const sessionsData = await sessionsRes.json();
@@ -6739,37 +6759,41 @@ window.checkStudentLockdownRecovery = async function() {
             const data = await res.json();
             if (data.success && data.active && data.record) {
                 const rec = data.record;
-                window.startAttendanceLockdown(rec.session_id);
-                if (rec.status === 'present' || rec.status === 'FLAGGED' || rec.status === 'flagged') {
-                    setTimeout(() => {
-                        const statusLabel = document.getElementById("lockdown-status-label");
-                        if (statusLabel) {
-                            statusLabel.textContent = "VERIFIED (PRESENT)";
-                            statusLabel.style.color = "var(--success)";
-                        }
-                        const standbyArea = document.getElementById("lockdown-status-area");
-                        if (standbyArea) {
-                            standbyArea.innerHTML = `
-                                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 24px; margin-top: 24px; text-align: center;">
-                                    <i class="fa-solid fa-circle-check fa-beat" style="font-size: 56px; color: var(--success); margin-bottom: 16px;"></i>
-                                    <h3 style="color: var(--success); margin-bottom: 8px;">Verification Successful!</h3>
-                                    <p style="font-size: 15px; font-weight: 600; color: #ffffff;">Status: PRESENT</p>
-                                    <p style="color: var(--text-muted); font-size: 13px; max-width: 400px; margin: 12px auto 0;">
-                                        Please remain on this screen. Fullscreen anti-tamper tracking is still active.
-                                    </p>
-                                    <div style="margin-top: 24px;">
-                                        <i class="fa-solid fa-spinner fa-spin-pulse" style="font-size: 24px; color: var(--success); margin-bottom: 8px;"></i>
-                                        <p style="font-size: 12px; color: var(--text-muted);">Waiting for the instructor to close the session...</p>
+                if (rec.status === 'flagged' || rec.status === 'FLAGGED') {
+                    window.exitAttendanceLockdown(false);
+                } else {
+                    window.startAttendanceLockdown(rec.session_id);
+                    if (rec.status === 'present') {
+                        setTimeout(() => {
+                            const statusLabel = document.getElementById("lockdown-status-label");
+                            if (statusLabel) {
+                                statusLabel.textContent = "VERIFIED (PRESENT)";
+                                statusLabel.style.color = "var(--success)";
+                            }
+                            const standbyArea = document.getElementById("lockdown-status-area");
+                            if (standbyArea) {
+                                standbyArea.innerHTML = `
+                                    <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 24px; margin-top: 24px; text-align: center;">
+                                        <i class="fa-solid fa-circle-check fa-beat" style="font-size: 56px; color: var(--success); margin-bottom: 16px;"></i>
+                                        <h3 style="color: var(--success); margin-bottom: 8px;">Verification Successful!</h3>
+                                        <p style="font-size: 15px; font-weight: 600; color: #ffffff;">Status: PRESENT</p>
+                                        <p style="color: var(--text-muted); font-size: 13px; max-width: 400px; margin: 12px auto 0;">
+                                            Please remain on this screen. Fullscreen anti-tamper tracking is still active.
+                                        </p>
+                                        <div style="margin-top: 24px;">
+                                            <i class="fa-solid fa-spinner fa-spin-pulse" style="font-size: 24px; color: var(--success); margin-bottom: 8px;"></i>
+                                            <p style="font-size: 12px; color: var(--text-muted);">Waiting for the instructor to close the session...</p>
+                                        </div>
                                     </div>
-                                </div>
-                            `;
-                        }
-                    }, 1000);
-                } else if (rec.verification_started === 1) {
-                    setTimeout(() => {
-                        const event = new MessageEvent('VERIFICATION_STARTED', { data: '' });
-                        if (activeSse) activeSse.dispatchEvent(event);
-                    }, 1000);
+                                `;
+                            }
+                        }, 1000);
+                    } else if (rec.verification_started === 1) {
+                        setTimeout(() => {
+                            const event = new MessageEvent('VERIFICATION_STARTED', { data: '' });
+                            if (activeSse) activeSse.dispatchEvent(event);
+                        }, 1000);
+                    }
                 }
             }
         } catch (e) {
