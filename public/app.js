@@ -6518,9 +6518,12 @@ window.renderTeacherLecture_history = async function() {
 
         dynamicContentArea.innerHTML = `
             <div class="glass-card">
-                <div class="card-header-flex mb-16">
+                <div class="card-header-flex mb-16" style="flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center;">
                     <h3 class="card-title"><i class="fa-solid fa-clock-rotate-left mr-8"></i> Manage Taken Lectures</h3>
-                    <span class="attendance-status-pill status-active">${sessions.length} Lectures Taken</span>
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <input type="text" id="teacher-history-search" class="form-control" placeholder="Search lectures..." style="width: 220px; font-size: 12px; height: 32px; padding: 4px 8px; margin: 0;">
+                        <span class="attendance-status-pill status-active">${sessions.length} Lectures Taken</span>
+                    </div>
                 </div>
                 <div class="table-responsive">
                     <table class="custom-table text-center">
@@ -6534,13 +6537,31 @@ window.renderTeacherLecture_history = async function() {
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="teacher-history-tbody">
                             ${rowsHTML.length > 0 ? rowsHTML : `<tr><td colspan="6" style="color: var(--text-muted); padding: 24px;">No lecture sessions recorded yet.</td></tr>`}
                         </tbody>
                     </table>
                 </div>
             </div>
         `;
+
+        const historySearchInput = document.getElementById("teacher-history-search");
+        if (historySearchInput) {
+            historySearchInput.addEventListener("input", (e) => {
+                const q = e.target.value.toLowerCase().trim();
+                const tbody = document.getElementById("teacher-history-tbody");
+                if (!tbody) return;
+                const rows = tbody.querySelectorAll("tr");
+                rows.forEach(tr => {
+                    const text = tr.innerText.toLowerCase();
+                    if (!q || text.includes(q)) {
+                        tr.style.display = "";
+                    } else {
+                        tr.style.display = "none";
+                    }
+                });
+            });
+        }
     } catch (err) {
         console.error(err);
         dynamicContentArea.innerHTML = `<div class="alert alert-danger">Failed to load lecture history.</div>`;
@@ -6602,16 +6623,19 @@ window.editSessionRoster = async function(sessionId, className, subject, divisio
 
         dynamicContentArea.innerHTML = `
             <div class="glass-card">
-                <div class="card-header-flex mb-16">
+                <div class="card-header-flex mb-16" style="flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center;">
                     <div>
                         <h3 class="card-title"><i class="fa-solid fa-user-pen mr-8"></i> Edit Lecture Attendance</h3>
                         <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
                             ${subject} | ${className} (Div ${division})
                         </p>
                     </div>
-                    <button class="btn btn-secondary" onclick="window.backToLectureHistory()" style="padding: 8px 16px; cursor: pointer;">
-                        <i class="fa-solid fa-arrow-left mr-8"></i> Back to Lectures
-                    </button>
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <input type="text" id="roster-student-search" class="form-control" placeholder="Search student name/roll..." style="width: 220px; font-size: 12px; height: 32px; padding: 4px 8px; margin: 0;">
+                        <button class="btn btn-secondary" onclick="window.backToLectureHistory()" style="padding: 8px 16px; cursor: pointer;">
+                            <i class="fa-solid fa-arrow-left mr-8"></i> Back to Lectures
+                        </button>
+                    </div>
                 </div>
                 <div class="table-responsive">
                     <table class="custom-table text-center">
@@ -6622,13 +6646,31 @@ window.editSessionRoster = async function(sessionId, className, subject, divisio
                                 <th>Attendance Status</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="roster-tbody">
                             ${rosterHTML.length > 0 ? rosterHTML : `<tr><td colspan="3" style="color: var(--text-muted); padding: 24px;">No students found for this class division.</td></tr>`}
                         </tbody>
                     </table>
                 </div>
             </div>
         `;
+
+        const rosterSearchInput = document.getElementById("roster-student-search");
+        if (rosterSearchInput) {
+            rosterSearchInput.addEventListener("input", (e) => {
+                const q = e.target.value.toLowerCase().trim();
+                const tbody = document.getElementById("roster-tbody");
+                if (!tbody) return;
+                const rows = tbody.querySelectorAll("tr");
+                rows.forEach(tr => {
+                    const text = tr.innerText.toLowerCase();
+                    if (!q || text.includes(q)) {
+                        tr.style.display = "";
+                    } else {
+                        tr.style.display = "none";
+                    }
+                });
+            });
+        }
     } catch (err) {
         console.error(err);
         dynamicContentArea.innerHTML = `<div class="alert alert-danger">Failed to load attendance editor.</div>`;
@@ -6719,9 +6761,12 @@ window.renderAdminAdmin_lectures = async function() {
             </div>
 
             <div class="glass-card">
-                <div class="card-header-flex mb-16">
+                <div class="card-header-flex mb-16" style="flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center;">
                     <h3 class="card-title"><i class="fa-solid fa-chalkboard-user mr-8"></i> Faculty Lectures Report</h3>
-                    <span class="attendance-status-pill status-active" id="admin-total-lectures-badge">${allSessions.length} Lectures Taken</span>
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <input type="text" id="admin-lectures-search" class="form-control" placeholder="Search lectures..." style="width: 220px; font-size: 12px; height: 32px; padding: 4px 8px; margin: 0;">
+                        <span class="attendance-status-pill status-active" id="admin-total-lectures-badge">${allSessions.length} Lectures Taken</span>
+                    </div>
                 </div>
                 <div class="table-responsive">
                     <table class="custom-table text-center">
@@ -6743,6 +6788,24 @@ window.renderAdminAdmin_lectures = async function() {
                 </div>
             </div>
         `;
+
+        const lecturesSearchInput = document.getElementById("admin-lectures-search");
+        if (lecturesSearchInput) {
+            lecturesSearchInput.addEventListener("input", (e) => {
+                const q = e.target.value.toLowerCase().trim();
+                const tbody = document.getElementById("admin-lectures-tbody");
+                if (!tbody) return;
+                const rows = tbody.querySelectorAll("tr");
+                rows.forEach(tr => {
+                    const text = tr.innerText.toLowerCase();
+                    if (!q || text.includes(q)) {
+                        tr.style.display = "";
+                    } else {
+                        tr.style.display = "none";
+                    }
+                });
+            });
+        }
 
         window.renderTeacherWiseLecturesTable("");
     } catch (err) {
