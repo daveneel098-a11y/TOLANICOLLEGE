@@ -809,6 +809,12 @@ app.post('/api/student/update-profile', (req, res) => {
     }
 
     try {
+        // Check if student profile editing is disabled globally
+        const setting = db.prepare("SELECT value FROM settings WHERE key = 'allow_student_profile_edit'").get();
+        if (setting && setting.value === 'false') {
+            return res.status(403).json({ error: "Profile editing has been disabled by the administrator." });
+        }
+
         // Fetch student details to check if already locked
         const user = db.prepare("SELECT * FROM users WHERE id = ?").get(student_id);
         if (!user) {
@@ -880,6 +886,43 @@ app.post('/api/student/update-profile', (req, res) => {
     } catch (err) {
         console.error("Error updating student profile:", err);
         return res.status(500).json({ error: "Internal server error." });
+    }
+});
+
+// 2.6 Teacher/Staff Profile Update
+app.post('/api/teacher/update-profile', (req, res) => {
+    const { teacher_id, email, phone } = req.body;
+    
+    if (!teacher_id || !email || !phone) {
+        return res.status(400).json({ error: "All profile fields are required." });
+    }
+
+    try {
+        // Check if teacher profile editing is disabled globally
+        const setting = db.prepare("SELECT value FROM settings WHERE key = 'allow_teacher_profile_edit'").get();
+        if (setting && setting.value === 'false') {
+            return res.status(403).json({ error: "Profile editing has been disabled by the administrator." });
+        }
+
+        const user = db.prepare("SELECT * FROM users WHERE id = ?").get(teacher_id);
+        if (!user) {
+            return res.status(404).json({ error: "Professor not found." });
+        }
+        
+        if (user.role !== 'teacher') {
+            return res.status(403).json({ error: "Only professors can update their profiles through this endpoint." });
+        }
+
+        db.prepare("UPDATE users SET email = ?, phone = ? WHERE id = ?").run(email, phone, teacher_id);
+        
+        const updatedUser = db.prepare("SELECT * FROM users WHERE id = ?").get(teacher_id);
+        delete updatedUser.password;
+        
+        dbChanged = true; // Trigger Mongo sync
+        return res.json({ success: true, message: "Profile details updated successfully.", user: updatedUser });
+    } catch (err) {
+        console.error("Error updating teacher profile:", err);
+        return res.status(500).json({ error: "Failed to update profile details." });
     }
 });
 
@@ -2147,6 +2190,40 @@ app.post('/api/settings/fees', (req, res) => {
         db.exec('ROLLBACK');
         console.error('Error writing fees baseline settings:', err);
         res.status(500).json({ error: 'Failed to save fees baseline configuration.' });
+    }
+});
+
+// Settings: Profile Permissions Configuration
+app.get('/api/settings/profile-permissions', (req, res) => {
+    try {
+        const rows = db.prepare('SELECT * FROM settings').all();
+        const settingsMap = {};
+        rows.forEach(r => { settingsMap[r.key] = r.value; });
+        
+        res.json({
+            success: true,
+            allow_student_profile_edit: settingsMap['allow_student_profile_edit'] !== 'false',
+            allow_teacher_profile_edit: settingsMap['allow_teacher_profile_edit'] !== 'false'
+        });
+    } catch (err) {
+        console.error('Error reading profile permissions:', err);
+        res.status(500).json({ error: 'Failed to retrieve profile permissions.' });
+    }
+});
+
+app.post('/api/settings/profile-permissions', (req, res) => {
+    const { allow_student_profile_edit, allow_teacher_profile_edit } = req.body;
+    try {
+        const stmt = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
+        db.exec('BEGIN TRANSACTION');
+        stmt.run('allow_student_profile_edit', String(allow_student_profile_edit));
+        stmt.run('allow_teacher_profile_edit', String(allow_teacher_profile_edit));
+        db.exec('COMMIT');
+        res.json({ success: true, message: 'Profile edit permissions saved successfully.' });
+    } catch (err) {
+        db.exec('ROLLBACK');
+        console.error('Error writing profile permissions:', err);
+        res.status(500).json({ error: 'Failed to save profile edit permissions.' });
     }
 });
 

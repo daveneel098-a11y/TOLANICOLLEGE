@@ -1200,8 +1200,19 @@ if (feePayForm) {
     });
 }
 
-window.renderStudentProfile = function() {
-    const isLocked = currentUser.profile_locked === 1 || currentUser.profile_locked === '1';
+window.renderStudentProfile = async function() {
+    dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
+    
+    let allowStudentEdit = true;
+    try {
+        const permRes = await fetch('/api/settings/profile-permissions');
+        const permData = await permRes.json();
+        allowStudentEdit = permData.allow_student_profile_edit !== false;
+    } catch (e) {
+        console.error(e);
+    }
+
+    const isLocked = !allowStudentEdit || currentUser.profile_locked === 1 || currentUser.profile_locked === '1';
     const isPassLocked = currentUser.password_locked === 1 || currentUser.password_locked === '1';
     
     dynamicContentArea.innerHTML = `
@@ -1252,7 +1263,7 @@ window.renderStudentProfile = function() {
             
             ${isLocked ? `
                 <p style="font-size: 12px; color: var(--text-muted); margin-top: 12px;">
-                    <i class="fa-solid fa-circle-info"></i> Profile modification is locked. Please contact the college registrar office for major data changes.
+                    <i class="fa-solid fa-circle-info"></i> ${!allowStudentEdit ? 'Profile editing has been disabled by the administrator.' : 'Profile modification is locked. Please contact the college registrar office for major data changes.'}
                 </p>
             ` : `
                 <div style="margin-top: 24px;">
@@ -2851,7 +2862,58 @@ window.initializeProfessorActiveSession = function(session) {
 
 
 window.renderStaffProfile = async function() {
-    dynamicContentArea.innerHTML = `
+    dynamicContentArea.innerHTML = `<div class="text-center" style="padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i></div>`;
+
+    let scriptUrlVal = "";
+    let allowStudentEdit = true;
+    let allowTeacherEdit = true;
+
+    try {
+        const driveRes = await fetch('/api/settings/drive');
+        const driveData = await driveRes.json();
+        scriptUrlVal = driveData.url || "";
+    } catch (e) {
+        console.error(e);
+    }
+
+    try {
+        const permRes = await fetch('/api/settings/profile-permissions');
+        const permData = await permRes.json();
+        allowStudentEdit = permData.allow_student_profile_edit !== false;
+        allowTeacherEdit = permData.allow_teacher_profile_edit !== false;
+    } catch (e) {
+        console.error(e);
+    }
+
+    let adminPermissionsHTML = "";
+    if (currentUser.role === 'admin') {
+        adminPermissionsHTML = `
+            <div class="glass-card mb-24">
+                <h3 class="card-title mb-16"><i class="fa-solid fa-user-gear mr-8"></i> Portal Profile Edit Controls</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+                    Enable or disable the profile details editing option for students and teachers.
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                        <input type="checkbox" id="perm-student-edit" style="width: 20px; height: 20px; cursor: pointer;" ${allowStudentEdit ? 'checked' : ''}>
+                        <span>Allow Students to Edit Profile Details (Email, Phone)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                        <input type="checkbox" id="perm-teacher-edit" style="width: 20px; height: 20px; cursor: pointer;" ${allowTeacherEdit ? 'checked' : ''}>
+                        <span>Allow Professors to Edit Profile Details (Email, Phone)</span>
+                    </label>
+                    <button class="btn btn-primary" id="save-permissions-btn" style="padding: 8px 16px; width: fit-content; margin-top: 8px;">
+                        <i class="fa-solid fa-floppy-disk mr-4"></i> Save Permissions
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    const isTeacher = currentUser.role === 'teacher';
+    const isTeacherLocked = isTeacher && !allowTeacherEdit;
+
+    let detailsCardHTML = `
         <div class="glass-card mb-24">
             <h3 class="card-title mb-16"><i class="fa-solid fa-user-tie mr-8"></i> Security & Details</h3>
             <div class="form-grid mb-24">
@@ -2865,92 +2927,196 @@ window.renderStaffProfile = async function() {
                 </div>
                 <div>
                     <label>Email ID</label>
-                    <input type="text" class="form-control" value="${currentUser.email || 'N/A'}" disabled>
+                    <input type="text" id="staff-profile-email" class="form-control" value="${currentUser.email || ''}" ${isTeacherLocked || currentUser.role === 'admin' ? 'disabled' : ''}>
                 </div>
                 <div>
                     <label>Contact Phone</label>
-                    <input type="text" class="form-control" value="${currentUser.phone || 'N/A'}" disabled>
+                    <input type="text" id="staff-profile-phone" class="form-control" value="${currentUser.phone || ''}" ${isTeacherLocked || currentUser.role === 'admin' ? 'disabled' : ''}>
                 </div>
             </div>
-            <p style="font-size: 12px; color: var(--text-muted);">
-                <i class="fa-solid fa-circle-info"></i> Profile modification is locked. Please contact the college registrar office for changes.
-            </p>
+            ${isTeacher ? `
+                ${isTeacherLocked ? `
+                    <p style="font-size: 12px; color: var(--text-muted);">
+                        <i class="fa-solid fa-circle-info"></i> Profile modification is locked. Profile editing has been disabled by the Administrator.
+                    </p>
+                ` : `
+                    <div style="margin-top: 24px;">
+                        <button class="btn btn-primary" id="save-staff-profile-btn">
+                            <i class="fa-solid fa-floppy-disk mr-4"></i> Save Profile Details
+                        </button>
+                    </div>
+                `}
+            ` : `
+                <p style="font-size: 12px; color: var(--text-muted);">
+                    <i class="fa-solid fa-circle-info"></i> Profile modification is locked. Please contact the college registrar office for changes.
+                </p>
+            `}
         </div>
+    `;
 
-        <div class="glass-card">
-            <h3 class="card-title mb-16"><i class="fa-brands fa-google-drive mr-8" style="color: var(--accent);"></i> Google Drive Attendance Sync</h3>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
-                EduSphere automatically syncs all finalized classroom attendance rosters to your Google Drive folder.
-            </p>
+    let driveCardHTML = "";
+    if (currentUser.role === 'admin') {
+        driveCardHTML = `
+            <div class="glass-card">
+                <h3 class="card-title mb-16"><i class="fa-brands fa-google-drive mr-8" style="color: var(--accent);"></i> Google Drive Attendance Sync</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+                    EduSphere automatically syncs all finalized classroom attendance rosters to your Google Drive folder.
+                </p>
 
-            <div style="background: rgba(45, 212, 191, 0.05); border: 1px dashed var(--accent); border-radius: 12px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                    <strong style="color: #ffffff; font-size: 14px; display: block; margin-bottom: 4px;">Target Google Drive Folder</strong>
-                    <span style="font-size: 12px; color: var(--text-muted);">Click to open target folder on Google Drive.</span>
+                <div style="background: rgba(45, 212, 191, 0.05); border: 1px dashed var(--accent); border-radius: 12px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <strong style="color: #0f172a; font-size: 14px; display: block; margin-bottom: 4px;">Target Google Drive Folder</strong>
+                        <span style="font-size: 12px; color: var(--text-muted);">Click to open target folder on Google Drive.</span>
+                    </div>
+                    <a href="https://drive.google.com/drive/folders/1CVXvcVhY19ebf2xUu4HsHviksoHywjHA" target="_blank" class="btn btn-secondary btn-sm" style="border-color: var(--accent); color: var(--accent);">
+                        <i class="fa-solid fa-up-right-from-square mr-4"></i> Open Folder
+                    </a>
                 </div>
-                <a href="https://drive.google.com/drive/folders/1CVXvcVhY19ebf2xUu4HsHviksoHywjHA" target="_blank" class="btn btn-secondary btn-sm" style="border-color: var(--accent); color: var(--accent);">
-                    <i class="fa-solid fa-up-right-from-square mr-4"></i> Open Folder
-                </a>
-            </div>
 
-            <div class="mb-24">
-                <label style="font-weight: 600; display: block; margin-bottom: 8px;">Google Apps Script Web App URL</label>
-                <input type="text" id="drive-script-url" class="form-control" style="background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.1);" placeholder="https://script.google.com/macros/s/.../exec">
-                <button class="btn btn-primary mt-12" id="save-drive-settings-btn" style="padding: 8px 16px;">Save Sync Settings</button>
-            </div>
+                <div class="mb-24">
+                    <label style="font-weight: 600; display: block; margin-bottom: 8px;">Google Apps Script Web App URL</label>
+                    <input type="text" id="drive-script-url" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
+                    <button class="btn btn-primary mt-12" id="save-drive-settings-btn" style="padding: 8px 16px;">Save Sync Settings</button>
+                </div>
 
-            <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; font-size: 13px;">
-                <h4 style="color: #ffffff; font-weight: 700; margin-bottom: 12px;"><i class="fa-solid fa-circle-question mr-4"></i> Setup Instructions (1 Minute)</h4>
-                <ol style="margin-left: 20px; color: var(--text-muted); line-height: 1.6; text-align: left;">
-                    <li>Open your Google account and go to <a href="https://script.google.com" target="_blank" style="color: var(--accent);">Google Apps Script</a>.</li>
-                    <li>Create a <strong>New Project</strong> and replace the code block with the following handler script:
-                        <pre style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; font-size: 11px; color: #a5f3fc; overflow-x: auto; margin: 8px 0; font-family: monospace;">
+                <div style="background: rgba(15, 23, 42, 0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; font-size: 13px;">
+                    <h4 style="color: #0f172a; font-weight: 700; margin-bottom: 12px;"><i class="fa-solid fa-circle-question mr-4"></i> Setup Instructions (1 Minute)</h4>
+                    <ol style="margin-left: 20px; color: var(--text-muted); line-height: 1.6; text-align: left;">
+                        <li>Open your Google account and go to <a href="https://script.google.com" target="_blank" style="color: var(--accent);">Google Apps Script</a>.</li>
+                        <li>Create a <strong>New Project</strong> and replace the code block with the following handler script:
+                            <pre style="background: #f1f5f9; padding: 12px; border-radius: 8px; font-size: 11px; color: #0f172a; overflow-x: auto; margin: 8px 0; font-family: monospace; border: 1px solid var(--border-color);">
 function doPost(e) {
   var data = JSON.parse(e.postData.contents);
   var folder = DriveApp.getFolderById("1CVXvcVhY19ebf2xUu4HsHviksoHywjHA");
   var file = folder.createFile(data.filename, data.content, "text/csv");
   return ContentService.createTextOutput(JSON.stringify({ success: true, url: file.getUrl() })).setMimeType(ContentService.MimeType.JSON);
 }</pre>
-                    </li>
-                    <li>Click <strong>Deploy > New Deployment</strong> in Google Apps Script.</li>
-                    <li>Choose <strong>Web App</strong> as the type.</li>
-                    <li>Set <strong>Execute as:</strong> <i>Me</i>, and <strong>Who has access:</strong> <i>Anyone</i> (crucial for local server authorization).</li>
-                    <li>Click <strong>Deploy</strong>, authorize the permissions, then copy the generated <strong>Web App URL</strong> and paste it above!</li>
-                </ol>
+                        </li>
+                        <li>Click <strong>Deploy > New Deployment</strong> in Google Apps Script.</li>
+                        <li>Choose <strong>Web App</strong> as the type.</li>
+                        <li>Set <strong>Execute as:</strong> <i>Me</i>, and <strong>Who has access:</strong> <i>Anyone</i> (crucial for local server authorization).</li>
+                        <li>Click <strong>Deploy</strong>, authorize the permissions, then copy the generated <strong>Web App URL</strong> and paste it above!</li>
+                    </ol>
+                </div>
             </div>
-        </div>
-    `;
-
-    // Fetch existing settings
-    try {
-        const res = await fetch('/api/settings/drive');
-        const data = await res.json();
-        if (data.success && data.url) {
-            document.getElementById("drive-script-url").value = data.url;
-        }
-    } catch (e) {
-        console.error("Failed to load drive settings:", e);
+        `;
     }
 
-    document.getElementById("save-drive-settings-btn").addEventListener("click", async () => {
-        const url = document.getElementById("drive-script-url").value.trim();
-        try {
-            const res = await fetch('/api/settings/drive', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
+    dynamicContentArea.innerHTML = `
+        ${adminPermissionsHTML}
+        ${detailsCardHTML}
+        ${driveCardHTML}
+    `;
+
+    // Populate Drive script URL if admin
+    if (currentUser.role === 'admin' && scriptUrlVal) {
+        document.getElementById("drive-script-url").value = scriptUrlVal;
+    }
+
+    // Add listeners
+    if (currentUser.role === 'admin') {
+        const savePermsBtn = document.getElementById("save-permissions-btn");
+        if (savePermsBtn) {
+            savePermsBtn.addEventListener("click", async () => {
+                const studentEditVal = document.getElementById("perm-student-edit").checked;
+                const teacherEditVal = document.getElementById("perm-teacher-edit").checked;
+                
+                savePermsBtn.disabled = true;
+                savePermsBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-4"></i> Saving...`;
+
+                try {
+                    const res = await fetch('/api/settings/profile-permissions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            allow_student_profile_edit: studentEditVal,
+                            allow_teacher_profile_edit: teacherEditVal
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert("Profile edit permissions updated successfully!");
+                    } else {
+                        alert("Failed to save permissions: " + (data.error || 'Unknown error'));
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("Network error saving permissions.");
+                } finally {
+                    savePermsBtn.disabled = false;
+                    savePermsBtn.innerHTML = `<i class="fa-solid fa-floppy-disk mr-4"></i> Save Permissions`;
+                }
             });
-            const data = await res.json();
-            if (data.success) {
-                alert("Google Drive sync settings successfully updated.");
-            } else {
-                alert("Failed to update settings.");
-            }
-        } catch (e) {
-            console.error(e);
-            alert("Error saving settings.");
         }
-    });
+
+        const saveDriveBtn = document.getElementById("save-drive-settings-btn");
+        if (saveDriveBtn) {
+            saveDriveBtn.addEventListener("click", async () => {
+                const url = document.getElementById("drive-script-url").value.trim();
+                try {
+                    const res = await fetch('/api/settings/drive', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert("Google Drive sync settings successfully updated.");
+                    } else {
+                        alert("Failed to update settings.");
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert("Error saving settings.");
+                }
+            });
+        }
+    }
+
+    if (isTeacher && !isTeacherLocked) {
+        const saveStaffBtn = document.getElementById("save-staff-profile-btn");
+        if (saveStaffBtn) {
+            saveStaffBtn.addEventListener("click", async () => {
+                const emailVal = document.getElementById("staff-profile-email").value.trim();
+                const phoneVal = document.getElementById("staff-profile-phone").value.trim();
+
+                if (!emailVal || !phoneVal) {
+                    alert("Email and phone fields cannot be empty.");
+                    return;
+                }
+
+                saveStaffBtn.disabled = true;
+                saveStaffBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-4"></i> Saving...`;
+
+                try {
+                    const res = await fetch('/api/teacher/update-profile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            teacher_id: currentUser.id,
+                            email: emailVal,
+                            phone: phoneVal
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert("Profile updated successfully!");
+                        currentUser = data.user;
+                        localStorage.setItem("es_current_user", JSON.stringify(currentUser));
+                        window.renderStaffProfile();
+                    } else {
+                        alert("Failed to save profile: " + (data.error || 'Unknown error'));
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("Network error saving profile.");
+                } finally {
+                    saveStaffBtn.disabled = false;
+                    saveStaffBtn.innerHTML = `<i class="fa-solid fa-floppy-disk mr-4"></i> Save Profile Details`;
+                }
+            });
+        }
+    }
 };
 
 window.renderTeacherProfile = function() {
