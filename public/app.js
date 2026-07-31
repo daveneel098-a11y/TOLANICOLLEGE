@@ -1962,6 +1962,7 @@ window.renderTeacherSchedule = function() {
                     <button class="btn btn-secondary btn-sm" id="launch-projector-btn" style="padding: 6px 12px; display: none;"><i class="fa-solid fa-expand"></i> Launch Projector View</button>
                     <button class="btn btn-secondary btn-sm" id="export-session-btn" style="padding: 6px 12px; background: var(--success); border-color: var(--success); color: white;"><i class="fa-solid fa-file-excel mr-4"></i> Export Session</button>
                     <button class="btn btn-secondary btn-sm" id="btn-manual-attendance" style="padding: 6px 12px; background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.2); color: var(--primary);"><i class="fa-solid fa-user-check mr-4"></i> Manual Attendance</button>
+                    <button class="btn btn-secondary btn-sm" id="btn-bulk-phone-checkin" style="padding: 6px 12px; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); color: #3b82f6;"><i class="fa-solid fa-mobile-screen mr-4"></i> Phone Check-in Assist</button>
                     <button class="btn btn-danger btn-sm" id="close-session-btn" style="padding: 6px 12px;"><i class="fa-solid fa-power-off"></i> Close Session Early</button>
                 </div>
             </div>
@@ -2244,6 +2245,109 @@ window.renderTeacherSchedule = function() {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        });
+    }
+
+    const bulkPhoneBtn = document.getElementById("btn-bulk-phone-checkin");
+    if (bulkPhoneBtn) {
+        bulkPhoneBtn.addEventListener("click", () => {
+            if (!currentSessionObj) {
+                alert("No active session found.");
+                return;
+            }
+            
+            generalModalTitle.textContent = "Phone Check-in Assistant";
+            generalModalBody.innerHTML = `
+                <div style="padding: 16px 0;">
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+                        Class: <strong>${currentSessionObj.class_name} - Division ${currentSessionObj.division}</strong> | Subject: <strong>${currentSessionObj.subject}</strong>
+                    </p>
+                    
+                    <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 20px;">
+                        <input type="number" id="bulk-student-count" class="form-control" min="1" max="100" placeholder="Number of students..." style="margin: 0; max-width: 180px;">
+                        <button class="btn btn-primary" id="btn-generate-lines" style="padding: 8px 16px; font-weight: bold; cursor: pointer;">
+                            Generate Lines
+                        </button>
+                    </div>
+
+                    <div id="bulk-lines-container" style="display: flex; flex-direction: column; gap: 12px; max-height: 280px; overflow-y: auto; padding-right: 8px;">
+                        <p style="color: var(--text-muted); font-size: 12px; margin: 0;"><i class="fa-solid fa-info-circle mr-4"></i> Enter the number of students who need manual check-in above to start.</p>
+                    </div>
+
+                    <button class="btn btn-success" id="btn-submit-bulk-checkin" style="display: none; margin-top: 20px; width: 100%; font-weight: bold; padding: 10px;">
+                        <i class="fa-solid fa-cloud-arrow-up mr-8"></i> Submit Attendance Check-ins
+                    </button>
+                </div>
+            `;
+            generalModal.classList.add("active");
+
+            document.getElementById("btn-generate-lines").addEventListener("click", () => {
+                const count = parseInt(document.getElementById("bulk-student-count").value);
+                if (isNaN(count) || count < 1) {
+                    alert("Please enter a valid positive number of students.");
+                    return;
+                }
+                
+                let linesHTML = "";
+                for (let i = 1; i <= count; i++) {
+                    linesHTML += `
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="font-weight: 600; width: 80px; font-size: 12px; color: var(--text-muted);">Student ${i}:</span>
+                            <input type="text" class="form-control bulk-roll-input" placeholder="Enter Roll Number (e.g. 351)" style="margin: 0; flex: 1;">
+                        </div>
+                    `;
+                }
+                
+                document.getElementById("bulk-lines-container").innerHTML = linesHTML;
+                document.getElementById("btn-submit-bulk-checkin").style.display = "block";
+            });
+
+            document.getElementById("btn-submit-bulk-checkin").addEventListener("click", async () => {
+                const rollInputs = document.querySelectorAll(".bulk-roll-input");
+                const rollNumbers = [];
+                rollInputs.forEach(input => {
+                    const val = input.value.trim();
+                    if (val) rollNumbers.push(val);
+                });
+
+                if (rollNumbers.length === 0) {
+                    alert("Please enter at least one student roll number.");
+                    return;
+                }
+
+                const submitBtn = document.getElementById("btn-submit-bulk-checkin");
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-8"></i> Submitting...`;
+
+                try {
+                    const res = await fetch('/api/attendance/session/bulk-checkin', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            session_code: activeSessionCode,
+                            roll_numbers: rollNumbers
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert(`Attendance check-ins submitted successfully!\n- Added: ${data.added.join(', ') || 'None'}\n- Already checked in: ${data.alreadyPresent.join(', ') || 'None'}\n- Invalid/Not found: ${data.invalid.join(', ') || 'None'}`);
+                        generalModal.classList.remove("active");
+                        // Refresh active session records list
+                        if (typeof window.pollCheckedInStudents === "function") {
+                            window.pollCheckedInStudents(activeSessionCode);
+                        }
+                    } else {
+                        alert("Submission failed: " + (data.error || 'Unknown error'));
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up mr-8"></i> Submit Attendance Check-ins`;
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("Network error submitting attendance.");
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up mr-8"></i> Submit Attendance Check-ins`;
+                }
+            });
         });
     }
 

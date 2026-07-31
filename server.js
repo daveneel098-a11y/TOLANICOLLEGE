@@ -1397,6 +1397,88 @@ app.post('/api/attendance/mark-manual', (req, res) => {
     }
 });
 
+// Bulk Manual Phone Check-in Endpoint
+app.post('/api/attendance/session/bulk-checkin', (req, res) => {
+    const { session_code, roll_numbers } = req.body;
+    if (!session_code || !roll_numbers || !Array.isArray(roll_numbers)) {
+        return res.status(400).json({ error: "Missing required session code or roll numbers." });
+    }
+
+    try {
+        const session = db.prepare("SELECT * FROM attendance_sessions WHERE code = ?").get(session_code);
+        if (!session) {
+            return res.status(404).json({ error: "Session not found." });
+        }
+
+        const added = [];
+        const invalid = [];
+        const alreadyPresent = [];
+
+        db.exec("BEGIN TRANSACTION");
+        
+        // Fetch all students in the class/division
+        const students = db.prepare(`
+            SELECT * FROM users 
+            WHERE role = 'student' 
+              AND class = ? 
+              AND division = ?
+        `).all(session.class_name, session.division);
+
+        for (const roll of roll_numbers) {
+            const cleanRoll = roll.trim();
+            if (!cleanRoll) continue;
+
+            const user = students.find(s => {
+                const rollPart = s.username.replace(/^(VI|IV|III|II|I|V)/i, '').replace(/P$/i, '').trim();
+                return rollPart === cleanRoll;
+            });
+
+            if (!user) {
+                invalid.push(cleanRoll);
+                continue;
+            }
+
+            // Check if already checked in
+            const existing = db.prepare(`
+                SELECT * FROM attendance_records 
+                WHERE session_id = ? AND student_id = ?
+            `).get(session.id, user.id);
+
+            if (existing) {
+                alreadyPresent.push(cleanRoll);
+                continue;
+            }
+
+            // Create record
+            const markedAt = new Date().toISOString();
+            db.prepare(`
+                INSERT INTO attendance_records (session_id, student_id, device_id, status, marked_at, location_verified)
+                VALUES (?, ?, 'MANUAL_PHONE', 'present', ?, 1)
+            `).run(session.id, user.id, markedAt);
+            
+            added.push(cleanRoll);
+
+            // Notify SSE Stream for professor UI updates in real-time
+            notifyProfessorSse(session.id, 'STUDENT_JOINED', { student_id: user.id });
+        }
+
+        db.exec("COMMIT");
+        dbChanged = true; // Trigger Mongo sync
+
+        res.json({
+            success: true,
+            added,
+            invalid,
+            alreadyPresent,
+            message: `Bulk manual phone check-in process completed.`
+        });
+    } catch (err) {
+        try { db.exec("ROLLBACK"); } catch(e) {}
+        console.error("Bulk manual phone check-in error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // 4.6. Retrieve all active attendance sessions for projector view
 app.get('/api/attendance/active-sessions', (req, res) => {
     try {
