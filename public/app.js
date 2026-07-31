@@ -2969,6 +2969,24 @@ window.renderStaffProfile = async function() {
         </div>
     `;
 
+    let storageCardHTML = "";
+    if (currentUser.role === 'admin') {
+        storageCardHTML = `
+            <div class="glass-card mb-24">
+                <h3 class="card-title mb-16"><i class="fa-solid fa-hard-drive mr-8"></i> Server Storage & Optimization</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+                    Monitor persistent storage usage, delete orphaned assignment/study files, and compact the SQLite database structure.
+                </p>
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 20px; font-size: 13px; display: flex; flex-direction: column; gap: 8px;" id="storage-details-container">
+                    <div><i class="fa-solid fa-spinner fa-spin mr-8"></i> Loading storage metrics...</div>
+                </div>
+                <button class="btn btn-danger" id="clean-storage-btn" style="padding: 8px 16px; width: fit-content; cursor: pointer;">
+                    <i class="fa-solid fa-broom mr-4"></i> Optimize & Clean Storage
+                </button>
+            </div>
+        `;
+    }
+
     let driveCardHTML = "";
     if (currentUser.role === 'admin') {
         driveCardHTML = `
@@ -3020,6 +3038,7 @@ function doPost(e) {
     dynamicContentArea.innerHTML = `
         ${adminPermissionsHTML}
         ${detailsCardHTML}
+        ${storageCardHTML}
         ${driveCardHTML}
     `;
 
@@ -3083,6 +3102,116 @@ function doPost(e) {
                 } catch (e) {
                     console.error(e);
                     alert("Error saving settings.");
+                }
+            });
+        }
+
+        // Storage details loading
+        async function loadStorageMetrics() {
+            const container = document.getElementById("storage-details-container");
+            if (!container) return;
+            try {
+                const res = await fetch('/api/admin/storage-info');
+                const data = await res.json();
+                if (data.success) {
+                    const stats = data.stats;
+                    const formatSize = (bytes) => {
+                        if (bytes === 0) return '0 Bytes';
+                        const k = 1024;
+                        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                        const i = Math.floor(Math.log(bytes) / Math.log(k));
+                        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                    };
+
+                    let persistentDiskHTML = "";
+                    if (stats.persistentDiskFiles && stats.persistentDiskFiles.length > 0) {
+                        persistentDiskHTML = `
+                            <div style="margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px; text-align: left;">
+                                <strong style="display:block; margin-bottom: 8px; color: #ffffff;">Persistent Volume Files (/var/data):</strong>
+                                <ul style="margin: 0; padding: 0; list-style-type: none; display: flex; flex-direction: column; gap: 8px;">
+                                    ${stats.persistentDiskFiles.map(f => `
+                                        <li style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                                            <span>${f.name} (<span style="color: var(--text-muted);">${formatSize(f.size)}</span>)</span>
+                                            ${f.name !== 'database.db' ? `
+                                                <button class="btn btn-danger btn-sm" onclick="window.deletePersistentFile('${f.name}')" style="padding: 4px 8px; font-size: 11px; cursor: pointer;">
+                                                    <i class="fa-solid fa-trash-can"></i> Delete
+                                                </button>
+                                            ` : ''}
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    }
+
+                    container.innerHTML = `
+                        <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">SQLite Database:</span><strong>${formatSize(stats.dbSize)}</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Uploaded Attachments:</span><strong>${formatSize(stats.uploadsSize)} (${stats.uploadsCount} files)</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Total Persistent Vol. Size:</span><strong>${formatSize(stats.persistentDiskSize)}</strong></div>
+                        ${persistentDiskHTML}
+                    `;
+                } else {
+                    container.innerHTML = `<span style="color: var(--danger);">Failed to load metrics.</span>`;
+                }
+            } catch (err) {
+                container.innerHTML = `<span style="color: var(--danger);">Error fetching storage stats.</span>`;
+            }
+        }
+
+        window.deletePersistentFile = async function(filename) {
+            if (!confirm(`Are you sure you want to delete ${filename}? This action cannot be undone.`)) return;
+            try {
+                const res = await fetch('/api/admin/delete-file', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(`File ${filename} deleted successfully.`);
+                    loadStorageMetrics();
+                } else {
+                    alert("Delete failed: " + (data.error || 'Unknown error'));
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Network error deleting file.");
+            }
+        };
+
+        // Initialize storage metrics
+        loadStorageMetrics();
+
+        const cleanStorageBtn = document.getElementById("clean-storage-btn");
+        if (cleanStorageBtn) {
+            cleanStorageBtn.addEventListener("click", async () => {
+                if (!confirm("Are you sure you want to run storage optimization? This will compact the database (vacuum) and permanently delete any uploaded files that are no longer linked to any assignment or study material. This is safe and will not affect active records.")) return;
+
+                cleanStorageBtn.disabled = true;
+                cleanStorageBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-4"></i> Cleaning...`;
+
+                try {
+                    const res = await fetch('/api/admin/clean-storage', { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                        const formatSize = (bytes) => {
+                            if (bytes === 0) return '0 Bytes';
+                            const k = 1024;
+                            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                            const i = Math.floor(Math.log(bytes) / Math.log(k));
+                            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                        };
+                        alert(`Storage optimization completed!\n- Cleaned ${data.deletedFilesCount} unused/temp files.\n- Reclaimed ${formatSize(data.reclaimedBytes)}.`);
+                        loadStorageMetrics();
+                    } else {
+                        alert("Optimization failed: " + (data.error || 'Unknown error'));
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("Network error executing storage clean.");
+                } finally {
+                    cleanStorageBtn.disabled = false;
+                    cleanStorageBtn.innerHTML = `<i class="fa-solid fa-broom mr-4"></i> Optimize & Clean Storage`;
                 }
             });
         }

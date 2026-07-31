@@ -2229,6 +2229,143 @@ app.post('/api/settings/profile-permissions', (req, res) => {
     }
 });
 
+// Settings: Storage Diagnostics and Optimization Endpoints
+app.get('/api/admin/storage-info', (req, res) => {
+    try {
+        const stats = {
+            dbSize: 0,
+            uploadsSize: 0,
+            uploadsCount: 0,
+            persistentDiskSize: 0,
+            persistentDiskFiles: []
+        };
+
+        // DB Size
+        if (fs.existsSync(dbPath)) {
+            stats.dbSize = fs.statSync(dbPath).size;
+        }
+
+        // Uploads Size
+        const uploadsDir = path.join(__dirname, 'public', 'uploads');
+        if (fs.existsSync(uploadsDir)) {
+            const files = fs.readdirSync(uploadsDir);
+            stats.uploadsCount = files.length;
+            files.forEach(f => {
+                const fp = path.join(uploadsDir, f);
+                try {
+                    stats.uploadsSize += fs.statSync(fp).size;
+                } catch(e) {}
+            });
+        }
+
+        // Persistent Disk Info
+        if (fs.existsSync(RENDER_DATA_DIR)) {
+            const files = fs.readdirSync(RENDER_DATA_DIR);
+            files.forEach(f => {
+                const fp = path.join(RENDER_DATA_DIR, f);
+                try {
+                    const sz = fs.statSync(fp).size;
+                    stats.persistentDiskSize += sz;
+                    stats.persistentDiskFiles.push({ name: f, size: sz });
+                } catch(e) {}
+            });
+        }
+
+        res.json({ success: true, stats });
+    } catch (err) {
+        console.error("Storage info error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/admin/clean-storage', (req, res) => {
+    try {
+        let deletedFilesCount = 0;
+        let reclaimedBytes = 0;
+
+        // 1. Run VACUUM on SQLite database to compact it and release empty space back to disk
+        db.exec("VACUUM");
+
+        // 2. Clean Orphaned Uploads
+        const uploadsDir = path.join(__dirname, 'public', 'uploads');
+        if (fs.existsSync(uploadsDir)) {
+            const files = fs.readdirSync(uploadsDir);
+            
+            // Get all referenced files in DB
+            const assignments = db.prepare("SELECT file_path FROM assignments").all();
+            const materials = db.prepare("SELECT file_path FROM study_materials").all();
+            const referencedPaths = new Set();
+            assignments.forEach(a => { if (a.file_path) referencedPaths.add(path.basename(a.file_path)); });
+            materials.forEach(m => { if (m.file_path) referencedPaths.add(path.basename(m.file_path)); });
+
+            files.forEach(f => {
+                if (!referencedPaths.has(f)) {
+                    const fp = path.join(uploadsDir, f);
+                    try {
+                        const sz = fs.statSync(fp).size;
+                        fs.unlinkSync(fp);
+                        deletedFilesCount++;
+                        reclaimedBytes += sz;
+                    } catch(e) {}
+                }
+            });
+        }
+
+        // 3. Clean temporary files in persistent volume
+        if (fs.existsSync(RENDER_DATA_DIR)) {
+            const files = fs.readdirSync(RENDER_DATA_DIR);
+            files.forEach(f => {
+                if (f.startsWith('database.db.bak') || f.includes('-journal') || f.endsWith('.tmp')) {
+                    const fp = path.join(RENDER_DATA_DIR, f);
+                    try {
+                        const sz = fs.statSync(fp).size;
+                        fs.unlinkSync(fp);
+                        deletedFilesCount++;
+                        reclaimedBytes += sz;
+                    } catch(e) {}
+                }
+            });
+        }
+
+        res.json({
+            success: true,
+            message: "Storage cleaned successfully!",
+            deletedFilesCount,
+            reclaimedBytes
+        });
+    } catch (err) {
+        console.error("Clean storage error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/admin/delete-file', (req, res) => {
+    const { filename } = req.body;
+    if (!filename) return res.status(400).json({ error: "Filename is required." });
+    
+    // Safety check: prevent directory traversal
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+        return res.status(400).json({ error: "Invalid filename path." });
+    }
+
+    try {
+        const fp = path.join(RENDER_DATA_DIR, filename);
+        if (fs.existsSync(fp)) {
+            if (filename === 'database.db') {
+                return res.status(400).json({ error: "Cannot delete the active database file." });
+            }
+            const sz = fs.statSync(fp).size;
+            fs.unlinkSync(fp);
+            res.json({ success: true, message: `File ${filename} deleted successfully.`, size: sz });
+        } else {
+            res.status(404).json({ error: "File not found." });
+        }
+    } catch (err) {
+        console.error("Delete file error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Subjects Management
 app.get('/api/subjects', (req, res) => {
     const { program } = req.query;
